@@ -1,0 +1,177 @@
+ djp  yoga  ~/.task/hooks/recurrence  task +test del
+This command will alter 163 tasks.
+Delete task 31 'test wait bug'? (yes/no/all/quit) all
+Deleting task 731f14cc 'test wait bug'.
+Deleting task a44f9449 'test wait bug fixed?'.
+Deleting task c0416cbe 'test1'.
+Deleting task 01d461be 'test relative date bug'.
+Deleting task d468805c 'test relative date bug'.
+Deleting task 90d58929 'test relative date bug'.
+Deleting task 7b08661b 'test1'.
+Deleting task 7baca603 'test1'.
+Deleting task 614a437c 'test2'.
+Deleting task 6044e96b 'test2'.
+Deleting task 5585763f 'test3'.
+Deleting task 4d142c8a 'test3'.
+Deleting task a6899ec2 'test4'.
+Deleting task 5765e8a8 'test4'.
+Deleting task 779a5047 'test5'.
+Deleting task fa970f6d 'test5'.
+Deleting task 9d8fa6e6 'test6'.
+Deleting task d7622792 'test6'.
+Deleting task baae4597 'test7'.
+Deleting task 487edd1a 'test7'.
+Task 6005640b 'test1' is not deletable.
+Task 3e771d66 'test chain' is not deletable.
+Task 33351b50 'test chain' is not deletable.
+Task cf4671f1 'test chain 2' is not deletable.
+Task 228b41da 'test chain 2' is not deletable.
+Task cf26728e 'test chain 2' is not deletable.
+Task 8c159110 'test using recur field for display' is not deletable.
+Task 093a8ec8 'period test 2' is not deletable.
+Task ff12b28d 'test using recur field for display' is not deletable.
+Task 7155e169 'test using recur field for display' is not deletable.
+Task 44ac5c61 'chain test 01' is not deletable.
+Task 65d2572d 'chain recurr test' is not deletable.
+Task f01946b3 'period test' is not deletable.
+Task 71cd09c7 'period test 2' is not deletable.
+Task 99392347 'period test 2' is not deletable.
+Task 600019ad 'period test' is not deletable.
+Task 8da9fb03 'chain recurr test' is not deletable.
+Task 81e5f12a 'chain test 01' is not deletable.
+Task 8ffa1f70 'period test 2' is not deletable.
+Task 226030ab 'period test' is not deletable.
+Task ee1013b2 'yet another one' is not deletable.
+Task fbf80728 'yet another one' is not deletable.
+Task a3149ad9 'chain test 01' is not deletable.
+Task 79908496 'chain recurr test' is not deletable.
+Task 2df28c96 'period test' is not deletable.
+Task b5882c96 'test using recur field for display' is not deletable.
+Task a7403aa2 'test instance and template deletion' is not deletable.
+Task 54125fb4 'rindex is showin 6 decimal places' is not deletable.
+Task 90610326 'chained instance not spawned' is not deletable.
+Task dc7243e4 'period test 2' is not deletable.
+Task 23515bfb 'period test 2' is not deletable.
+Task 2c5a8cb8 'period test 2' is not deletable.
+Task f433a36b 'period test 2' is not deletable.
+Task 6ddf2f22 'period test' is not deletable.
+Task f309d8d5 'chain test 01' is not deletable.
+Task 7299bef7 'chain recurr test' is not deletable.
+Task 1351df37 'chain test 01' is not deletable.
+Task 0503a998 'chain test 01' is not deletable.
+Task de06345e 'chain recurr test' is not deletable.
+Task f876116b 'chain test 01' is not deletable.
+Task ae6a998c 'test using recur field for display' is not deletable.
+Task ebf6c63a 'chain test 01' is not deletable.
+Task 4dc0b12e 'test using recur field for display' is not deletable.
+Task 6428a24d 'Rent2' is not deletable.
+Task 48e6982a 'test using recur field for display' is not deletable.
+Task c1d74a14 'test 12 period recurrence' is not deletable.
+Task a456fc24 'test 13 chain recurrence' is not deletable.
+Task c61df584 'test15 recurrence chain' is not deletable.
+Task 25432a02 'test16 recurrence chain' is not deletable.
+Task ec1c8abf 'test 11 recurrence' is not deletable.
+Task 8e034d83 'test21 periodic' is not deletable.
+Task 2b36203b 'test22 periodic' is not deletable.
+Task d0a796e4 'test23 periodic' is not deletable.
+Task 753a5e5d 'test24 chained' is not deletable.
+Task dcbb8f18 'test24 chained' is not deletable.
+Task d83c31db 'test27 periodic' is not deletable.
+Task 702c1931 'test 30 periodic' is not deletable.
+Task 13a33415 'test 31 periodic' is not deletable.
+Task bcbadaea 'test40 periodic' is not deletable.
+Task 2c508d07 'test441 chained' is not deletable.
+Task 1f9bd057 'recurr-test-2002' is not deletable.
+Task e00f8411 'recurr-test-2003 chained' is not deletable.
+Task 850f8dff 'recurr-test-2005 chained' is not deletable.
+Task d590edcc 'recurr-test-2006 period' is not deletable.
+Task da5c9e1f 'periodic recurrence test' is not deletable.
+Task 595ef1e6 'test15 recurrence chain' is not deletable.
+Task 39dc4a8c 'test16 recurrence chain' is not deletable.
+Task e9a8c8ec 'test 11 recurrence' is not deletable.
+Task d123355b 'test21 periodic' is not deletable.
+Task 3c900c9f 'test22 periodic' is not deletable.
+Task ea905e29 'test23 periodic' is not deletable.
+Task 7845a636 'test24 chained' is not deletable.
+Task 5c2393ae 'test24 chained' is not deletable.
+Task bb8d6236 'test27 periodic' is not deletable.
+Task 96890d12 'test 30 periodic' is not deletable.
+Task fcfc3277 'test 31 periodic' is not deletable.
+Task 6dd91f71 'test40 periodic' is not deletable.
+Task d7967b51 'test441 chained' is not deletable.
+Task cbf8bb46 'recurr-test-2002' is not deletable.
+Task 5e889091 'recurr-test-2003 chained' is not deletable.
+Task 36b915f1 'recurr-test-2005 chained' is not deletable.
+Task 499577ec 'recurr-test-2006 period' is not deletable.
+Task f7526d47 'periodic recurrence test' is not deletable.
+Task 45af5d04 'test recur' is not deletable.
+Task 9db968c8 'test recur' is not deletable.
+Task 97e2597f 'test recur 03' is not deletable.
+Task 71bc7174 'test recur 03' is not deletable.
+Task 55e17232 'testing periodic with wait and until' is not deletable.
+Task b4fd4af0 'testing periodic with wait and until' is not deletable.
+Task f0a5b63c 'testing chained with wait and until' is not deletable.
+Task 3ee54637 'testing chained with wait and until' is not deletable.
+Task b75d21b1 'testing chained with wait and until' is not deletable.
+Task 4aff9f18 'testing chained with wait and until' is not deletable.
+Task 50045934 'testing chained with wait and until' is not deletable.
+Task fe9639f5 'testing chained with wait and until' is not deletable.
+Task 6a68c79e 'testing chained with wait and until' is not deletable.
+Task a1a3dc9c 'testing chained with wait and until' is not deletable.
+Task 1cb4eaca 'testing chained with wait and until' is not deletable.
+Task b4097b08 'testing chained with wait and until' is not deletable.
+Task 88890085 'testing chained with wait and until' is not deletable.
+Task 048dc9a9 'testing chained with wait and until' is not deletable.
+Task da15d90a 'testing chained with wait and until' is not deletable.
+Task dab54287 'Test c' is not deletable.
+Task 1c1a9459 'Test c' is not deletable.
+Task 1a599ef4 'Test p' is not deletable.
+Task 1da74696 'Test p' is not deletable.
+Task 9bb08d11 'Chain test' is not deletable.
+Task 4e1d1215 'Chain test' is not deletable.
+Task 63e20a42 'test recur' is not deletable.
+Task 32d0c864 'periodic recurrence test' is not deletable.
+Task eb81c6da 'recurr-test-2006 period' is not deletable.
+Task 26f8551e 'recurr-test-2005 chained' is not deletable.
+Task c211d88c 'recurr-test-2002' is not deletable.
+Task 1209f2de 'recurr-test-2003 chained' is not deletable.
+Task 40fa5cdd 'test40 periodic' is not deletable.
+Task e63231c0 'test441 chained' is not deletable.
+Task 7739bacc 'test 30 periodic' is not deletable.
+Task e72aee0c 'test 31 periodic' is not deletable.
+Task 5d26aa74 'test27 periodic' is not deletable.
+Task 17d43a93 'test24 chained' is not deletable.
+Task 9482ceff 'test23 periodic' is not deletable.
+Task b781681f 'test24 chained' is not deletable.
+Task cf1e39b0 'test21 periodic' is not deletable.
+Task ecbbd512 'test22 periodic' is not deletable.
+Task 60a4b581 'test15 recurrence chain' is not deletable.
+Task 3fcdb9bc 'test16 recurrence chain' is not deletable.
+Task cb27ac93 'test 11 recurrence' is not deletable.
+Task 8004aa13 'pay Pembroke storage r:1mo' is not deletable.
+Task a3f5d672 'test16 recurrence chain' is not deletable.
+Task 627a9717 'test 10 recurrence' is not deletable.
+Task d07cd8f8 'test 11 recurrence' is not deletable.
+Task a30abf48 'test recur-enhanced' is not deletable.
+Task c0d9f1e5 'test2 recur-enhanced' is not deletable.
+Task 0b416dd5 'test3 recurr enhanced' is not deletable.
+Task d4db4669 'test4 recurr enhanced' is not deletable.
+Task 3a23e053 'test5 recurr enhanced' is not deletable.
+Task 6c326916 'test6 recurr enhanced' is not deletable.
+Task 5db17410 'test7 recurr enhanced' is not deletable.
+Task 3845303b 'test8 recurr enhanced' is not deletable.
+Task 5fa7f212 'test9 recurr chain' is not deletable.
+Task c174de35 'test 10 recurrence' is not deletable.
+Task 16b24156 'test recur +2min r:5min' is not deletable.
+Task 059c1900 'test flutter' is not deletable.
+Deleted 20 tasks.
+Deleted template 'test relative date bug' - all future instances stopped.
+Deleted template 'test1' - all future instances stopped.
+Deleted template 'test2' - all future instances stopped.
+Deleted template 'test3' - all future instances stopped.
+Deleted template 'test4' - all future instances stopped.
+Deleted template 'test5' - all future instances stopped.
+Deleted template 'test6' - all future instances stopped.
+Deleted template 'test7' - all future instances stopped.
+
+

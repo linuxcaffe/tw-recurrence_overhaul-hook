@@ -1,0 +1,72 @@
+Logging to: /home/djp/.task/hooks/recurrence/test/logs/run-20260115-175850-001.txt
+Run ID: 20260115-175850-001
+
+
+════════════════════════════════════════════════════════════════
+  Taskwarrior Enhanced Recurrence - Test Suite v2.0
+════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════
+  Test Environment Setup
+════════════════════════════════════════════════════════════════
+[INFO] Using hooks from: /home/djp/.task/hooks/recurrence (real: /home/djp/.task/hooks/recurrence)
+[INFO] Test directory: /tmp/taskwarrior-recurrence-test-3489035
+[INFO] Debug mode: true
+[INFO] Debug logging enabled in hooks
+[INFO] Hook debug log: ~/.task/recurrence_debug.log
+[DEBUG] Cleared old debug log
+
+──────────────────────────────────────────────────────────────
+  Setup & Configuration
+──────────────────────────────────────────────────────────────
+[TEST] UDAs are properly configured
+[DEBUG] Found UDA: uda.type
+[DEBUG] Found UDA: uda.r
+[DEBUG] Found UDA: uda.rtemplate
+[DEBUG] Found UDA: uda.rindex
+[DEBUG] Found UDA: uda.rlast
+[DEBUG] Found UDA: uda.rend
+[DEBUG] Found UDA: uda.rwait
+[DEBUG] Found UDA: uda.rscheduled
+[DEBUG] Found UDA: uda.ranchor
+[PASS] All required UDAs configured
+[TEST] Hook files are executable
+[PASS] Hook files are executable
+
+──────────────────────────────────────────────────────────────
+  Template Creation
+──────────────────────────────────────────────────────────────
+[TEST] Basic template creation with recurrence
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Template not created (count: 0)
+[TEST] Template has correct UDA values
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Type incorrect: 'periodic
+null
+chained
+null' (expected 'chained')
+[TEST] Type abbreviations normalized correctly
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Abbreviation 'c' not normalized to 'chained' (got: '')
+[TEST] Default type is 'periodic' when not specified
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Default type incorrect: '' (expected 'periodic')
+
+──────────────────────────────────────────────────────────────
+  Chained Recurrence (Completion-Based)
+──────────────────────────────────────────────────────────────
+[TEST] Chained: First instance spawned on template creation
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Template UUID: 
+[DEBUG] All instances found:
+[PASS] Instance(s) created (count: 10)
+[INFO] Note: Expected 1 instance but got 10 (possible duplicate spawn bug)
+[TEST] Chained: Instance has rindex:1
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Found rindex: 'null'
+[FAIL] Instance missing rindex field
+[TEST] Chained: Completing instance spawns next
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Initial pending count: 14
+[DEBUG] Completing instance: 1fd472bc-5fc5-4d15-9340-0b50562dc0bf
+[DEBUG] Waiting 2s for hooks to execu

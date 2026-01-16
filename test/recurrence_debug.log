@@ -1,0 +1,2157 @@
+[2026-01-15 17:58:50] EXIT: ============================================================
+[2026-01-15 17:58:50] EXIT: on-exit hook started
+[2026-01-15 17:58:50] EXIT: Received 0 lines of input
+[2026-01-15 17:58:50] ADD/MOD: ============================================================
+[2026-01-15 17:58:50] ADD/MOD: Hook starting
+[2026-01-15 17:58:50] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:50] ADD/MOD: Creating template: Basic recur test
+[2026-01-15 17:58:50] ADD/MOD:   Type: periodic, r=P7D
+[2026-01-15 17:58:50] ADD/MOD:   parse_date: '20260116T050000Z' -> 2026-01-16 05:00:00
+[2026-01-15 17:58:50] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:50] ADD/MOD: Hook completed
+[2026-01-15 17:58:50] EXIT: ============================================================
+[2026-01-15 17:58:50] EXIT: on-exit hook started
+[2026-01-15 17:58:50] EXIT: Received 1 lines of input
+[2026-01-15 17:58:50] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:50] EXIT: Task 0: uuid=df59d0d9-bfac-4c7e-8586-34ae23f27b32, status=recurring, desc=Basic recur test
+[2026-01-15 17:58:50] EXIT: Processing task: uuid=df59d0d9-bfac-4c7e-8586-34ae23f27b32, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:50] EXIT: Found new template: Basic recur test
+[2026-01-15 17:58:50] EXIT: Creating instance 1 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:58:50] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:50] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:51] ADD/MOD: ============================================================
+[2026-01-15 17:58:51] ADD/MOD: Hook starting
+[2026-01-15 17:58:51] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:51] ADD/MOD: Creating template: UDA test
+[2026-01-15 17:58:51] ADD/MOD:   Type: chained, r=P3D
+[2026-01-15 17:58:51] ADD/MOD:   parse_date: '20260116T050000Z' -> 2026-01-16 05:00:00
+[2026-01-15 17:58:51] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:51] ADD/MOD: Hook completed
+[2026-01-15 17:58:51] EXIT: ============================================================
+[2026-01-15 17:58:51] EXIT: on-exit hook started
+[2026-01-15 17:58:51] EXIT: Received 1 lines of input
+[2026-01-15 17:58:51] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:51] EXIT: Task 0: uuid=9e6131d7-63a1-417e-874c-4283dfc1eb2e, status=recurring, desc=UDA test
+[2026-01-15 17:58:51] EXIT: Processing task: uuid=9e6131d7-63a1-417e-874c-4283dfc1eb2e, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:51] EXIT: Found new template: UDA test
+[2026-01-15 17:58:51] EXIT: Creating instance 1 from 9e6131d7-63a1-417e-874c-4283dfc1eb2e
+[2026-01-15 17:58:51] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:51] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:52] EXIT: ============================================================
+[2026-01-15 17:58:52] EXIT: on-exit hook started
+[2026-01-15 17:58:52] EXIT: Received 0 lines of input
+[2026-01-15 17:58:52] ADD/MOD: ============================================================
+[2026-01-15 17:58:52] ADD/MOD: Hook starting
+[2026-01-15 17:58:52] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:52] ADD/MOD: Creating template: Type abbr c
+[2026-01-15 17:58:52] ADD/MOD:   Type: chained, r=P1D
+[2026-01-15 17:58:52] ADD/MOD:   parse_date: '20260116T050000Z' -> 2026-01-16 05:00:00
+[2026-01-15 17:58:52] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:52] ADD/MOD: Hook completed
+[2026-01-15 17:58:52] EXIT: ============================================================
+[2026-01-15 17:58:52] EXIT: on-exit hook started
+[2026-01-15 17:58:52] EXIT: Received 1 lines of input
+[2026-01-15 17:58:52] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:52] EXIT: Task 0: uuid=33da9648-e3c0-469c-9646-bca5a5f89eb1, status=recurring, desc=Type abbr c
+[2026-01-15 17:58:52] EXIT: Processing task: uuid=33da9648-e3c0-469c-9646-bca5a5f89eb1, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:52] EXIT: Found new template: Type abbr c
+[2026-01-15 17:58:52] EXIT: Creating instance 1 from 33da9648-e3c0-469c-9646-bca5a5f89eb1
+[2026-01-15 17:58:52] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:52] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:53] ADD/MOD: ============================================================
+[2026-01-15 17:58:53] ADD/MOD: Hook starting
+[2026-01-15 17:58:53] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:53] ADD/MOD: Creating template: Default type test
+[2026-01-15 17:58:53] ADD/MOD:   Type: periodic, r=P1D
+[2026-01-15 17:58:53] ADD/MOD:   parse_date: '20260116T050000Z' -> 2026-01-16 05:00:00
+[2026-01-15 17:58:53] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:53] ADD/MOD: Hook completed
+[2026-01-15 17:58:54] EXIT: ============================================================
+[2026-01-15 17:58:54] EXIT: on-exit hook started
+[2026-01-15 17:58:54] EXIT: Received 1 lines of input
+[2026-01-15 17:58:54] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:54] EXIT: Task 0: uuid=33f0ac9a-83d7-4485-897f-f6e29db6c199, status=recurring, desc=Default type test
+[2026-01-15 17:58:54] EXIT: Processing task: uuid=33f0ac9a-83d7-4485-897f-f6e29db6c199, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:54] EXIT: Found new template: Default type test
+[2026-01-15 17:58:54] EXIT: Creating instance 1 from 33f0ac9a-83d7-4485-897f-f6e29db6c199
+[2026-01-15 17:58:54] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:54] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:55] ADD/MOD: ============================================================
+[2026-01-15 17:58:55] ADD/MOD: Hook starting
+[2026-01-15 17:58:55] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:55] ADD/MOD: Creating template: Chained test 1
+[2026-01-15 17:58:55] ADD/MOD:   Type: chained, r=P7D
+[2026-01-15 17:58:55] ADD/MOD:   parse_date: '20260116T050000Z' -> 2026-01-16 05:00:00
+[2026-01-15 17:58:55] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:55] ADD/MOD: Hook completed
+[2026-01-15 17:58:55] EXIT: ============================================================
+[2026-01-15 17:58:55] EXIT: on-exit hook started
+[2026-01-15 17:58:55] EXIT: Received 1 lines of input
+[2026-01-15 17:58:55] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:55] EXIT: Task 0: uuid=7278dbc9-896e-4f2b-9a4f-23b576e0a05c, status=recurring, desc=Chained test 1
+[2026-01-15 17:58:55] EXIT: Processing task: uuid=7278dbc9-896e-4f2b-9a4f-23b576e0a05c, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:55] EXIT: Found new template: Chained test 1
+[2026-01-15 17:58:55] EXIT: Creating instance 1 from 7278dbc9-896e-4f2b-9a4f-23b576e0a05c
+[2026-01-15 17:58:55] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:55] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:56] EXIT: ============================================================
+[2026-01-15 17:58:56] EXIT: on-exit hook started
+[2026-01-15 17:58:56] EXIT: Received 0 lines of input
+[2026-01-15 17:58:56] ADD/MOD: ============================================================
+[2026-01-15 17:58:56] ADD/MOD: Hook starting
+[2026-01-15 17:58:56] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:56] ADD/MOD: Creating template: Chained index test
+[2026-01-15 17:58:56] ADD/MOD:   Type: chained, r=P7D
+[2026-01-15 17:58:56] ADD/MOD:   parse_date: '20260116T050000Z' -> 2026-01-16 05:00:00
+[2026-01-15 17:58:56] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:56] ADD/MOD: Hook completed
+[2026-01-15 17:58:56] EXIT: ============================================================
+[2026-01-15 17:58:56] EXIT: on-exit hook started
+[2026-01-15 17:58:56] EXIT: Received 1 lines of input
+[2026-01-15 17:58:56] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:56] EXIT: Task 0: uuid=8cc5e41c-3389-4a9d-9f54-5463301cfaf1, status=recurring, desc=Chained index test
+[2026-01-15 17:58:56] EXIT: Processing task: uuid=8cc5e41c-3389-4a9d-9f54-5463301cfaf1, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:56] EXIT: Found new template: Chained index test
+[2026-01-15 17:58:56] EXIT: Creating instance 1 from 8cc5e41c-3389-4a9d-9f54-5463301cfaf1
+[2026-01-15 17:58:56] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:56] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:57] EXIT: ============================================================
+[2026-01-15 17:58:57] EXIT: on-exit hook started
+[2026-01-15 17:58:57] EXIT: Received 0 lines of input
+[2026-01-15 17:58:57] ADD/MOD: ============================================================
+[2026-01-15 17:58:57] ADD/MOD: Hook starting
+[2026-01-15 17:58:57] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:58:57] ADD/MOD: Creating template: Chained complete test
+[2026-01-15 17:58:57] ADD/MOD:   Type: chained, r=PT2S
+[2026-01-15 17:58:57] ADD/MOD:   parse_date: '20260115T225857Z' -> 2026-01-15 22:58:57
+[2026-01-15 17:58:57] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:58:57] ADD/MOD: Hook completed
+[2026-01-15 17:58:57] EXIT: ============================================================
+[2026-01-15 17:58:57] EXIT: on-exit hook started
+[2026-01-15 17:58:57] EXIT: Received 1 lines of input
+[2026-01-15 17:58:57] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:57] EXIT: Task 0: uuid=f66fa96c-4b8c-4e5c-aeba-acb742278289, status=recurring, desc=Chained complete test
+[2026-01-15 17:58:57] EXIT: Processing task: uuid=f66fa96c-4b8c-4e5c-aeba-acb742278289, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:58:57] EXIT: Found new template: Chained complete test
+[2026-01-15 17:58:57] EXIT: Creating instance 1 from f66fa96c-4b8c-4e5c-aeba-acb742278289
+[2026-01-15 17:58:57] EXIT: Instance 1 created successfully
+[2026-01-15 17:58:57] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:58:58] EXIT: ============================================================
+[2026-01-15 17:58:58] EXIT: on-exit hook started
+[2026-01-15 17:58:58] EXIT: Received 0 lines of input
+[2026-01-15 17:58:58] EXIT: ============================================================
+[2026-01-15 17:58:58] EXIT: on-exit hook started
+[2026-01-15 17:58:58] EXIT: Received 0 lines of input
+[2026-01-15 17:58:58] EXIT: ============================================================
+[2026-01-15 17:58:58] EXIT: on-exit hook started
+[2026-01-15 17:58:58] EXIT: Received 1 lines of input
+[2026-01-15 17:58:58] EXIT: Parsed 1 tasks
+[2026-01-15 17:58:58] EXIT: Task 0: uuid=1fd472bc-5fc5-4d15-9340-0b50562dc0bf, status=completed, desc=Basic recur test
+[2026-01-15 17:58:58] EXIT: Processing task: uuid=1fd472bc-5fc5-4d15-9340-0b50562dc0bf, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=1
+[2026-01-15 17:58:58] EXIT: Found completed instance: rindex=1
+[2026-01-15 17:58:58] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:58:58] EXIT: Method 1 returncode: 0
+[2026-01-15 17:58:58] EXIT: Method 1 stderr: 
+[2026-01-15 17:58:58] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:58:58] EXIT: Template found: Basic recur test, rlast=1, type=periodic
+[2026-01-15 17:58:58] EXIT: Checking: current_idx=1, last_idx=1
+[2026-01-15 17:58:58] EXIT: Will spawn next instance
+[2026-01-15 17:58:58] EXIT: Completion time: 2026-01-15 22:58:58
+[2026-01-15 17:58:58] EXIT: Creating instance 2 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:58:58] EXIT: Instance 2 created successfully
+[2026-01-15 17:58:58] EXIT: Result: Created instance 2 of 'Basic recur test'
+[2026-01-15 17:58:58] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:01] EXIT: ============================================================
+[2026-01-15 17:59:01] EXIT: on-exit hook started
+[2026-01-15 17:59:01] EXIT: Received 0 lines of input
+[2026-01-15 17:59:01] ADD/MOD: ============================================================
+[2026-01-15 17:59:01] ADD/MOD: Hook starting
+[2026-01-15 17:59:01] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:59:01] ADD/MOD: Creating template: Chained due test
+[2026-01-15 17:59:01] ADD/MOD:   Type: chained, r=PT5S
+[2026-01-15 17:59:01] ADD/MOD:   parse_date: '20260115T225901Z' -> 2026-01-15 22:59:01
+[2026-01-15 17:59:01] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:59:01] ADD/MOD: Hook completed
+[2026-01-15 17:59:01] EXIT: ============================================================
+[2026-01-15 17:59:01] EXIT: on-exit hook started
+[2026-01-15 17:59:01] EXIT: Received 1 lines of input
+[2026-01-15 17:59:01] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:01] EXIT: Task 0: uuid=9a1963fc-1329-461e-95be-ad47949f0838, status=recurring, desc=Chained due test
+[2026-01-15 17:59:01] EXIT: Processing task: uuid=9a1963fc-1329-461e-95be-ad47949f0838, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:59:01] EXIT: Found new template: Chained due test
+[2026-01-15 17:59:01] EXIT: Creating instance 1 from 9a1963fc-1329-461e-95be-ad47949f0838
+[2026-01-15 17:59:01] EXIT: Instance 1 created successfully
+[2026-01-15 17:59:01] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:04] ADD/MOD: ============================================================
+[2026-01-15 17:59:04] ADD/MOD: Hook starting
+[2026-01-15 17:59:04] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 17:59:04] ADD/MOD: Creating template: Chained multi test
+[2026-01-15 17:59:04] ADD/MOD:   Type: chained, r=PT1S
+[2026-01-15 17:59:04] ADD/MOD:   parse_date: '20260115T225904Z' -> 2026-01-15 22:59:04
+[2026-01-15 17:59:04] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 17:59:04] ADD/MOD: Hook completed
+[2026-01-15 17:59:04] EXIT: ============================================================
+[2026-01-15 17:59:04] EXIT: on-exit hook started
+[2026-01-15 17:59:04] EXIT: Received 1 lines of input
+[2026-01-15 17:59:04] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:04] EXIT: Task 0: uuid=51308986-1fe6-4cad-98ff-183d77bb1ccf, status=recurring, desc=Chained multi test
+[2026-01-15 17:59:04] EXIT: Processing task: uuid=51308986-1fe6-4cad-98ff-183d77bb1ccf, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 17:59:04] EXIT: Found new template: Chained multi test
+[2026-01-15 17:59:04] EXIT: Creating instance 1 from 51308986-1fe6-4cad-98ff-183d77bb1ccf
+[2026-01-15 17:59:04] EXIT: Instance 1 created successfully
+[2026-01-15 17:59:04] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:05] EXIT: ============================================================
+[2026-01-15 17:59:05] EXIT: on-exit hook started
+[2026-01-15 17:59:05] EXIT: Received 0 lines of input
+[2026-01-15 17:59:05] EXIT: ============================================================
+[2026-01-15 17:59:05] EXIT: on-exit hook started
+[2026-01-15 17:59:05] EXIT: Received 0 lines of input
+[2026-01-15 17:59:05] EXIT: ============================================================
+[2026-01-15 17:59:05] EXIT: on-exit hook started
+[2026-01-15 17:59:05] EXIT: Received 1 lines of input
+[2026-01-15 17:59:05] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:05] EXIT: Task 0: uuid=f7f76494-dbbb-4143-a8a0-fea85f3ffc06, status=completed, desc=UDA test
+[2026-01-15 17:59:05] EXIT: Processing task: uuid=f7f76494-dbbb-4143-a8a0-fea85f3ffc06, status=completed, rtemplate=9e6131d7-63a1-417e-874c-4283dfc1eb2e, rindex=1
+[2026-01-15 17:59:05] EXIT: Found completed instance: rindex=1
+[2026-01-15 17:59:05] EXIT: Attempting to fetch template: 9e6131d7-63a1-417e-874c-4283dfc1eb2e
+[2026-01-15 17:59:05] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:05] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:05] EXIT: Template fetched via method 1: UDA test, status=recurring
+[2026-01-15 17:59:05] EXIT: Template found: UDA test, rlast=1, type=chained
+[2026-01-15 17:59:05] EXIT: Checking: current_idx=1, last_idx=1
+[2026-01-15 17:59:05] EXIT: Will spawn next instance
+[2026-01-15 17:59:05] EXIT: Completion time: 2026-01-15 22:59:05
+[2026-01-15 17:59:05] EXIT: Creating instance 2 from 9e6131d7-63a1-417e-874c-4283dfc1eb2e
+[2026-01-15 17:59:05] EXIT: Instance 2 created successfully
+[2026-01-15 17:59:05] EXIT: Result: Created instance 2 of 'UDA test'
+[2026-01-15 17:59:05] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:07] EXIT: ============================================================
+[2026-01-15 17:59:07] EXIT: on-exit hook started
+[2026-01-15 17:59:07] EXIT: Received 0 lines of input
+[2026-01-15 17:59:07] EXIT: ============================================================
+[2026-01-15 17:59:07] EXIT: on-exit hook started
+[2026-01-15 17:59:07] EXIT: Received 1 lines of input
+[2026-01-15 17:59:07] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:07] EXIT: Task 0: uuid=d2dd2676-4867-411a-a2c5-fb7a3b9b32cc, status=completed, desc=Basic recur test
+[2026-01-15 17:59:07] EXIT: Processing task: uuid=d2dd2676-4867-411a-a2c5-fb7a3b9b32cc, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=2
+[2026-01-15 17:59:07] EXIT: Found completed instance: rindex=2
+[2026-01-15 17:59:07] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:07] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:07] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:07] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:07] EXIT: Template found: Basic recur test, rlast=2, type=periodic
+[2026-01-15 17:59:07] EXIT: Checking: current_idx=2, last_idx=2
+[2026-01-15 17:59:07] EXIT: Will spawn next instance
+[2026-01-15 17:59:07] EXIT: Completion time: 2026-01-15 22:59:07
+[2026-01-15 17:59:07] EXIT: Creating instance 3 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:07] EXIT: Instance 3 created successfully
+[2026-01-15 17:59:07] EXIT: Result: Created instance 3 of 'Basic recur test'
+[2026-01-15 17:59:07] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:09] EXIT: ============================================================
+[2026-01-15 17:59:09] EXIT: on-exit hook started
+[2026-01-15 17:59:09] EXIT: Received 0 lines of input
+[2026-01-15 17:59:09] EXIT: ============================================================
+[2026-01-15 17:59:09] EXIT: on-exit hook started
+[2026-01-15 17:59:09] EXIT: Received 1 lines of input
+[2026-01-15 17:59:09] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:09] EXIT: Task 0: uuid=5a01a03e-8791-4996-a0a5-af626f4e616c, status=completed, desc=Basic recur test
+[2026-01-15 17:59:09] EXIT: Processing task: uuid=5a01a03e-8791-4996-a0a5-af626f4e616c, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=3
+[2026-01-15 17:59:09] EXIT: Found completed instance: rindex=3
+[2026-01-15 17:59:09] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:09] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:09] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:09] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:09] EXIT: Template found: Basic recur test, rlast=3, type=periodic
+[2026-01-15 17:59:09] EXIT: Checking: current_idx=3, last_idx=3
+[2026-01-15 17:59:09] EXIT: Will spawn next instance
+[2026-01-15 17:59:09] EXIT: Completion time: 2026-01-15 22:59:09
+[2026-01-15 17:59:09] EXIT: Creating instance 4 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:10] EXIT: Instance 4 created successfully
+[2026-01-15 17:59:10] EXIT: Result: Created instance 4 of 'Basic recur test'
+[2026-01-15 17:59:10] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:12] EXIT: ============================================================
+[2026-01-15 17:59:12] EXIT: on-exit hook started
+[2026-01-15 17:59:12] EXIT: Received 0 lines of input
+[2026-01-15 17:59:12] EXIT: ============================================================
+[2026-01-15 17:59:12] EXIT: on-exit hook started
+[2026-01-15 17:59:12] EXIT: Received 1 lines of input
+[2026-01-15 17:59:12] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:12] EXIT: Task 0: uuid=45b9319a-3215-48f5-a62e-98e29af6db0c, status=completed, desc=Basic recur test
+[2026-01-15 17:59:12] EXIT: Processing task: uuid=45b9319a-3215-48f5-a62e-98e29af6db0c, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=4
+[2026-01-15 17:59:12] EXIT: Found completed instance: rindex=4
+[2026-01-15 17:59:12] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:12] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:12] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:12] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:12] EXIT: Template found: Basic recur test, rlast=4, type=periodic
+[2026-01-15 17:59:12] EXIT: Checking: current_idx=4, last_idx=4
+[2026-01-15 17:59:12] EXIT: Will spawn next instance
+[2026-01-15 17:59:12] EXIT: Completion time: 2026-01-15 22:59:12
+[2026-01-15 17:59:12] EXIT: Creating instance 5 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:12] EXIT: Instance 5 created successfully
+[2026-01-15 17:59:12] EXIT: Result: Created instance 5 of 'Basic recur test'
+[2026-01-15 17:59:12] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:14] EXIT: ============================================================
+[2026-01-15 17:59:14] EXIT: on-exit hook started
+[2026-01-15 17:59:14] EXIT: Received 0 lines of input
+[2026-01-15 17:59:14] EXIT: ============================================================
+[2026-01-15 17:59:14] EXIT: on-exit hook started
+[2026-01-15 17:59:14] EXIT: Received 1 lines of input
+[2026-01-15 17:59:14] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:14] EXIT: Task 0: uuid=42c198e5-2018-4ee3-a3c0-12c3709643e1, status=completed, desc=Basic recur test
+[2026-01-15 17:59:14] EXIT: Processing task: uuid=42c198e5-2018-4ee3-a3c0-12c3709643e1, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=5
+[2026-01-15 17:59:14] EXIT: Found completed instance: rindex=5
+[2026-01-15 17:59:14] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:14] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:14] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:14] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:14] EXIT: Template found: Basic recur test, rlast=5, type=periodic
+[2026-01-15 17:59:14] EXIT: Checking: current_idx=5, last_idx=5
+[2026-01-15 17:59:14] EXIT: Will spawn next instance
+[2026-01-15 17:59:14] EXIT: Completion time: 2026-01-15 22:59:14
+[2026-01-15 17:59:14] EXIT: Creating instance 6 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:14] EXIT: Instance 6 created successfully
+[2026-01-15 17:59:14] EXIT: Result: Created instance 6 of 'Basic recur test'
+[2026-01-15 17:59:14] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:16] EXIT: ============================================================
+[2026-01-15 17:59:16] EXIT: on-exit hook started
+[2026-01-15 17:59:16] EXIT: Received 0 lines of input
+[2026-01-15 17:59:16] EXIT: ============================================================
+[2026-01-15 17:59:16] EXIT: on-exit hook started
+[2026-01-15 17:59:16] EXIT: Received 1 lines of input
+[2026-01-15 17:59:16] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:16] EXIT: Task 0: uuid=77d22895-47e4-433a-a136-0bcbcb554a42, status=completed, desc=Basic recur test
+[2026-01-15 17:59:16] EXIT: Processing task: uuid=77d22895-47e4-433a-a136-0bcbcb554a42, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=6
+[2026-01-15 17:59:16] EXIT: Found completed instance: rindex=6
+[2026-01-15 17:59:16] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:16] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:16] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:16] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:16] EXIT: Template found: Basic recur test, rlast=6, type=periodic
+[2026-01-15 17:59:16] EXIT: Checking: current_idx=6, last_idx=6
+[2026-01-15 17:59:16] EXIT: Will spawn next instance
+[2026-01-15 17:59:16] EXIT: Completion time: 2026-01-15 22:59:16
+[2026-01-15 17:59:16] EXIT: Creating instance 7 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:16] EXIT: Instance 7 created successfully
+[2026-01-15 17:59:16] EXIT: Result: Created instance 7 of 'Basic recur test'
+[2026-01-15 17:59:16] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:18] EXIT: ============================================================
+[2026-01-15 17:59:18] EXIT: on-exit hook started
+[2026-01-15 17:59:18] EXIT: Received 0 lines of input
+[2026-01-15 17:59:18] EXIT: ============================================================
+[2026-01-15 17:59:18] EXIT: on-exit hook started
+[2026-01-15 17:59:18] EXIT: Received 1 lines of input
+[2026-01-15 17:59:18] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:18] EXIT: Task 0: uuid=9b09468d-7dc3-4c7b-86b2-3279ecef1a4e, status=completed, desc=Basic recur test
+[2026-01-15 17:59:18] EXIT: Processing task: uuid=9b09468d-7dc3-4c7b-86b2-3279ecef1a4e, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=7
+[2026-01-15 17:59:18] EXIT: Found completed instance: rindex=7
+[2026-01-15 17:59:18] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:18] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:18] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:18] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:18] EXIT: Template found: Basic recur test, rlast=7, type=periodic
+[2026-01-15 17:59:18] EXIT: Checking: current_idx=7, last_idx=7
+[2026-01-15 17:59:18] EXIT: Will spawn next instance
+[2026-01-15 17:59:18] EXIT: Completion time: 2026-01-15 22:59:18
+[2026-01-15 17:59:18] EXIT: Creating instance 8 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:18] EXIT: Instance 8 created successfully
+[2026-01-15 17:59:18] EXIT: Result: Created instance 8 of 'Basic recur test'
+[2026-01-15 17:59:18] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:20] EXIT: ============================================================
+[2026-01-15 17:59:20] EXIT: on-exit hook started
+[2026-01-15 17:59:20] EXIT: Received 0 lines of input
+[2026-01-15 17:59:20] EXIT: ============================================================
+[2026-01-15 17:59:20] EXIT: on-exit hook started
+[2026-01-15 17:59:20] EXIT: Received 1 lines of input
+[2026-01-15 17:59:20] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:20] EXIT: Task 0: uuid=e0d8c036-a16f-412f-bd80-89bb4a31a981, status=completed, desc=Basic recur test
+[2026-01-15 17:59:20] EXIT: Processing task: uuid=e0d8c036-a16f-412f-bd80-89bb4a31a981, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=8
+[2026-01-15 17:59:20] EXIT: Found completed instance: rindex=8
+[2026-01-15 17:59:20] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:20] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:20] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:20] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:20] EXIT: Template found: Basic recur test, rlast=8, type=periodic
+[2026-01-15 17:59:20] EXIT: Checking: current_idx=8, last_idx=8
+[2026-01-15 17:59:20] EXIT: Will spawn next instance
+[2026-01-15 17:59:20] EXIT: Completion time: 2026-01-15 22:59:20
+[2026-01-15 17:59:20] EXIT: Creating instance 9 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:20] EXIT: Instance 9 created successfully
+[2026-01-15 17:59:20] EXIT: Result: Created instance 9 of 'Basic recur test'
+[2026-01-15 17:59:20] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:22] EXIT: ============================================================
+[2026-01-15 17:59:22] EXIT: on-exit hook started
+[2026-01-15 17:59:22] EXIT: Received 0 lines of input
+[2026-01-15 17:59:23] EXIT: ============================================================
+[2026-01-15 17:59:23] EXIT: on-exit hook started
+[2026-01-15 17:59:23] EXIT: Received 1 lines of input
+[2026-01-15 17:59:23] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:23] EXIT: Task 0: uuid=7e763387-cf3f-4040-99cb-110c965e2b60, status=completed, desc=Basic recur test
+[2026-01-15 17:59:23] EXIT: Processing task: uuid=7e763387-cf3f-4040-99cb-110c965e2b60, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=9
+[2026-01-15 17:59:23] EXIT: Found completed instance: rindex=9
+[2026-01-15 17:59:23] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:23] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:23] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:23] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:23] EXIT: Template found: Basic recur test, rlast=9, type=periodic
+[2026-01-15 17:59:23] EXIT: Checking: current_idx=9, last_idx=9
+[2026-01-15 17:59:23] EXIT: Will spawn next instance
+[2026-01-15 17:59:23] EXIT: Completion time: 2026-01-15 22:59:22
+[2026-01-15 17:59:23] EXIT: Creating instance 10 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:23] EXIT: Instance 10 created successfully
+[2026-01-15 17:59:23] EXIT: Result: Created instance 10 of 'Basic recur test'
+[2026-01-15 17:59:23] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:25] EXIT: ============================================================
+[2026-01-15 17:59:25] EXIT: on-exit hook started
+[2026-01-15 17:59:25] EXIT: Received 0 lines of input
+[2026-01-15 17:59:25] EXIT: ============================================================
+[2026-01-15 17:59:25] EXIT: on-exit hook started
+[2026-01-15 17:59:25] EXIT: Received 1 lines of input
+[2026-01-15 17:59:25] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:25] EXIT: Task 0: uuid=053035fb-d03f-4562-857f-e8aa3c94911c, status=completed, desc=Basic recur test
+[2026-01-15 17:59:25] EXIT: Processing task: uuid=053035fb-d03f-4562-857f-e8aa3c94911c, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=10
+[2026-01-15 17:59:25] EXIT: Found completed instance: rindex=10
+[2026-01-15 17:59:25] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:25] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:25] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:25] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:25] EXIT: Template found: Basic recur test, rlast=10, type=periodic
+[2026-01-15 17:59:25] EXIT: Checking: current_idx=10, last_idx=10
+[2026-01-15 17:59:25] EXIT: Will spawn next instance
+[2026-01-15 17:59:25] EXIT: Completion time: 2026-01-15 22:59:25
+[2026-01-15 17:59:25] EXIT: Creating instance 11 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:25] EXIT: Instance 11 created successfully
+[2026-01-15 17:59:25] EXIT: Result: Created instance 11 of 'Basic recur test'
+[2026-01-15 17:59:25] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:27] EXIT: ============================================================
+[2026-01-15 17:59:27] EXIT: on-exit hook started
+[2026-01-15 17:59:27] EXIT: Received 0 lines of input
+[2026-01-15 17:59:27] EXIT: ============================================================
+[2026-01-15 17:59:27] EXIT: on-exit hook started
+[2026-01-15 17:59:27] EXIT: Received 1 lines of input
+[2026-01-15 17:59:27] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:27] EXIT: Task 0: uuid=b86b4c2b-f297-47be-8bb6-d75fb5b9fc11, status=completed, desc=Basic recur test
+[2026-01-15 17:59:27] EXIT: Processing task: uuid=b86b4c2b-f297-47be-8bb6-d75fb5b9fc11, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=11
+[2026-01-15 17:59:27] EXIT: Found completed instance: rindex=11
+[2026-01-15 17:59:27] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:27] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:27] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:27] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:27] EXIT: Template found: Basic recur test, rlast=11, type=periodic
+[2026-01-15 17:59:27] EXIT: Checking: current_idx=11, last_idx=11
+[2026-01-15 17:59:27] EXIT: Will spawn next instance
+[2026-01-15 17:59:27] EXIT: Completion time: 2026-01-15 22:59:27
+[2026-01-15 17:59:27] EXIT: Creating instance 12 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:27] EXIT: Instance 12 created successfully
+[2026-01-15 17:59:27] EXIT: Result: Created instance 12 of 'Basic recur test'
+[2026-01-15 17:59:27] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:29] EXIT: ============================================================
+[2026-01-15 17:59:29] EXIT: on-exit hook started
+[2026-01-15 17:59:29] EXIT: Received 0 lines of input
+[2026-01-15 17:59:29] EXIT: ============================================================
+[2026-01-15 17:59:29] EXIT: on-exit hook started
+[2026-01-15 17:59:29] EXIT: Received 1 lines of input
+[2026-01-15 17:59:29] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:29] EXIT: Task 0: uuid=b870a0d0-5b96-4cd0-b2e9-53f2bc9b48ca, status=completed, desc=Basic recur test
+[2026-01-15 17:59:29] EXIT: Processing task: uuid=b870a0d0-5b96-4cd0-b2e9-53f2bc9b48ca, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=12
+[2026-01-15 17:59:29] EXIT: Found completed instance: rindex=12
+[2026-01-15 17:59:29] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:29] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:29] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:29] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:29] EXIT: Template found: Basic recur test, rlast=12, type=periodic
+[2026-01-15 17:59:29] EXIT: Checking: current_idx=12, last_idx=12
+[2026-01-15 17:59:29] EXIT: Will spawn next instance
+[2026-01-15 17:59:29] EXIT: Completion time: 2026-01-15 22:59:29
+[2026-01-15 17:59:29] EXIT: Creating instance 13 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:29] EXIT: Instance 13 created successfully
+[2026-01-15 17:59:29] EXIT: Result: Created instance 13 of 'Basic recur test'
+[2026-01-15 17:59:29] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:31] EXIT: ============================================================
+[2026-01-15 17:59:31] EXIT: on-exit hook started
+[2026-01-15 17:59:31] EXIT: Received 0 lines of input
+[2026-01-15 17:59:31] EXIT: ============================================================
+[2026-01-15 17:59:31] EXIT: on-exit hook started
+[2026-01-15 17:59:31] EXIT: Received 1 lines of input
+[2026-01-15 17:59:31] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:31] EXIT: Task 0: uuid=f60f6e78-896e-4101-86f4-0fdd168a5f8d, status=completed, desc=Basic recur test
+[2026-01-15 17:59:31] EXIT: Processing task: uuid=f60f6e78-896e-4101-86f4-0fdd168a5f8d, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=13
+[2026-01-15 17:59:31] EXIT: Found completed instance: rindex=13
+[2026-01-15 17:59:31] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:31] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:31] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:31] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:31] EXIT: Template found: Basic recur test, rlast=13, type=periodic
+[2026-01-15 17:59:31] EXIT: Checking: current_idx=13, last_idx=13
+[2026-01-15 17:59:31] EXIT: Will spawn next instance
+[2026-01-15 17:59:31] EXIT: Completion time: 2026-01-15 22:59:31
+[2026-01-15 17:59:31] EXIT: Creating instance 14 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:31] EXIT: Instance 14 created successfully
+[2026-01-15 17:59:31] EXIT: Result: Created instance 14 of 'Basic recur test'
+[2026-01-15 17:59:31] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:33] EXIT: ============================================================
+[2026-01-15 17:59:33] EXIT: on-exit hook started
+[2026-01-15 17:59:33] EXIT: Received 0 lines of input
+[2026-01-15 17:59:33] EXIT: ============================================================
+[2026-01-15 17:59:33] EXIT: on-exit hook started
+[2026-01-15 17:59:33] EXIT: Received 1 lines of input
+[2026-01-15 17:59:33] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:33] EXIT: Task 0: uuid=bf209c68-4558-4a3c-9da5-7ec78f789f60, status=completed, desc=Basic recur test
+[2026-01-15 17:59:33] EXIT: Processing task: uuid=bf209c68-4558-4a3c-9da5-7ec78f789f60, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=14
+[2026-01-15 17:59:33] EXIT: Found completed instance: rindex=14
+[2026-01-15 17:59:33] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:33] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:33] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:33] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:33] EXIT: Template found: Basic recur test, rlast=14, type=periodic
+[2026-01-15 17:59:33] EXIT: Checking: current_idx=14, last_idx=14
+[2026-01-15 17:59:33] EXIT: Will spawn next instance
+[2026-01-15 17:59:33] EXIT: Completion time: 2026-01-15 22:59:33
+[2026-01-15 17:59:33] EXIT: Creating instance 15 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:33] EXIT: Instance 15 created successfully
+[2026-01-15 17:59:33] EXIT: Result: Created instance 15 of 'Basic recur test'
+[2026-01-15 17:59:33] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:36] EXIT: ============================================================
+[2026-01-15 17:59:36] EXIT: on-exit hook started
+[2026-01-15 17:59:36] EXIT: Received 0 lines of input
+[2026-01-15 17:59:36] EXIT: ============================================================
+[2026-01-15 17:59:36] EXIT: on-exit hook started
+[2026-01-15 17:59:36] EXIT: Received 1 lines of input
+[2026-01-15 17:59:36] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:36] EXIT: Task 0: uuid=8e2d7622-5e23-4539-b53f-0e1761edc854, status=completed, desc=Basic recur test
+[2026-01-15 17:59:36] EXIT: Processing task: uuid=8e2d7622-5e23-4539-b53f-0e1761edc854, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=15
+[2026-01-15 17:59:36] EXIT: Found completed instance: rindex=15
+[2026-01-15 17:59:36] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:36] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:36] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:36] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:36] EXIT: Template found: Basic recur test, rlast=15, type=periodic
+[2026-01-15 17:59:36] EXIT: Checking: current_idx=15, last_idx=15
+[2026-01-15 17:59:36] EXIT: Will spawn next instance
+[2026-01-15 17:59:36] EXIT: Completion time: 2026-01-15 22:59:36
+[2026-01-15 17:59:36] EXIT: Creating instance 16 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:36] EXIT: Instance 16 created successfully
+[2026-01-15 17:59:36] EXIT: Result: Created instance 16 of 'Basic recur test'
+[2026-01-15 17:59:36] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:38] EXIT: ============================================================
+[2026-01-15 17:59:38] EXIT: on-exit hook started
+[2026-01-15 17:59:38] EXIT: Received 0 lines of input
+[2026-01-15 17:59:38] EXIT: ============================================================
+[2026-01-15 17:59:38] EXIT: on-exit hook started
+[2026-01-15 17:59:38] EXIT: Received 1 lines of input
+[2026-01-15 17:59:38] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:38] EXIT: Task 0: uuid=edec973f-02c8-4c2f-b88f-2830d5dfc433, status=completed, desc=Basic recur test
+[2026-01-15 17:59:38] EXIT: Processing task: uuid=edec973f-02c8-4c2f-b88f-2830d5dfc433, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=16
+[2026-01-15 17:59:38] EXIT: Found completed instance: rindex=16
+[2026-01-15 17:59:38] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:38] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:38] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:38] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:38] EXIT: Template found: Basic recur test, rlast=16, type=periodic
+[2026-01-15 17:59:38] EXIT: Checking: current_idx=16, last_idx=16
+[2026-01-15 17:59:38] EXIT: Will spawn next instance
+[2026-01-15 17:59:38] EXIT: Completion time: 2026-01-15 22:59:38
+[2026-01-15 17:59:38] EXIT: Creating instance 17 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:38] EXIT: Instance 17 created successfully
+[2026-01-15 17:59:38] EXIT: Result: Created instance 17 of 'Basic recur test'
+[2026-01-15 17:59:38] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:40] EXIT: ============================================================
+[2026-01-15 17:59:40] EXIT: on-exit hook started
+[2026-01-15 17:59:40] EXIT: Received 0 lines of input
+[2026-01-15 17:59:40] EXIT: ============================================================
+[2026-01-15 17:59:40] EXIT: on-exit hook started
+[2026-01-15 17:59:40] EXIT: Received 1 lines of input
+[2026-01-15 17:59:40] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:40] EXIT: Task 0: uuid=59918a1b-a3f3-4d51-ba68-1fe53a68c120, status=completed, desc=Basic recur test
+[2026-01-15 17:59:40] EXIT: Processing task: uuid=59918a1b-a3f3-4d51-ba68-1fe53a68c120, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=17
+[2026-01-15 17:59:40] EXIT: Found completed instance: rindex=17
+[2026-01-15 17:59:40] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:40] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:40] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:40] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:40] EXIT: Template found: Basic recur test, rlast=17, type=periodic
+[2026-01-15 17:59:40] EXIT: Checking: current_idx=17, last_idx=17
+[2026-01-15 17:59:40] EXIT: Will spawn next instance
+[2026-01-15 17:59:40] EXIT: Completion time: 2026-01-15 22:59:40
+[2026-01-15 17:59:40] EXIT: Creating instance 18 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:40] EXIT: Instance 18 created successfully
+[2026-01-15 17:59:40] EXIT: Result: Created instance 18 of 'Basic recur test'
+[2026-01-15 17:59:40] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:42] EXIT: ============================================================
+[2026-01-15 17:59:42] EXIT: on-exit hook started
+[2026-01-15 17:59:42] EXIT: Received 0 lines of input
+[2026-01-15 17:59:42] EXIT: ============================================================
+[2026-01-15 17:59:42] EXIT: on-exit hook started
+[2026-01-15 17:59:42] EXIT: Received 1 lines of input
+[2026-01-15 17:59:42] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:42] EXIT: Task 0: uuid=de047662-167a-425a-84d8-9c0323781cae, status=completed, desc=Basic recur test
+[2026-01-15 17:59:42] EXIT: Processing task: uuid=de047662-167a-425a-84d8-9c0323781cae, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=18
+[2026-01-15 17:59:42] EXIT: Found completed instance: rindex=18
+[2026-01-15 17:59:42] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:42] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:42] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:42] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:42] EXIT: Template found: Basic recur test, rlast=18, type=periodic
+[2026-01-15 17:59:42] EXIT: Checking: current_idx=18, last_idx=18
+[2026-01-15 17:59:42] EXIT: Will spawn next instance
+[2026-01-15 17:59:42] EXIT: Completion time: 2026-01-15 22:59:42
+[2026-01-15 17:59:42] EXIT: Creating instance 19 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:42] EXIT: Instance 19 created successfully
+[2026-01-15 17:59:42] EXIT: Result: Created instance 19 of 'Basic recur test'
+[2026-01-15 17:59:42] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 17:59:44] EXIT: ============================================================
+[2026-01-15 17:59:44] EXIT: on-exit hook started
+[2026-01-15 17:59:44] EXIT: Received 0 lines of input
+[2026-01-15 17:59:44] EXIT: ============================================================
+[2026-01-15 17:59:44] EXIT: on-exit hook started
+[2026-01-15 17:59:44] EXIT: Received 1 lines of input
+[2026-01-15 17:59:44] EXIT: Parsed 1 tasks
+[2026-01-15 17:59:44] EXIT: Task 0: uuid=a75ae03d-7c59-4a01-9a4e-b4dca3f80c10, status=completed, desc=Basic recur test
+[2026-01-15 17:59:44] EXIT: Processing task: uuid=a75ae03d-7c59-4a01-9a4e-b4dca3f80c10, status=completed, rtemplate=df59d0d9-bfac-4c7e-8586-34ae23f27b32, rindex=19
+[2026-01-15 17:59:44] EXIT: Found completed instance: rindex=19
+[2026-01-15 17:59:44] EXIT: Attempting to fetch template: df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:44] EXIT: Method 1 returncode: 0
+[2026-01-15 17:59:44] EXIT: Method 1 stderr: 
+[2026-01-15 17:59:44] EXIT: Template fetched via method 1: Basic recur test, status=recurring
+[2026-01-15 17:59:44] EXIT: Template found: Basic recur test, rlast=19, type=periodic
+[2026-01-15 17:59:44] EXIT: Checking: current_idx=19, last_idx=19
+[2026-01-15 17:59:44] EXIT: Will spawn next instance
+[2026-01-15 17:59:44] EXIT: Completion time: 2026-01-15 22:59:44
+[2026-01-15 17:59:44] EXIT: Creating instance 20 from df59d0d9-bfac-4c7e-8586-34ae23f27b32
+[2026-01-15 17:59:44] EXIT: Instance 20 created successfully
+[2026-01-15 17:59:44] EXIT: Result: Created instance 20 of 'Basic recur test'
+[2026-01-15 17:59:44] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 18:24:30] ADD/MOD: ============================================================
+[2026-01-15 18:24:30] ADD/MOD: Hook starting
+[2026-01-15 18:24:30] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 18:24:30] ADD/MOD: Creating template: jrnk work hours
+[2026-01-15 18:24:30] ADD/MOD:   Type: periodic, r=P1D
+[2026-01-15 18:24:30] ADD/MOD:   parse_date: '20260115T232430Z' -> 2026-01-15 23:24:30
+[2026-01-15 18:24:30] ADD/MOD:   parse_date: '20260115T172430Z' -> 2026-01-15 17:24:30
+[2026-01-15 18:24:30] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 18:24:30] ADD/MOD: Hook completed
+[2026-01-15 18:24:30] EXIT: ============================================================
+[2026-01-15 18:24:30] EXIT: on-exit hook started
+[2026-01-15 18:24:30] EXIT: Received 1 lines of input
+[2026-01-15 18:24:30] EXIT: Parsed 1 tasks
+[2026-01-15 18:24:30] EXIT: Task 0: uuid=e307655f-5f7e-48a1-9d0a-f90e20e190c9, status=recurring, desc=jrnk work hours
+[2026-01-15 18:24:30] EXIT: Processing task: uuid=e307655f-5f7e-48a1-9d0a-f90e20e190c9, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 18:24:30] EXIT: Found new template: jrnk work hours
+[2026-01-15 18:24:30] EXIT: Creating instance 1 from e307655f-5f7e-48a1-9d0a-f90e20e190c9
+[2026-01-15 18:24:30] EXIT: Instance 1 created successfully
+[2026-01-15 18:24:30] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 18:24:44] ADD/MOD: ============================================================
+[2026-01-15 18:24:44] ADD/MOD: Hook starting
+[2026-01-15 18:24:44] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:24:44] ADD/MOD: Hook completed
+[2026-01-15 18:24:44] ADD/MOD: ============================================================
+[2026-01-15 18:24:44] ADD/MOD: Hook starting
+[2026-01-15 18:24:44] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:24:44] ADD/MOD: Hook completed
+[2026-01-15 18:24:44] EXIT: ============================================================
+[2026-01-15 18:24:44] EXIT: on-exit hook started
+[2026-01-15 18:24:44] EXIT: Received 2 lines of input
+[2026-01-15 18:24:44] EXIT: Parsed 2 tasks
+[2026-01-15 18:24:44] EXIT: Task 0: uuid=4a55ebf1-cbe6-4172-a4c0-329ffb035999, status=deleted, desc=Until test
+[2026-01-15 18:24:44] EXIT: Task 1: uuid=7f4a77e7-610b-4613-a80e-3e05c4bfbbf9, status=deleted, desc=Until test
+[2026-01-15 18:24:44] EXIT: Processing task: uuid=4a55ebf1-cbe6-4172-a4c0-329ffb035999, status=deleted, rtemplate=c003932c-3d18-4ff9-99c7-7069eb459058, rindex=1.0
+[2026-01-15 18:24:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:24:44] EXIT: Attempting to fetch template: c003932c-3d18-4ff9-99c7-7069eb459058
+[2026-01-15 18:24:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:24:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:24:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:24:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:24:44] EXIT: All template fetch methods failed
+[2026-01-15 18:24:44] EXIT: Could not fetch template: c003932c-3d18-4ff9-99c7-7069eb459058
+[2026-01-15 18:24:44] EXIT: Processing task: uuid=7f4a77e7-610b-4613-a80e-3e05c4bfbbf9, status=deleted, rtemplate=2c4de3c7-376c-4db8-9683-6ea6d9a4f6ff, rindex=1.0
+[2026-01-15 18:24:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:24:44] EXIT: Attempting to fetch template: 2c4de3c7-376c-4db8-9683-6ea6d9a4f6ff
+[2026-01-15 18:24:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:24:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:24:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:24:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:24:44] EXIT: All template fetch methods failed
+[2026-01-15 18:24:44] EXIT: Could not fetch template: 2c4de3c7-376c-4db8-9683-6ea6d9a4f6ff
+[2026-01-15 18:24:44] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:41] ADD/MOD: ============================================================
+[2026-01-15 18:25:41] ADD/MOD: Hook starting
+[2026-01-15 18:25:41] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:41] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:42] ADD/MOD: ============================================================
+[2026-01-15 18:25:42] ADD/MOD: Hook starting
+[2026-01-15 18:25:42] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:42] ADD/MOD: Hook completed
+[2026-01-15 18:25:43] ADD/MOD: ============================================================
+[2026-01-15 18:25:43] ADD/MOD: Hook starting
+[2026-01-15 18:25:43] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:43] ADD/MOD: Hook completed
+[2026-01-15 18:25:43] ADD/MOD: ============================================================
+[2026-01-15 18:25:43] ADD/MOD: Hook starting
+[2026-01-15 18:25:43] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:43] ADD/MOD: Hook completed
+[2026-01-15 18:25:43] ADD/MOD: ============================================================
+[2026-01-15 18:25:43] ADD/MOD: Hook starting
+[2026-01-15 18:25:43] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:43] ADD/MOD: Hook completed
+[2026-01-15 18:25:43] ADD/MOD: ============================================================
+[2026-01-15 18:25:43] ADD/MOD: Hook starting
+[2026-01-15 18:25:43] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:43] ADD/MOD: Hook completed
+[2026-01-15 18:25:43] ADD/MOD: ============================================================
+[2026-01-15 18:25:43] ADD/MOD: Hook starting
+[2026-01-15 18:25:43] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 18:25:43] ADD/MOD: Hook completed
+[2026-01-15 18:25:43] EXIT: ============================================================
+[2026-01-15 18:25:43] EXIT: on-exit hook started
+[2026-01-15 18:25:43] EXIT: Received 48 lines of input
+[2026-01-15 18:25:43] EXIT: Parsed 48 tasks
+[2026-01-15 18:25:43] EXIT: Task 0: uuid=8c1fc611-5abf-4f89-a6d3-cd420781dde7, status=deleted, desc=Basic recur test
+[2026-01-15 18:25:43] EXIT: Task 1: uuid=ca3096ea-3ab5-47b0-849d-adbd75484cc4, status=deleted, desc=UDA test
+[2026-01-15 18:25:43] EXIT: Task 2: uuid=736d0a7c-ae96-46d4-959b-80a08774fefd, status=deleted, desc=Default type test
+[2026-01-15 18:25:43] EXIT: Task 3: uuid=cb343db9-51c1-4933-b9b2-e4c8416330c0, status=deleted, desc=Chained test 1
+[2026-01-15 18:25:43] EXIT: Task 4: uuid=3e885626-dc61-4194-865d-18be6861f5ec, status=deleted, desc=Chained index test
+[2026-01-15 18:25:43] EXIT: Task 5: uuid=86ae0f36-e48b-4eeb-a860-076bc7f7988f, status=deleted, desc=Chained complete test
+[2026-01-15 18:25:43] EXIT: Task 6: uuid=01fbd6cf-a87c-4ed3-bbfb-1eff5567853c, status=deleted, desc=Chained due test
+[2026-01-15 18:25:43] EXIT: Task 7: uuid=809643a0-5cef-4994-a27c-eaf870dd95ba, status=deleted, desc=Chained multi test
+[2026-01-15 18:25:43] EXIT: Task 8: uuid=eb622f51-b1e5-48ac-8679-3cba0704f896, status=deleted, desc=Periodic test 1
+[2026-01-15 18:25:43] EXIT: Task 9: uuid=db4d06b2-af1d-41eb-b626-942d3b4390ea, status=deleted, desc=Periodic spawn test
+[2026-01-15 18:25:43] EXIT: Task 10: uuid=21d5d1ff-bebc-4350-b983-2a749747ee7f, status=deleted, desc=Periodic anchor test
+[2026-01-15 18:25:43] EXIT: Task 11: uuid=cdee5c74-8b23-408a-8507-5bd8100c7973, status=deleted, desc=Periodic schedule test
+[2026-01-15 18:25:43] EXIT: Task 12: uuid=ee9ca37a-7a10-4f04-9ff5-fae6d7579a55, status=deleted, desc=Wait test
+[2026-01-15 18:25:43] EXIT: Task 13: uuid=69c20408-793c-4893-a3eb-e3f1f767d661, status=deleted, desc=Scheduled test
+[2026-01-15 18:25:43] EXIT: Task 14: uuid=05d40253-9080-4d90-a0ba-dacbf736c7b1, status=deleted, desc=Relative wait test
+[2026-01-15 18:25:43] EXIT: Task 15: uuid=6b5a09ab-7d67-459f-a625-964606c395ef, status=deleted, desc=Relative sched test
+[2026-01-15 18:25:43] EXIT: Task 16: uuid=b5d78863-00f8-4a61-b060-a0bfb44cf1f4, status=deleted, desc=Delete instance test
+[2026-01-15 18:25:43] EXIT: Task 17: uuid=19f2102d-1652-4512-9622-044214867244, status=deleted, desc=Complete template test
+[2026-01-15 18:25:43] EXIT: Task 18: uuid=d29f42e8-a2d6-4415-bb18-3b82fd0e7937, status=deleted, desc=Delete template test
+[2026-01-15 18:25:43] EXIT: Task 19: uuid=89cee5a2-1cac-4a77-8422-43ee77017b52, status=deleted, desc=No due test
+[2026-01-15 18:25:43] EXIT: Task 20: uuid=e06b5fba-d852-4704-aca8-a2a17deaaf1c, status=deleted, desc=Modify period test
+[2026-01-15 18:25:43] EXIT: Task 21: uuid=4dc23637-7db3-4236-a340-d308ebeb520b, status=deleted, desc=Modify type test
+[2026-01-15 18:25:43] EXIT: Task 22: uuid=8c375913-8816-464c-bdc5-7a8d227492ba, status=deleted, desc=Chained until test
+[2026-01-15 18:25:43] EXIT: Task 23: uuid=1b823ed1-bf25-4f2a-97ae-e0d076de547e, status=deleted, desc=Safety tag test
+[2026-01-15 18:25:43] EXIT: Task 24: uuid=2d9604cb-389c-4df4-af4c-14a28019d1fd, status=deleted, desc=Basic recur test
+[2026-01-15 18:25:43] EXIT: Task 25: uuid=3f10fa6a-68a7-4931-9208-384b4dc3992a, status=deleted, desc=UDA test
+[2026-01-15 18:25:43] EXIT: Task 26: uuid=6f8f75c9-d390-4fc4-a31f-b9007d2691d8, status=deleted, desc=Default type test
+[2026-01-15 18:25:43] EXIT: Task 27: uuid=8bf5f66c-3efb-4642-8709-41a0310d0660, status=deleted, desc=Chained test 1
+[2026-01-15 18:25:43] EXIT: Task 28: uuid=6b748321-1a89-4846-8a13-733e79f5edfb, status=deleted, desc=Chained index test
+[2026-01-15 18:25:43] EXIT: Task 29: uuid=ae6a5186-5b82-4ee2-ad94-7023a1e361c6, status=deleted, desc=Chained complete test
+[2026-01-15 18:25:43] EXIT: Task 30: uuid=75aced75-5e1f-477a-b1c4-121107c8a38f, status=deleted, desc=Chained due test
+[2026-01-15 18:25:43] EXIT: Task 31: uuid=c738588b-1ec7-4e81-9ac1-3fd07bb23d81, status=deleted, desc=Chained multi test
+[2026-01-15 18:25:43] EXIT: Task 32: uuid=5704618f-9034-4828-b136-6c639bf94350, status=deleted, desc=Periodic test 1
+[2026-01-15 18:25:43] EXIT: Task 33: uuid=0ca12096-7ef9-4078-9efe-e7682b6987de, status=deleted, desc=Periodic spawn test
+[2026-01-15 18:25:43] EXIT: Task 34: uuid=6befe9b0-78e6-4a05-b8c1-9428f84f67aa, status=deleted, desc=Periodic anchor test
+[2026-01-15 18:25:43] EXIT: Task 35: uuid=0604ad8d-6e01-492f-9e5c-2c994bf2a41c, status=deleted, desc=Periodic schedule test
+[2026-01-15 18:25:43] EXIT: Task 36: uuid=5a1ed657-d9c3-4d04-b079-4428acbe01e7, status=deleted, desc=Wait test
+[2026-01-15 18:25:43] EXIT: Task 37: uuid=0516e814-91e5-4016-aea1-1ef7e075a1a4, status=deleted, desc=Scheduled test
+[2026-01-15 18:25:43] EXIT: Task 38: uuid=4112d66d-bdd3-425c-9ca6-14f1e3b59aa5, status=deleted, desc=Relative wait test
+[2026-01-15 18:25:43] EXIT: Task 39: uuid=1a9e6350-9bc2-4664-a80b-de104d24ce8b, status=deleted, desc=Relative sched test
+[2026-01-15 18:25:43] EXIT: Task 40: uuid=8d544673-6372-49eb-ad91-c804fed24a13, status=deleted, desc=Delete instance test
+[2026-01-15 18:25:43] EXIT: Task 41: uuid=2873e713-d3c9-45b0-874b-90f978a51b09, status=deleted, desc=Complete template test
+[2026-01-15 18:25:43] EXIT: Task 42: uuid=f47399ee-78aa-4c5b-960f-155375e3d256, status=deleted, desc=Delete template test
+[2026-01-15 18:25:43] EXIT: Task 43: uuid=db4109b2-418f-4e6e-a195-db2c3042d0a8, status=deleted, desc=No due test
+[2026-01-15 18:25:43] EXIT: Task 44: uuid=bae73613-c4a2-4ad4-b0ea-fc0e3dc477b1, status=deleted, desc=Modify period test
+[2026-01-15 18:25:43] EXIT: Task 45: uuid=568faab5-5147-4c59-95bc-177b289f5e5d, status=deleted, desc=Modify type test
+[2026-01-15 18:25:43] EXIT: Task 46: uuid=a4f74516-e15c-411c-ad37-d3069f21cd5c, status=deleted, desc=Chained until test
+[2026-01-15 18:25:43] EXIT: Task 47: uuid=1bf63121-673b-457a-acd2-cb3e7e599da3, status=deleted, desc=Safety tag test
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=8c1fc611-5abf-4f89-a6d3-cd420781dde7, status=deleted, rtemplate=729a53e6-156b-40e2-a3b6-ab3c28e47c45, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 729a53e6-156b-40e2-a3b6-ab3c28e47c45
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 729a53e6-156b-40e2-a3b6-ab3c28e47c45
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=ca3096ea-3ab5-47b0-849d-adbd75484cc4, status=deleted, rtemplate=cd45628a-48b7-475d-9533-53b47932dd01, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: cd45628a-48b7-475d-9533-53b47932dd01
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: cd45628a-48b7-475d-9533-53b47932dd01
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=736d0a7c-ae96-46d4-959b-80a08774fefd, status=deleted, rtemplate=9ef356b2-3528-4fdc-8cbe-14de9228a443, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 9ef356b2-3528-4fdc-8cbe-14de9228a443
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 9ef356b2-3528-4fdc-8cbe-14de9228a443
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=cb343db9-51c1-4933-b9b2-e4c8416330c0, status=deleted, rtemplate=c9cd1138-e282-4a5f-8a58-e42020f485c3, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: c9cd1138-e282-4a5f-8a58-e42020f485c3
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: c9cd1138-e282-4a5f-8a58-e42020f485c3
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=3e885626-dc61-4194-865d-18be6861f5ec, status=deleted, rtemplate=535c84b6-ad15-42be-86e7-7498dcc71a9a, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 535c84b6-ad15-42be-86e7-7498dcc71a9a
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 535c84b6-ad15-42be-86e7-7498dcc71a9a
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=86ae0f36-e48b-4eeb-a860-076bc7f7988f, status=deleted, rtemplate=0ec4e7db-015b-40bc-8304-1041bc19f358, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 0ec4e7db-015b-40bc-8304-1041bc19f358
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 0ec4e7db-015b-40bc-8304-1041bc19f358
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=01fbd6cf-a87c-4ed3-bbfb-1eff5567853c, status=deleted, rtemplate=7a362ebc-4b86-41c5-b4ee-bbfae6d7b277, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 7a362ebc-4b86-41c5-b4ee-bbfae6d7b277
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 7a362ebc-4b86-41c5-b4ee-bbfae6d7b277
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=809643a0-5cef-4994-a27c-eaf870dd95ba, status=deleted, rtemplate=a56a310b-478a-4e5b-ac69-56cc8e618ea7, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: a56a310b-478a-4e5b-ac69-56cc8e618ea7
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: a56a310b-478a-4e5b-ac69-56cc8e618ea7
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=eb622f51-b1e5-48ac-8679-3cba0704f896, status=deleted, rtemplate=e3faac81-3edc-445d-9022-e916b3e57455, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: e3faac81-3edc-445d-9022-e916b3e57455
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: e3faac81-3edc-445d-9022-e916b3e57455
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=db4d06b2-af1d-41eb-b626-942d3b4390ea, status=deleted, rtemplate=61bcaba5-9bea-4854-a2e1-162d109200d4, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 61bcaba5-9bea-4854-a2e1-162d109200d4
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 61bcaba5-9bea-4854-a2e1-162d109200d4
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=21d5d1ff-bebc-4350-b983-2a749747ee7f, status=deleted, rtemplate=2d990c9b-156c-4b6f-9055-2b6ff612251f, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 2d990c9b-156c-4b6f-9055-2b6ff612251f
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 2d990c9b-156c-4b6f-9055-2b6ff612251f
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=cdee5c74-8b23-408a-8507-5bd8100c7973, status=deleted, rtemplate=c7bb9bc5-e07f-416d-a551-baefb9c97235, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: c7bb9bc5-e07f-416d-a551-baefb9c97235
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: c7bb9bc5-e07f-416d-a551-baefb9c97235
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=ee9ca37a-7a10-4f04-9ff5-fae6d7579a55, status=deleted, rtemplate=9ddfae91-74c4-428e-a5cd-dd308bcdefb5, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 9ddfae91-74c4-428e-a5cd-dd308bcdefb5
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 9ddfae91-74c4-428e-a5cd-dd308bcdefb5
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=69c20408-793c-4893-a3eb-e3f1f767d661, status=deleted, rtemplate=004f1887-273e-4b37-aa72-1544322eb720, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 004f1887-273e-4b37-aa72-1544322eb720
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 004f1887-273e-4b37-aa72-1544322eb720
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=05d40253-9080-4d90-a0ba-dacbf736c7b1, status=deleted, rtemplate=40f5f972-139f-4d95-b070-3dd6d1091a49, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 40f5f972-139f-4d95-b070-3dd6d1091a49
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 40f5f972-139f-4d95-b070-3dd6d1091a49
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=6b5a09ab-7d67-459f-a625-964606c395ef, status=deleted, rtemplate=dfba17f3-34e7-4bab-aa61-a38d37a57b63, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: dfba17f3-34e7-4bab-aa61-a38d37a57b63
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: dfba17f3-34e7-4bab-aa61-a38d37a57b63
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=b5d78863-00f8-4a61-b060-a0bfb44cf1f4, status=deleted, rtemplate=65ed9bbd-6a4f-4e43-a4a1-724a852dd8af, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 65ed9bbd-6a4f-4e43-a4a1-724a852dd8af
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 65ed9bbd-6a4f-4e43-a4a1-724a852dd8af
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=19f2102d-1652-4512-9622-044214867244, status=deleted, rtemplate=2f9603fd-79b7-4275-94ab-0a1434b97698, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 2f9603fd-79b7-4275-94ab-0a1434b97698
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 2f9603fd-79b7-4275-94ab-0a1434b97698
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=d29f42e8-a2d6-4415-bb18-3b82fd0e7937, status=deleted, rtemplate=00e8c307-f825-42df-91ca-1f992223eaf6, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 00e8c307-f825-42df-91ca-1f992223eaf6
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 00e8c307-f825-42df-91ca-1f992223eaf6
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=89cee5a2-1cac-4a77-8422-43ee77017b52, status=deleted, rtemplate=73400dbb-b9ac-433c-b9e9-4f757a81cfb1, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 73400dbb-b9ac-433c-b9e9-4f757a81cfb1
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 73400dbb-b9ac-433c-b9e9-4f757a81cfb1
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=e06b5fba-d852-4704-aca8-a2a17deaaf1c, status=deleted, rtemplate=7948ff78-f80f-439b-a542-f77ed4f7f3a9, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: 7948ff78-f80f-439b-a542-f77ed4f7f3a9
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:43] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:43] EXIT: All template fetch methods failed
+[2026-01-15 18:25:43] EXIT: Could not fetch template: 7948ff78-f80f-439b-a542-f77ed4f7f3a9
+[2026-01-15 18:25:43] EXIT: Processing task: uuid=4dc23637-7db3-4236-a340-d308ebeb520b, status=deleted, rtemplate=b2c01ee3-dab9-4bb4-8e56-f5de811606eb, rindex=1.0
+[2026-01-15 18:25:43] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:43] EXIT: Attempting to fetch template: b2c01ee3-dab9-4bb4-8e56-f5de811606eb
+[2026-01-15 18:25:43] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:43] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:43] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: b2c01ee3-dab9-4bb4-8e56-f5de811606eb
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=8c375913-8816-464c-bdc5-7a8d227492ba, status=deleted, rtemplate=58f2d430-6bd3-45f4-bd01-807ef8fb03e4, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 58f2d430-6bd3-45f4-bd01-807ef8fb03e4
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 58f2d430-6bd3-45f4-bd01-807ef8fb03e4
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=1b823ed1-bf25-4f2a-97ae-e0d076de547e, status=deleted, rtemplate=4b75ac88-a4b9-4a35-a88e-f4b0a92f070d, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 4b75ac88-a4b9-4a35-a88e-f4b0a92f070d
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 4b75ac88-a4b9-4a35-a88e-f4b0a92f070d
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=2d9604cb-389c-4df4-af4c-14a28019d1fd, status=deleted, rtemplate=16c26e66-ee7d-461b-8b9b-fea2257e8a49, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 16c26e66-ee7d-461b-8b9b-fea2257e8a49
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 16c26e66-ee7d-461b-8b9b-fea2257e8a49
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=3f10fa6a-68a7-4931-9208-384b4dc3992a, status=deleted, rtemplate=8cbf2a2c-7b24-403a-8bd4-98c6532fa74d, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 8cbf2a2c-7b24-403a-8bd4-98c6532fa74d
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 8cbf2a2c-7b24-403a-8bd4-98c6532fa74d
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=6f8f75c9-d390-4fc4-a31f-b9007d2691d8, status=deleted, rtemplate=4f3f3699-8d80-44df-8e0b-1009d9fa0462, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 4f3f3699-8d80-44df-8e0b-1009d9fa0462
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 4f3f3699-8d80-44df-8e0b-1009d9fa0462
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=8bf5f66c-3efb-4642-8709-41a0310d0660, status=deleted, rtemplate=9b5a886b-aef3-4244-8fef-7ff39b5e14e7, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 9b5a886b-aef3-4244-8fef-7ff39b5e14e7
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 9b5a886b-aef3-4244-8fef-7ff39b5e14e7
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=6b748321-1a89-4846-8a13-733e79f5edfb, status=deleted, rtemplate=a12fb180-55ff-4d77-b53e-0182d496d464, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: a12fb180-55ff-4d77-b53e-0182d496d464
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: a12fb180-55ff-4d77-b53e-0182d496d464
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=ae6a5186-5b82-4ee2-ad94-7023a1e361c6, status=deleted, rtemplate=4475ef18-d1e4-4d55-86ee-f9a9bdb1dc11, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 4475ef18-d1e4-4d55-86ee-f9a9bdb1dc11
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 4475ef18-d1e4-4d55-86ee-f9a9bdb1dc11
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=75aced75-5e1f-477a-b1c4-121107c8a38f, status=deleted, rtemplate=2e8376ee-90bd-44f1-ac04-affb2601193c, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 2e8376ee-90bd-44f1-ac04-affb2601193c
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 2e8376ee-90bd-44f1-ac04-affb2601193c
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=c738588b-1ec7-4e81-9ac1-3fd07bb23d81, status=deleted, rtemplate=4b225019-c277-4e1a-a60c-b279976ac5dd, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 4b225019-c277-4e1a-a60c-b279976ac5dd
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 4b225019-c277-4e1a-a60c-b279976ac5dd
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=5704618f-9034-4828-b136-6c639bf94350, status=deleted, rtemplate=7b867eb9-003f-44dd-8c20-5e30777055f7, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 7b867eb9-003f-44dd-8c20-5e30777055f7
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 7b867eb9-003f-44dd-8c20-5e30777055f7
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=0ca12096-7ef9-4078-9efe-e7682b6987de, status=deleted, rtemplate=d4c3c31f-0ca4-4185-9270-6a3c9869b078, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: d4c3c31f-0ca4-4185-9270-6a3c9869b078
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: d4c3c31f-0ca4-4185-9270-6a3c9869b078
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=6befe9b0-78e6-4a05-b8c1-9428f84f67aa, status=deleted, rtemplate=c1ed318a-7b8e-4839-bbdd-afd72faf1840, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: c1ed318a-7b8e-4839-bbdd-afd72faf1840
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: c1ed318a-7b8e-4839-bbdd-afd72faf1840
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=0604ad8d-6e01-492f-9e5c-2c994bf2a41c, status=deleted, rtemplate=0b8de905-e6f1-4926-89e9-0138da8a59fa, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 0b8de905-e6f1-4926-89e9-0138da8a59fa
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 0b8de905-e6f1-4926-89e9-0138da8a59fa
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=5a1ed657-d9c3-4d04-b079-4428acbe01e7, status=deleted, rtemplate=282bf1c4-16b6-4e26-ba5f-abb0be6fa2c1, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 282bf1c4-16b6-4e26-ba5f-abb0be6fa2c1
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 282bf1c4-16b6-4e26-ba5f-abb0be6fa2c1
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=0516e814-91e5-4016-aea1-1ef7e075a1a4, status=deleted, rtemplate=636f6409-6d5c-4639-a8ee-7104b271959e, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 636f6409-6d5c-4639-a8ee-7104b271959e
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 636f6409-6d5c-4639-a8ee-7104b271959e
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=4112d66d-bdd3-425c-9ca6-14f1e3b59aa5, status=deleted, rtemplate=e7bef1e3-f823-43f0-99c6-45329b2400e5, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: e7bef1e3-f823-43f0-99c6-45329b2400e5
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: e7bef1e3-f823-43f0-99c6-45329b2400e5
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=1a9e6350-9bc2-4664-a80b-de104d24ce8b, status=deleted, rtemplate=e718392e-b6a9-431e-937a-88599d7afad5, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: e718392e-b6a9-431e-937a-88599d7afad5
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: e718392e-b6a9-431e-937a-88599d7afad5
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=8d544673-6372-49eb-ad91-c804fed24a13, status=deleted, rtemplate=1dc6284e-2068-4605-b13e-80a56f2d969b, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 1dc6284e-2068-4605-b13e-80a56f2d969b
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 1dc6284e-2068-4605-b13e-80a56f2d969b
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=2873e713-d3c9-45b0-874b-90f978a51b09, status=deleted, rtemplate=d75fa8bf-9bde-4f34-8286-71a649046511, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: d75fa8bf-9bde-4f34-8286-71a649046511
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: d75fa8bf-9bde-4f34-8286-71a649046511
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=f47399ee-78aa-4c5b-960f-155375e3d256, status=deleted, rtemplate=4764c180-a610-4a9b-b996-926b8d147b23, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 4764c180-a610-4a9b-b996-926b8d147b23
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 4764c180-a610-4a9b-b996-926b8d147b23
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=db4109b2-418f-4e6e-a195-db2c3042d0a8, status=deleted, rtemplate=ba511f1c-e25d-48bc-b494-80d62063f30c, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: ba511f1c-e25d-48bc-b494-80d62063f30c
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: ba511f1c-e25d-48bc-b494-80d62063f30c
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=bae73613-c4a2-4ad4-b0ea-fc0e3dc477b1, status=deleted, rtemplate=3ff5753d-4c64-4d66-bd81-bb4590653bb5, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 3ff5753d-4c64-4d66-bd81-bb4590653bb5
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 3ff5753d-4c64-4d66-bd81-bb4590653bb5
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=568faab5-5147-4c59-95bc-177b289f5e5d, status=deleted, rtemplate=45b91f0f-65d4-43ce-8dc5-497c81f2e63d, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 45b91f0f-65d4-43ce-8dc5-497c81f2e63d
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 45b91f0f-65d4-43ce-8dc5-497c81f2e63d
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=a4f74516-e15c-411c-ad37-d3069f21cd5c, status=deleted, rtemplate=31f86193-1132-4700-ac0e-902d856dafba, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: 31f86193-1132-4700-ac0e-902d856dafba
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: 31f86193-1132-4700-ac0e-902d856dafba
+[2026-01-15 18:25:44] EXIT: Processing task: uuid=1bf63121-673b-457a-acd2-cb3e7e599da3, status=deleted, rtemplate=f329f317-2ca4-4f57-a5d3-5a5bc9506d91, rindex=1.0
+[2026-01-15 18:25:44] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 18:25:44] EXIT: Attempting to fetch template: f329f317-2ca4-4f57-a5d3-5a5bc9506d91
+[2026-01-15 18:25:44] EXIT: Method 1 returncode: 0
+[2026-01-15 18:25:44] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 18:25:44] EXIT: Method 1: Empty task array
+[2026-01-15 18:25:44] EXIT: Method 2 returncode: 0
+[2026-01-15 18:25:44] EXIT: All template fetch methods failed
+[2026-01-15 18:25:44] EXIT: Could not fetch template: f329f317-2ca4-4f57-a5d3-5a5bc9506d91
+[2026-01-15 18:25:44] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 18:27:55] EXIT: ============================================================
+[2026-01-15 18:27:55] EXIT: on-exit hook started
+[2026-01-15 18:27:55] EXIT: Received 0 lines of input
+[2026-01-15 18:28:48] EXIT: ============================================================
+[2026-01-15 18:28:48] EXIT: on-exit hook started
+[2026-01-15 18:28:48] EXIT: Received 0 lines of input
+[2026-01-15 18:29:19] EXIT: ============================================================
+[2026-01-15 18:29:19] EXIT: on-exit hook started
+[2026-01-15 18:29:19] EXIT: Received 0 lines of input
+[2026-01-15 18:29:43] EXIT: ============================================================
+[2026-01-15 18:29:43] EXIT: on-exit hook started
+[2026-01-15 18:29:43] EXIT: Received 0 lines of input
+[2026-01-15 20:44:15] EXIT: ============================================================
+[2026-01-15 20:44:15] EXIT: on-exit hook started
+[2026-01-15 20:44:15] EXIT: Received 0 lines of input
+[2026-01-15 20:44:32] EXIT: ============================================================
+[2026-01-15 20:44:32] EXIT: on-exit hook started
+[2026-01-15 20:44:32] EXIT: Received 0 lines of input
+[2026-01-15 20:46:13] ADD/MOD: ============================================================
+[2026-01-15 20:46:13] ADD/MOD: Hook starting
+[2026-01-15 20:46:13] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:46:13] ADD/MOD: Hook completed
+[2026-01-15 20:46:13] ADD/MOD: ============================================================
+[2026-01-15 20:46:13] ADD/MOD: Hook starting
+[2026-01-15 20:46:13] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:46:13] ADD/MOD: Hook completed
+[2026-01-15 20:46:13] EXIT: ============================================================
+[2026-01-15 20:46:13] EXIT: on-exit hook started
+[2026-01-15 20:46:13] EXIT: Received 2 lines of input
+[2026-01-15 20:46:13] EXIT: Parsed 2 tasks
+[2026-01-15 20:46:13] EXIT: Task 0: uuid=26aaa42b-b1ca-4afa-bdc6-d51c14c0039e, status=deleted, desc=Type abbr c
+[2026-01-15 20:46:13] EXIT: Task 1: uuid=7296568b-f6be-4582-89d8-503eba19c5a4, status=deleted, desc=Type abbr c
+[2026-01-15 20:46:13] EXIT: Processing task: uuid=26aaa42b-b1ca-4afa-bdc6-d51c14c0039e, status=deleted, rtemplate=eabc7580-6169-4fd0-99a0-b39bbc2e85d7, rindex=1.0
+[2026-01-15 20:46:13] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 20:46:13] EXIT: Attempting to fetch template: eabc7580-6169-4fd0-99a0-b39bbc2e85d7
+[2026-01-15 20:46:13] EXIT: Method 1 returncode: 0
+[2026-01-15 20:46:13] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 20:46:13] EXIT: Method 1: Empty task array
+[2026-01-15 20:46:13] EXIT: Method 2 returncode: 0
+[2026-01-15 20:46:13] EXIT: All template fetch methods failed
+[2026-01-15 20:46:13] EXIT: Could not fetch template: eabc7580-6169-4fd0-99a0-b39bbc2e85d7
+[2026-01-15 20:46:13] EXIT: Processing task: uuid=7296568b-f6be-4582-89d8-503eba19c5a4, status=deleted, rtemplate=8910459a-7740-4336-99ea-5552851f05e4, rindex=1.0
+[2026-01-15 20:46:13] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 20:46:13] EXIT: Attempting to fetch template: 8910459a-7740-4336-99ea-5552851f05e4
+[2026-01-15 20:46:13] EXIT: Method 1 returncode: 0
+[2026-01-15 20:46:13] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 20:46:13] EXIT: Method 1: Empty task array
+[2026-01-15 20:46:13] EXIT: Method 2 returncode: 0
+[2026-01-15 20:46:13] EXIT: All template fetch methods failed
+[2026-01-15 20:46:13] EXIT: Could not fetch template: 8910459a-7740-4336-99ea-5552851f05e4
+[2026-01-15 20:46:13] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 20:46:25] EXIT: ============================================================
+[2026-01-15 20:46:25] EXIT: on-exit hook started
+[2026-01-15 20:46:25] EXIT: Received 0 lines of input
+[2026-01-15 20:47:54] EXIT: ============================================================
+[2026-01-15 20:47:54] EXIT: on-exit hook started
+[2026-01-15 20:47:54] EXIT: Received 0 lines of input
+[2026-01-15 20:47:58] EXIT: ============================================================
+[2026-01-15 20:47:58] EXIT: on-exit hook started
+[2026-01-15 20:47:58] EXIT: Received 0 lines of input
+[2026-01-15 20:48:21] EXIT: ============================================================
+[2026-01-15 20:48:21] EXIT: on-exit hook started
+[2026-01-15 20:48:21] EXIT: Received 0 lines of input
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:24] ADD/MOD: ============================================================
+[2026-01-15 20:49:24] ADD/MOD: Hook starting
+[2026-01-15 20:49:24] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:49:24] ADD/MOD: Hook completed
+[2026-01-15 20:49:25] EXIT: ============================================================
+[2026-01-15 20:49:25] EXIT: on-exit hook started
+[2026-01-15 20:49:25] EXIT: Received 10 lines of input
+[2026-01-15 20:49:25] EXIT: Parsed 10 tasks
+[2026-01-15 20:49:25] EXIT: Task 0: uuid=38b8f810-93f3-12c2-8114-49b0fed5f831, status=pending, desc=improve sync status visual feedback
+[2026-01-15 20:49:25] EXIT: Task 1: uuid=f3181a13-4772-4f3c-9248-09526071e649, status=pending, desc=install recur-enhanced hooks
+[2026-01-15 20:49:25] EXIT: Task 2: uuid=e5ed9805-3c97-40e2-85f4-19e1685d86a0, status=pending, desc=install clog
+[2026-01-15 20:49:25] EXIT: Task 3: uuid=9f0ef2c8-898b-4213-b3ec-f593c5fdbec8, status=pending, desc=install t.sh
+[2026-01-15 20:49:25] EXIT: Task 4: uuid=36f79ad5-041e-4805-b9f8-7d1e863f8eb5, status=pending, desc=hookify script
+[2026-01-15 20:49:25] EXIT: Task 5: uuid=69c20408-793c-4893-a3eb-e3f1f767d661, status=deleted, desc=Scheduled test
+[2026-01-15 20:49:25] EXIT: Task 6: uuid=6b5a09ab-7d67-459f-a625-964606c395ef, status=deleted, desc=Relative sched test
+[2026-01-15 20:49:25] EXIT: Task 7: uuid=0516e814-91e5-4016-aea1-1ef7e075a1a4, status=deleted, desc=Scheduled test
+[2026-01-15 20:49:25] EXIT: Task 8: uuid=1a9e6350-9bc2-4664-a80b-de104d24ce8b, status=deleted, desc=Relative sched test
+[2026-01-15 20:49:25] EXIT: Task 9: uuid=448cc281-ee93-45b3-b1eb-46e7c5e3d6e2, status=deleted, desc=test
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=38b8f810-93f3-12c2-8114-49b0fed5f831, status=pending, rtemplate=None, rindex=None
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=f3181a13-4772-4f3c-9248-09526071e649, status=pending, rtemplate=None, rindex=None
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=e5ed9805-3c97-40e2-85f4-19e1685d86a0, status=pending, rtemplate=None, rindex=None
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=9f0ef2c8-898b-4213-b3ec-f593c5fdbec8, status=pending, rtemplate=None, rindex=None
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=36f79ad5-041e-4805-b9f8-7d1e863f8eb5, status=pending, rtemplate=None, rindex=None
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=69c20408-793c-4893-a3eb-e3f1f767d661, status=deleted, rtemplate=004f1887-273e-4b37-aa72-1544322eb720, rindex=1.0
+[2026-01-15 20:49:25] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 20:49:25] EXIT: Attempting to fetch template: 004f1887-273e-4b37-aa72-1544322eb720
+[2026-01-15 20:49:25] EXIT: Method 1 returncode: 0
+[2026-01-15 20:49:25] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 20:49:25] EXIT: Method 1: Empty task array
+[2026-01-15 20:49:25] EXIT: Method 2 returncode: 0
+[2026-01-15 20:49:25] EXIT: All template fetch methods failed
+[2026-01-15 20:49:25] EXIT: Could not fetch template: 004f1887-273e-4b37-aa72-1544322eb720
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=6b5a09ab-7d67-459f-a625-964606c395ef, status=deleted, rtemplate=dfba17f3-34e7-4bab-aa61-a38d37a57b63, rindex=1.0
+[2026-01-15 20:49:25] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 20:49:25] EXIT: Attempting to fetch template: dfba17f3-34e7-4bab-aa61-a38d37a57b63
+[2026-01-15 20:49:25] EXIT: Method 1 returncode: 0
+[2026-01-15 20:49:25] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 20:49:25] EXIT: Method 1: Empty task array
+[2026-01-15 20:49:25] EXIT: Method 2 returncode: 0
+[2026-01-15 20:49:25] EXIT: All template fetch methods failed
+[2026-01-15 20:49:25] EXIT: Could not fetch template: dfba17f3-34e7-4bab-aa61-a38d37a57b63
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=0516e814-91e5-4016-aea1-1ef7e075a1a4, status=deleted, rtemplate=636f6409-6d5c-4639-a8ee-7104b271959e, rindex=1.0
+[2026-01-15 20:49:25] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 20:49:25] EXIT: Attempting to fetch template: 636f6409-6d5c-4639-a8ee-7104b271959e
+[2026-01-15 20:49:25] EXIT: Method 1 returncode: 0
+[2026-01-15 20:49:25] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 20:49:25] EXIT: Method 1: Empty task array
+[2026-01-15 20:49:25] EXIT: Method 2 returncode: 0
+[2026-01-15 20:49:25] EXIT: All template fetch methods failed
+[2026-01-15 20:49:25] EXIT: Could not fetch template: 636f6409-6d5c-4639-a8ee-7104b271959e
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=1a9e6350-9bc2-4664-a80b-de104d24ce8b, status=deleted, rtemplate=e718392e-b6a9-431e-937a-88599d7afad5, rindex=1.0
+[2026-01-15 20:49:25] EXIT: Found deleted instance: rindex=1.0
+[2026-01-15 20:49:25] EXIT: Attempting to fetch template: e718392e-b6a9-431e-937a-88599d7afad5
+[2026-01-15 20:49:25] EXIT: Method 1 returncode: 0
+[2026-01-15 20:49:25] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 20:49:25] EXIT: Method 1: Empty task array
+[2026-01-15 20:49:25] EXIT: Method 2 returncode: 0
+[2026-01-15 20:49:25] EXIT: All template fetch methods failed
+[2026-01-15 20:49:25] EXIT: Could not fetch template: e718392e-b6a9-431e-937a-88599d7afad5
+[2026-01-15 20:49:25] EXIT: Processing task: uuid=448cc281-ee93-45b3-b1eb-46e7c5e3d6e2, status=deleted, rtemplate=None, rindex=None
+[2026-01-15 20:49:25] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 20:49:57] EXIT: ============================================================
+[2026-01-15 20:49:57] EXIT: on-exit hook started
+[2026-01-15 20:49:57] EXIT: Received 0 lines of input
+[2026-01-15 20:50:33] EXIT: ============================================================
+[2026-01-15 20:50:33] EXIT: on-exit hook started
+[2026-01-15 20:50:33] EXIT: Received 0 lines of input
+[2026-01-15 20:51:02] EXIT: ============================================================
+[2026-01-15 20:51:02] EXIT: on-exit hook started
+[2026-01-15 20:51:02] EXIT: Received 0 lines of input
+[2026-01-15 20:51:10] EXIT: ============================================================
+[2026-01-15 20:51:10] EXIT: on-exit hook started
+[2026-01-15 20:51:10] EXIT: Received 0 lines of input
+[2026-01-15 20:52:07] EXIT: ============================================================
+[2026-01-15 20:52:07] EXIT: on-exit hook started
+[2026-01-15 20:52:07] EXIT: Received 0 lines of input
+[2026-01-15 20:53:06] ADD/MOD: ============================================================
+[2026-01-15 20:53:06] ADD/MOD: Hook starting
+[2026-01-15 20:53:06] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:53:06] ADD/MOD: Hook completed
+[2026-01-15 20:53:06] EXIT: ============================================================
+[2026-01-15 20:53:06] EXIT: on-exit hook started
+[2026-01-15 20:53:06] EXIT: Received 1 lines of input
+[2026-01-15 20:53:06] EXIT: Parsed 1 tasks
+[2026-01-15 20:53:06] EXIT: Task 0: uuid=fc10f3b5-f61c-4903-8158-b2aa247d939d, status=pending, desc=pay Sonnet car insurance
+[2026-01-15 20:53:06] EXIT: Processing task: uuid=fc10f3b5-f61c-4903-8158-b2aa247d939d, status=pending, rtemplate=a7fe6201-dcfd-4e33-8844-02aaa8cde15b, rindex=1.0
+[2026-01-15 20:53:06] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 20:53:37] ADD/MOD: ============================================================
+[2026-01-15 20:53:37] ADD/MOD: Hook starting
+[2026-01-15 20:53:37] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 20:53:37] ADD/MOD: Hook completed
+[2026-01-15 20:53:37] EXIT: ============================================================
+[2026-01-15 20:53:37] EXIT: on-exit hook started
+[2026-01-15 20:53:37] EXIT: Received 1 lines of input
+[2026-01-15 20:53:37] EXIT: Parsed 1 tasks
+[2026-01-15 20:53:37] EXIT: Task 0: uuid=fc10f3b5-f61c-4903-8158-b2aa247d939d, status=pending, desc=pay Sonnet car insurance
+[2026-01-15 20:53:37] EXIT: Processing task: uuid=fc10f3b5-f61c-4903-8158-b2aa247d939d, status=pending, rtemplate=a7fe6201-dcfd-4e33-8844-02aaa8cde15b, rindex=1.0
+[2026-01-15 20:53:37] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 20:53:47] EXIT: ============================================================
+[2026-01-15 20:53:47] EXIT: on-exit hook started
+[2026-01-15 20:53:47] EXIT: Received 0 lines of input
+[2026-01-15 20:54:12] EXIT: ============================================================
+[2026-01-15 20:54:12] EXIT: on-exit hook started
+[2026-01-15 20:54:12] EXIT: Received 0 lines of input
+[2026-01-15 20:54:15] EXIT: ============================================================
+[2026-01-15 20:54:15] EXIT: on-exit hook started
+[2026-01-15 20:54:15] EXIT: Received 0 lines of input
+[2026-01-15 20:55:37] EXIT: ============================================================
+[2026-01-15 20:55:37] EXIT: on-exit hook started
+[2026-01-15 20:55:37] EXIT: Received 0 lines of input
+[2026-01-15 20:56:10] EXIT: ============================================================
+[2026-01-15 20:56:10] EXIT: on-exit hook started
+[2026-01-15 20:56:10] EXIT: Received 0 lines of input
+[2026-01-15 20:56:50] EXIT: ============================================================
+[2026-01-15 20:56:50] EXIT: on-exit hook started
+[2026-01-15 20:56:50] EXIT: Received 0 lines of input
+[2026-01-15 20:58:35] ADD/MOD: ============================================================
+[2026-01-15 20:58:35] ADD/MOD: Hook starting
+[2026-01-15 20:58:35] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 20:58:35] ADD/MOD: Creating template: testing recurr chain
+[2026-01-15 20:58:35] ADD/MOD:   Type: chained, r=PT10M
+[2026-01-15 20:58:35] ADD/MOD:   parse_date: '20260116T015835Z' -> 2026-01-16 01:58:35
+[2026-01-15 20:58:35] ADD/MOD:   parse_date: '20260116T014935Z' -> 2026-01-16 01:49:35
+[2026-01-15 20:58:35] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 20:58:35] ADD/MOD: Hook completed
+[2026-01-15 20:58:35] EXIT: ============================================================
+[2026-01-15 20:58:35] EXIT: on-exit hook started
+[2026-01-15 20:58:35] EXIT: Received 1 lines of input
+[2026-01-15 20:58:35] EXIT: Parsed 1 tasks
+[2026-01-15 20:58:35] EXIT: Task 0: uuid=6bc28966-ec99-4584-a705-53ed3e60c6b6, status=recurring, desc=testing recurr chain
+[2026-01-15 20:58:35] EXIT: Processing task: uuid=6bc28966-ec99-4584-a705-53ed3e60c6b6, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 20:58:35] EXIT: Found new template: testing recurr chain
+[2026-01-15 20:58:35] EXIT: Creating instance 1 from 6bc28966-ec99-4584-a705-53ed3e60c6b6
+[2026-01-15 20:58:35] EXIT: Instance 1 created successfully
+[2026-01-15 20:58:35] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 20:58:58] EXIT: ============================================================
+[2026-01-15 20:58:58] EXIT: on-exit hook started
+[2026-01-15 20:58:58] EXIT: Received 0 lines of input
+[2026-01-15 20:59:22] EXIT: ============================================================
+[2026-01-15 20:59:22] EXIT: on-exit hook started
+[2026-01-15 20:59:22] EXIT: Received 0 lines of input
+[2026-01-15 20:59:31] EXIT: ============================================================
+[2026-01-15 20:59:31] EXIT: on-exit hook started
+[2026-01-15 20:59:31] EXIT: Received 0 lines of input
+[2026-01-15 21:00:11] EXIT: ============================================================
+[2026-01-15 21:00:11] EXIT: on-exit hook started
+[2026-01-15 21:00:11] EXIT: Received 0 lines of input
+[2026-01-15 21:00:22] ADD/MOD: ============================================================
+[2026-01-15 21:00:22] ADD/MOD: Hook starting
+[2026-01-15 21:00:22] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 21:00:22] ADD/MOD: Hook completed
+[2026-01-15 21:00:22] EXIT: ============================================================
+[2026-01-15 21:00:22] EXIT: on-exit hook started
+[2026-01-15 21:00:22] EXIT: Received 1 lines of input
+[2026-01-15 21:00:22] EXIT: Parsed 1 tasks
+[2026-01-15 21:00:22] EXIT: Task 0: uuid=6f957f3f-59c7-4812-9041-45823ee3b8c2, status=completed, desc=testing recurr chain
+[2026-01-15 21:00:22] EXIT: Processing task: uuid=6f957f3f-59c7-4812-9041-45823ee3b8c2, status=completed, rtemplate=6bc28966-ec99-4584-a705-53ed3e60c6b6, rindex=1.0
+[2026-01-15 21:00:22] EXIT: Found completed instance: rindex=1.0
+[2026-01-15 21:00:22] EXIT: Attempting to fetch template: 6bc28966-ec99-4584-a705-53ed3e60c6b6
+[2026-01-15 21:00:22] EXIT: Method 1 returncode: 0
+[2026-01-15 21:00:22] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 21:00:22] EXIT: Template fetched via method 1: testing recurr chain, status=recurring
+[2026-01-15 21:00:22] EXIT: Template found: testing recurr chain, rlast=1, type=chained
+[2026-01-15 21:00:22] EXIT: Checking: current_idx=1, last_idx=1
+[2026-01-15 21:00:22] EXIT: Will spawn next instance
+[2026-01-15 21:00:22] EXIT: Completion time: 2026-01-16 02:00:22
+[2026-01-15 21:00:22] EXIT: Creating instance 2 from 6bc28966-ec99-4584-a705-53ed3e60c6b6
+[2026-01-15 21:00:22] EXIT: Instance 2 created successfully
+[2026-01-15 21:00:22] EXIT: Result: Created instance 2 of 'testing recurr chain'
+[2026-01-15 21:00:22] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 21:00:31] EXIT: ============================================================
+[2026-01-15 21:00:31] EXIT: on-exit hook started
+[2026-01-15 21:00:31] EXIT: Received 0 lines of input
+[2026-01-15 21:00:39] EXIT: ============================================================
+[2026-01-15 21:00:39] EXIT: on-exit hook started
+[2026-01-15 21:00:39] EXIT: Received 0 lines of input
+[2026-01-15 21:00:55] EXIT: ============================================================
+[2026-01-15 21:00:55] EXIT: on-exit hook started
+[2026-01-15 21:00:55] EXIT: Received 0 lines of input
+[2026-01-15 21:01:25] EXIT: ============================================================
+[2026-01-15 21:01:25] EXIT: on-exit hook started
+[2026-01-15 21:01:25] EXIT: Received 0 lines of input
+[2026-01-15 21:01:48] ADD/MOD: ============================================================
+[2026-01-15 21:01:48] ADD/MOD: Hook starting
+[2026-01-15 21:01:48] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 21:01:48] ADD/MOD: Hook completed
+[2026-01-15 21:01:49] EXIT: ============================================================
+[2026-01-15 21:01:49] EXIT: on-exit hook started
+[2026-01-15 21:01:49] EXIT: Received 1 lines of input
+[2026-01-15 21:01:49] EXIT: Parsed 1 tasks
+[2026-01-15 21:01:49] EXIT: Task 0: uuid=b5aef598-b7bf-445f-a04e-f1fd6ba2f953, status=completed, desc=testing recurr chain
+[2026-01-15 21:01:49] EXIT: Processing task: uuid=b5aef598-b7bf-445f-a04e-f1fd6ba2f953, status=completed, rtemplate=6bc28966-ec99-4584-a705-53ed3e60c6b6, rindex=2.0
+[2026-01-15 21:01:49] EXIT: Found completed instance: rindex=2.0
+[2026-01-15 21:01:49] EXIT: Attempting to fetch template: 6bc28966-ec99-4584-a705-53ed3e60c6b6
+[2026-01-15 21:01:49] EXIT: Method 1 returncode: 0
+[2026-01-15 21:01:49] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 21:01:49] EXIT: Template fetched via method 1: testing recurr chain, status=recurring
+[2026-01-15 21:01:49] EXIT: Template found: testing recurr chain, rlast=2, type=chained
+[2026-01-15 21:01:49] EXIT: Checking: current_idx=2, last_idx=2
+[2026-01-15 21:01:49] EXIT: Will spawn next instance
+[2026-01-15 21:01:49] EXIT: Completion time: 2026-01-16 02:01:48
+[2026-01-15 21:01:49] EXIT: Creating instance 3 from 6bc28966-ec99-4584-a705-53ed3e60c6b6
+[2026-01-15 21:01:49] EXIT: Instance 3 created successfully
+[2026-01-15 21:01:49] EXIT: Result: Created instance 3 of 'testing recurr chain'
+[2026-01-15 21:01:49] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 21:01:56] EXIT: ============================================================
+[2026-01-15 21:01:56] EXIT: on-exit hook started
+[2026-01-15 21:01:56] EXIT: Received 0 lines of input
+[2026-01-15 21:02:51] EXIT: ============================================================
+[2026-01-15 21:02:51] EXIT: on-exit hook started
+[2026-01-15 21:02:51] EXIT: Received 0 lines of input
+[2026-01-15 21:03:35] EXIT: ============================================================
+[2026-01-15 21:03:35] EXIT: on-exit hook started
+[2026-01-15 21:03:35] EXIT: Received 0 lines of input
+[2026-01-15 21:04:09] EXIT: ============================================================
+[2026-01-15 21:04:09] EXIT: on-exit hook started
+[2026-01-15 21:04:09] EXIT: Received 0 lines of input
+[2026-01-15 21:04:44] EXIT: ============================================================
+[2026-01-15 21:04:44] EXIT: on-exit hook started
+[2026-01-15 21:04:44] EXIT: Received 0 lines of input
+[2026-01-15 21:04:59] ADD/MOD: ============================================================
+[2026-01-15 21:04:59] ADD/MOD: Hook starting
+[2026-01-15 21:04:59] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 21:04:59] ADD/MOD: Hook completed
+[2026-01-15 21:04:59] EXIT: ============================================================
+[2026-01-15 21:04:59] EXIT: on-exit hook started
+[2026-01-15 21:04:59] EXIT: Received 1 lines of input
+[2026-01-15 21:04:59] EXIT: Parsed 1 tasks
+[2026-01-15 21:04:59] EXIT: Task 0: uuid=6bc28966-ec99-4584-a705-53ed3e60c6b6, status=deleted, desc=testing recurr chain
+[2026-01-15 21:04:59] EXIT: Processing task: uuid=6bc28966-ec99-4584-a705-53ed3e60c6b6, status=deleted, rtemplate=None, rindex=None
+[2026-01-15 21:04:59] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 21:05:17] ADD/MOD: ============================================================
+[2026-01-15 21:05:17] ADD/MOD: Hook starting
+[2026-01-15 21:05:17] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 21:05:17] ADD/MOD: Hook completed
+[2026-01-15 21:05:17] EXIT: ============================================================
+[2026-01-15 21:05:17] EXIT: on-exit hook started
+[2026-01-15 21:05:17] EXIT: Received 1 lines of input
+[2026-01-15 21:05:17] EXIT: Parsed 1 tasks
+[2026-01-15 21:05:17] EXIT: Task 0: uuid=f2f7b408-7980-40ec-85ff-44ca1d8d68ca, status=deleted, desc=testing recurr chain
+[2026-01-15 21:05:17] EXIT: Processing task: uuid=f2f7b408-7980-40ec-85ff-44ca1d8d68ca, status=deleted, rtemplate=6bc28966-ec99-4584-a705-53ed3e60c6b6, rindex=3.0
+[2026-01-15 21:05:17] EXIT: Found deleted instance: rindex=3.0
+[2026-01-15 21:05:17] EXIT: Attempting to fetch template: 6bc28966-ec99-4584-a705-53ed3e60c6b6
+[2026-01-15 21:05:17] EXIT: Method 1 returncode: 0
+[2026-01-15 21:05:17] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 21:05:17] EXIT: Template fetched via method 1: testing recurr chain, status=deleted
+[2026-01-15 21:05:17] EXIT: Template is deleted, not spawning
+[2026-01-15 21:05:17] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 21:05:22] EXIT: ============================================================
+[2026-01-15 21:05:22] EXIT: on-exit hook started
+[2026-01-15 21:05:22] EXIT: Received 0 lines of input
+[2026-01-15 21:05:42] EXIT: ============================================================
+[2026-01-15 21:05:42] EXIT: on-exit hook started
+[2026-01-15 21:05:42] EXIT: Received 0 lines of input
+[2026-01-15 21:05:52] EXIT: ============================================================
+[2026-01-15 21:05:52] EXIT: on-exit hook started
+[2026-01-15 21:05:52] EXIT: Received 0 lines of input
+[2026-01-15 21:06:51] ADD/MOD: ============================================================
+[2026-01-15 21:06:51] ADD/MOD: Hook starting
+[2026-01-15 21:06:51] ADD/MOD: Mode: ADD, lines: 1
+[2026-01-15 21:06:51] ADD/MOD: Creating template: testing recurr chain
+[2026-01-15 21:06:51] ADD/MOD:   Type: chained, r=PT10M
+[2026-01-15 21:06:51] ADD/MOD:   parse_date: '20260116T020651Z' -> 2026-01-16 02:06:51
+[2026-01-15 21:06:51] ADD/MOD:   parse_date: '20260116T015751Z' -> 2026-01-16 01:57:51
+[2026-01-15 21:06:51] ADD/MOD:   Template created: status=recurring, rlast=0
+[2026-01-15 21:06:51] ADD/MOD: Hook completed
+[2026-01-15 21:06:51] EXIT: ============================================================
+[2026-01-15 21:06:51] EXIT: on-exit hook started
+[2026-01-15 21:06:51] EXIT: Received 1 lines of input
+[2026-01-15 21:06:51] EXIT: Parsed 1 tasks
+[2026-01-15 21:06:51] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, desc=testing recurr chain
+[2026-01-15 21:06:51] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 21:06:51] EXIT: Found new template: testing recurr chain
+[2026-01-15 21:06:51] EXIT: Creating instance 1 from b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 21:06:51] EXIT: Instance 1 created successfully
+[2026-01-15 21:06:51] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 21:06:59] EXIT: ============================================================
+[2026-01-15 21:06:59] EXIT: on-exit hook started
+[2026-01-15 21:06:59] EXIT: Received 0 lines of input
+[2026-01-15 21:08:51] EXIT: ============================================================
+[2026-01-15 21:08:51] EXIT: on-exit hook started
+[2026-01-15 21:08:51] EXIT: Received 0 lines of input
+[2026-01-15 22:45:14] EXIT: ============================================================
+[2026-01-15 22:45:14] EXIT: on-exit hook started
+[2026-01-15 22:45:14] EXIT: Received 0 lines of input
+[2026-01-15 22:46:06] EXIT: ============================================================
+[2026-01-15 22:46:06] EXIT: on-exit hook started
+[2026-01-15 22:46:06] EXIT: Received 0 lines of input
+[2026-01-15 22:47:40] ADD/MOD: ============================================================
+[2026-01-15 22:47:40] ADD/MOD: Hook starting
+[2026-01-15 22:47:40] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 22:47:40] ADD/MOD: Hook completed
+[2026-01-15 22:47:40] EXIT: ============================================================
+[2026-01-15 22:47:40] EXIT: on-exit hook started
+[2026-01-15 22:47:40] EXIT: Received 1 lines of input
+[2026-01-15 22:47:40] EXIT: Parsed 1 tasks
+[2026-01-15 22:47:40] EXIT: Task 0: uuid=8a211b17-89a3-49fb-907c-86c2f315ec9c, status=completed, desc=testing recurr chain
+[2026-01-15 22:47:40] EXIT: Processing task: uuid=8a211b17-89a3-49fb-907c-86c2f315ec9c, status=completed, rtemplate=b2220b28-e047-48cd-a110-dac48c06fb4b, rindex=1.0
+[2026-01-15 22:47:40] EXIT: Found completed instance: rindex=1.0
+[2026-01-15 22:47:40] EXIT: Attempting to fetch template: b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 22:47:40] EXIT: Method 1 returncode: 0
+[2026-01-15 22:47:40] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 22:47:40] EXIT: Template fetched via method 1: testing recurr chain, status=recurring
+[2026-01-15 22:47:40] EXIT: Template found: testing recurr chain, rlast=1, type=chained
+[2026-01-15 22:47:40] EXIT: Checking: current_idx=1, last_idx=1
+[2026-01-15 22:47:40] EXIT: Will spawn next instance
+[2026-01-15 22:47:40] EXIT: Completion time: 2026-01-16 03:47:40
+[2026-01-15 22:47:40] EXIT: Creating instance 2 from b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 22:47:40] EXIT: Instance 2 created successfully
+[2026-01-15 22:47:40] EXIT: Result: Created instance 2 of 'testing recurr chain'
+[2026-01-15 22:47:40] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 22:47:49] EXIT: ============================================================
+[2026-01-15 22:47:49] EXIT: on-exit hook started
+[2026-01-15 22:47:49] EXIT: Received 0 lines of input
+[2026-01-15 22:48:04] EXIT: ============================================================
+[2026-01-15 22:48:04] EXIT: on-exit hook started
+[2026-01-15 22:48:04] EXIT: Received 0 lines of input
+[2026-01-15 22:48:10] EXIT: ============================================================
+[2026-01-15 22:48:10] EXIT: on-exit hook started
+[2026-01-15 22:48:10] EXIT: Received 0 lines of input
+[2026-01-15 22:48:19] EXIT: ============================================================
+[2026-01-15 22:48:19] EXIT: on-exit hook started
+[2026-01-15 22:48:19] EXIT: Received 0 lines of input
+[2026-01-15 22:48:28] EXIT: ============================================================
+[2026-01-15 22:48:28] EXIT: on-exit hook started
+[2026-01-15 22:48:28] EXIT: Received 0 lines of input
+[2026-01-15 22:48:34] EXIT: ============================================================
+[2026-01-15 22:48:34] EXIT: on-exit hook started
+[2026-01-15 22:48:34] EXIT: Received 0 lines of input
+[2026-01-15 22:48:42] EXIT: ============================================================
+[2026-01-15 22:48:42] EXIT: on-exit hook started
+[2026-01-15 22:48:42] EXIT: Received 0 lines of input
+[2026-01-15 22:50:23] EXIT: ============================================================
+[2026-01-15 22:50:23] EXIT: on-exit hook started
+[2026-01-15 22:50:23] EXIT: Received 0 lines of input
+[2026-01-15 22:51:57] EXIT: ============================================================
+[2026-01-15 22:51:57] EXIT: on-exit hook started
+[2026-01-15 22:51:57] EXIT: Received 0 lines of input
+[2026-01-15 22:52:47] ADD/MOD: ============================================================
+[2026-01-15 22:52:47] ADD/MOD: Hook starting
+[2026-01-15 22:52:47] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 22:52:47] ADD/MOD: Hook completed
+[2026-01-15 22:52:47] EXIT: ============================================================
+[2026-01-15 22:52:47] EXIT: on-exit hook started
+[2026-01-15 22:52:47] EXIT: Received 1 lines of input
+[2026-01-15 22:52:47] EXIT: Parsed 1 tasks
+[2026-01-15 22:52:47] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, desc=testing recurr chain
+[2026-01-15 22:52:47] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 22:52:47] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 22:52:56] EXIT: ============================================================
+[2026-01-15 22:52:56] EXIT: on-exit hook started
+[2026-01-15 22:52:56] EXIT: Received 0 lines of input
+[2026-01-15 22:53:12] EXIT: ============================================================
+[2026-01-15 22:53:12] EXIT: on-exit hook started
+[2026-01-15 22:53:12] EXIT: Received 0 lines of input
+[2026-01-15 22:53:47] ADD/MOD: ============================================================
+[2026-01-15 22:53:47] ADD/MOD: Hook starting
+[2026-01-15 22:53:47] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 22:53:47] ADD/MOD: Hook completed
+[2026-01-15 22:53:47] EXIT: ============================================================
+[2026-01-15 22:53:47] EXIT: on-exit hook started
+[2026-01-15 22:53:47] EXIT: Received 1 lines of input
+[2026-01-15 22:53:47] EXIT: Parsed 1 tasks
+[2026-01-15 22:53:47] EXIT: Task 0: uuid=acbe7a34-2975-4cbd-8455-b3ecdd111e21, status=completed, desc=testing recurr chain
+[2026-01-15 22:53:47] EXIT: Processing task: uuid=acbe7a34-2975-4cbd-8455-b3ecdd111e21, status=completed, rtemplate=b2220b28-e047-48cd-a110-dac48c06fb4b, rindex=2.0
+[2026-01-15 22:53:47] EXIT: Found completed instance: rindex=2.0
+[2026-01-15 22:53:47] EXIT: Attempting to fetch template: b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 22:53:47] EXIT: Method 1 returncode: 0
+[2026-01-15 22:53:47] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 22:53:47] EXIT: Template fetched via method 1: testing recurr chain, status=recurring
+[2026-01-15 22:53:47] EXIT: Template found: testing recurr chain, rlast=2.0, type=chained
+[2026-01-15 22:53:47] EXIT: Checking: current_idx=2, last_idx=2
+[2026-01-15 22:53:47] EXIT: Will spawn next instance
+[2026-01-15 22:53:47] EXIT: Completion time: 2026-01-16 03:53:47
+[2026-01-15 22:53:47] EXIT: Creating instance 3 from b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 22:53:47] EXIT: Instance 3 created successfully
+[2026-01-15 22:53:47] EXIT: Result: Created instance 3 of 'testing recurr chain'
+[2026-01-15 22:53:47] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 22:53:54] EXIT: ============================================================
+[2026-01-15 22:53:54] EXIT: on-exit hook started
+[2026-01-15 22:53:54] EXIT: Received 0 lines of input
+[2026-01-15 22:54:38] ADD/MOD: ============================================================
+[2026-01-15 22:54:38] ADD/MOD: Hook starting
+[2026-01-15 22:54:38] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 22:54:38] ADD/MOD: Hook completed
+[2026-01-15 22:54:38] EXIT: ============================================================
+[2026-01-15 22:54:38] EXIT: on-exit hook started
+[2026-01-15 22:54:38] EXIT: Received 1 lines of input
+[2026-01-15 22:54:38] EXIT: Parsed 1 tasks
+[2026-01-15 22:54:38] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, desc=append:mods
+[2026-01-15 22:54:38] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 22:54:38] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 22:54:43] EXIT: ============================================================
+[2026-01-15 22:54:43] EXIT: on-exit hook started
+[2026-01-15 22:54:43] EXIT: Received 0 lines of input
+[2026-01-15 22:55:18] EXIT: ============================================================
+[2026-01-15 22:55:18] EXIT: on-exit hook started
+[2026-01-15 22:55:18] EXIT: Received 0 lines of input
+[2026-01-15 22:56:03] EXIT: ============================================================
+[2026-01-15 22:56:03] EXIT: on-exit hook started
+[2026-01-15 22:56:03] EXIT: Received 0 lines of input
+[2026-01-15 22:57:02] ADD/MOD: ============================================================
+[2026-01-15 22:57:02] ADD/MOD: Hook starting
+[2026-01-15 22:57:02] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 22:57:02] ADD/MOD: Hook completed
+[2026-01-15 22:57:02] EXIT: ============================================================
+[2026-01-15 22:57:02] EXIT: on-exit hook started
+[2026-01-15 22:57:02] EXIT: Received 1 lines of input
+[2026-01-15 22:57:02] EXIT: Parsed 1 tasks
+[2026-01-15 22:57:02] EXIT: Task 0: uuid=0f49ab3e-e72a-40eb-8aec-b1f4242b6a20, status=completed, desc=testing recurr chain
+[2026-01-15 22:57:02] EXIT: Processing task: uuid=0f49ab3e-e72a-40eb-8aec-b1f4242b6a20, status=completed, rtemplate=b2220b28-e047-48cd-a110-dac48c06fb4b, rindex=3.0
+[2026-01-15 22:57:02] EXIT: Found completed instance: rindex=3.0
+[2026-01-15 22:57:02] EXIT: Attempting to fetch template: b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 22:57:02] EXIT: Method 1 returncode: 0
+[2026-01-15 22:57:02] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 22:57:02] EXIT: Template fetched via method 1: append:mods, status=recurring
+[2026-01-15 22:57:02] EXIT: Template found: append:mods, rlast=3.0, type=chained
+[2026-01-15 22:57:02] EXIT: Checking: current_idx=3, last_idx=3
+[2026-01-15 22:57:02] EXIT: Will spawn next instance
+[2026-01-15 22:57:02] EXIT: Completion time: 2026-01-16 03:57:02
+[2026-01-15 22:57:02] EXIT: Creating instance 4 from b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 22:57:02] EXIT: Instance 4 created successfully
+[2026-01-15 22:57:02] EXIT: Result: Created instance 4 of 'append:mods'
+[2026-01-15 22:57:02] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 22:57:07] EXIT: ============================================================
+[2026-01-15 22:57:07] EXIT: on-exit hook started
+[2026-01-15 22:57:07] EXIT: Received 0 lines of input
+[2026-01-15 22:58:37] EXIT: ============================================================
+[2026-01-15 22:58:37] EXIT: on-exit hook started
+[2026-01-15 22:58:37] EXIT: Received 0 lines of input
+[2026-01-15 22:58:43] EXIT: ============================================================
+[2026-01-15 22:58:43] EXIT: on-exit hook started
+[2026-01-15 22:58:43] EXIT: Received 0 lines of input
+[2026-01-15 23:00:17] EXIT: ============================================================
+[2026-01-15 23:00:17] EXIT: on-exit hook started
+[2026-01-15 23:00:17] EXIT: Received 0 lines of input
+[2026-01-15 23:00:51] ADD/MOD: ============================================================
+[2026-01-15 23:00:51] ADD/MOD: Hook starting
+[2026-01-15 23:00:51] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:00:51] ADD/MOD: Hook completed
+[2026-01-15 23:00:51] EXIT: ============================================================
+[2026-01-15 23:00:51] EXIT: on-exit hook started
+[2026-01-15 23:00:51] EXIT: Received 1 lines of input
+[2026-01-15 23:00:51] EXIT: Parsed 1 tasks
+[2026-01-15 23:00:51] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, desc=append:mods
+[2026-01-15 23:00:51] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 23:00:51] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 23:01:06] EXIT: ============================================================
+[2026-01-15 23:01:06] EXIT: on-exit hook started
+[2026-01-15 23:01:06] EXIT: Received 0 lines of input
+[2026-01-15 23:01:26] EXIT: ============================================================
+[2026-01-15 23:01:26] EXIT: on-exit hook started
+[2026-01-15 23:01:26] EXIT: Received 0 lines of input
+[2026-01-15 23:02:20] EXIT: ============================================================
+[2026-01-15 23:02:20] EXIT: on-exit hook started
+[2026-01-15 23:02:20] EXIT: Received 0 lines of input
+[2026-01-15 23:02:40] ADD/MOD: ============================================================
+[2026-01-15 23:02:40] ADD/MOD: Hook starting
+[2026-01-15 23:02:40] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:02:40] ADD/MOD: Hook completed
+[2026-01-15 23:02:40] EXIT: ============================================================
+[2026-01-15 23:02:40] EXIT: on-exit hook started
+[2026-01-15 23:02:40] EXIT: Received 1 lines of input
+[2026-01-15 23:02:40] EXIT: Parsed 1 tasks
+[2026-01-15 23:02:40] EXIT: Task 0: uuid=af1557aa-c0ea-4ff6-9757-c7a0efcb1b08, status=completed, desc=append:mods
+[2026-01-15 23:02:40] EXIT: Processing task: uuid=af1557aa-c0ea-4ff6-9757-c7a0efcb1b08, status=completed, rtemplate=b2220b28-e047-48cd-a110-dac48c06fb4b, rindex=4.0
+[2026-01-15 23:02:40] EXIT: Found completed instance: rindex=4.0
+[2026-01-15 23:02:40] EXIT: Attempting to fetch template: b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 23:02:40] EXIT: Method 1 returncode: 0
+[2026-01-15 23:02:40] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 23:02:40] EXIT: Template fetched via method 1: append:mods, status=recurring
+[2026-01-15 23:02:40] EXIT: Template found: append:mods, rlast=4.0, type=chained
+[2026-01-15 23:02:40] EXIT: Checking: current_idx=4, last_idx=4
+[2026-01-15 23:02:40] EXIT: Will spawn next instance
+[2026-01-15 23:02:40] EXIT: Completion time: 2026-01-16 04:02:40
+[2026-01-15 23:02:40] EXIT: Creating instance 5 from b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 23:02:40] EXIT: Instance 5 created successfully
+[2026-01-15 23:02:40] EXIT: Result: Created instance 5 of 'append:mods'
+[2026-01-15 23:02:40] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 23:02:50] EXIT: ============================================================
+[2026-01-15 23:02:50] EXIT: on-exit hook started
+[2026-01-15 23:02:50] EXIT: Received 0 lines of input
+[2026-01-15 23:03:27] ADD/MOD: ============================================================
+[2026-01-15 23:03:27] ADD/MOD: Hook starting
+[2026-01-15 23:03:27] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:03:27] ADD/MOD: Hook completed
+[2026-01-15 23:03:28] EXIT: ============================================================
+[2026-01-15 23:03:28] EXIT: on-exit hook started
+[2026-01-15 23:03:28] EXIT: Received 1 lines of input
+[2026-01-15 23:03:28] EXIT: Parsed 1 tasks
+[2026-01-15 23:03:28] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, desc=append:mods
+[2026-01-15 23:03:28] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 23:03:28] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 23:03:33] EXIT: ============================================================
+[2026-01-15 23:03:33] EXIT: on-exit hook started
+[2026-01-15 23:03:33] EXIT: Received 0 lines of input
+[2026-01-15 23:05:00] ADD/MOD: ============================================================
+[2026-01-15 23:05:00] ADD/MOD: Hook starting
+[2026-01-15 23:05:00] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:05:00] ADD/MOD: Hook completed
+[2026-01-15 23:05:00] EXIT: ============================================================
+[2026-01-15 23:05:00] EXIT: on-exit hook started
+[2026-01-15 23:05:00] EXIT: Received 1 lines of input
+[2026-01-15 23:05:00] EXIT: Parsed 1 tasks
+[2026-01-15 23:05:00] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, desc=chained recur test
+[2026-01-15 23:05:00] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 23:05:00] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 23:05:10] EXIT: ============================================================
+[2026-01-15 23:05:10] EXIT: on-exit hook started
+[2026-01-15 23:05:10] EXIT: Received 0 lines of input
+[2026-01-15 23:05:32] ADD/MOD: ============================================================
+[2026-01-15 23:05:32] ADD/MOD: Hook starting
+[2026-01-15 23:05:32] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:05:32] ADD/MOD: Hook completed
+[2026-01-15 23:05:32] EXIT: ============================================================
+[2026-01-15 23:05:32] EXIT: on-exit hook started
+[2026-01-15 23:05:32] EXIT: Received 1 lines of input
+[2026-01-15 23:05:32] EXIT: Parsed 1 tasks
+[2026-01-15 23:05:32] EXIT: Task 0: uuid=9487ec49-5f87-4ab5-ab25-19f5e8a25753, status=completed, desc=append:mods
+[2026-01-15 23:05:32] EXIT: Processing task: uuid=9487ec49-5f87-4ab5-ab25-19f5e8a25753, status=completed, rtemplate=b2220b28-e047-48cd-a110-dac48c06fb4b, rindex=5.0
+[2026-01-15 23:05:32] EXIT: Found completed instance: rindex=5.0
+[2026-01-15 23:05:32] EXIT: Attempting to fetch template: b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 23:05:32] EXIT: Method 1 returncode: 0
+[2026-01-15 23:05:32] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 23:05:32] EXIT: Template fetched via method 1: chained recur test, status=recurring
+[2026-01-15 23:05:32] EXIT: Template found: chained recur test, rlast=5.0, type=chained
+[2026-01-15 23:05:32] EXIT: Checking: current_idx=5, last_idx=5
+[2026-01-15 23:05:32] EXIT: Will spawn next instance
+[2026-01-15 23:05:32] EXIT: Completion time: 2026-01-16 04:05:32
+[2026-01-15 23:05:32] EXIT: Creating instance 6 from b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 23:05:32] EXIT: Instance 6 created successfully
+[2026-01-15 23:05:32] EXIT: Result: Created instance 6 of 'chained recur test'
+[2026-01-15 23:05:32] EXIT: on-exit completed with 1 feedback messages
+[2026-01-15 23:05:36] EXIT: ============================================================
+[2026-01-15 23:05:36] EXIT: on-exit hook started
+[2026-01-15 23:05:36] EXIT: Received 0 lines of input
+[2026-01-15 23:06:09] EXIT: ============================================================
+[2026-01-15 23:06:09] EXIT: on-exit hook started
+[2026-01-15 23:06:09] EXIT: Received 0 lines of input
+[2026-01-15 23:06:51] EXIT: ============================================================
+[2026-01-15 23:06:51] EXIT: on-exit hook started
+[2026-01-15 23:06:51] EXIT: Received 0 lines of input
+[2026-01-15 23:07:20] EXIT: ============================================================
+[2026-01-15 23:07:20] EXIT: on-exit hook started
+[2026-01-15 23:07:20] EXIT: Received 0 lines of input
+[2026-01-15 23:07:52] EXIT: ============================================================
+[2026-01-15 23:07:52] EXIT: on-exit hook started
+[2026-01-15 23:07:52] EXIT: Received 0 lines of input
+[2026-01-15 23:11:27] ADD/MOD: ============================================================
+[2026-01-15 23:11:27] ADD/MOD: Hook starting
+[2026-01-15 23:11:27] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:11:27] ADD/MOD: Hook completed
+[2026-01-15 23:11:27] ADD/MOD: ============================================================
+[2026-01-15 23:11:27] ADD/MOD: Hook starting
+[2026-01-15 23:11:27] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:11:27] ADD/MOD: Hook completed
+[2026-01-15 23:11:27] EXIT: ============================================================
+[2026-01-15 23:11:27] EXIT: on-exit hook started
+[2026-01-15 23:11:27] EXIT: Received 2 lines of input
+[2026-01-15 23:11:27] EXIT: Parsed 2 tasks
+[2026-01-15 23:11:27] EXIT: Task 0: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=deleted, desc=chained recur test
+[2026-01-15 23:11:27] EXIT: Task 1: uuid=f9e2811e-0819-4456-a70c-9d0067f1f25a, status=deleted, desc=chained recur test
+[2026-01-15 23:11:27] EXIT: Processing task: uuid=b2220b28-e047-48cd-a110-dac48c06fb4b, status=deleted, rtemplate=None, rindex=None
+[2026-01-15 23:11:27] EXIT: Processing task: uuid=f9e2811e-0819-4456-a70c-9d0067f1f25a, status=deleted, rtemplate=b2220b28-e047-48cd-a110-dac48c06fb4b, rindex=6.0
+[2026-01-15 23:11:27] EXIT: Found deleted instance: rindex=6.0
+[2026-01-15 23:11:27] EXIT: Attempting to fetch template: b2220b28-e047-48cd-a110-dac48c06fb4b
+[2026-01-15 23:11:27] EXIT: Method 1 returncode: 0
+[2026-01-15 23:11:27] EXIT: Method 1 stderr: Configuration override rc.hooks=off
+
+[2026-01-15 23:11:27] EXIT: Template fetched via method 1: chained recur test, status=deleted
+[2026-01-15 23:11:27] EXIT: Template is deleted, not spawning
+[2026-01-15 23:11:27] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 23:11:34] EXIT: ============================================================
+[2026-01-15 23:11:34] EXIT: on-exit hook started
+[2026-01-15 23:11:34] EXIT: Received 0 lines of input
+[2026-01-15 23:14:24] EXIT: ============================================================
+[2026-01-15 23:14:24] EXIT: on-exit hook started
+[2026-01-15 23:14:24] EXIT: Received 0 lines of input
+[2026-01-15 23:14:47] EXIT: ============================================================
+[2026-01-15 23:14:47] EXIT: on-exit hook started
+[2026-01-15 23:14:47] EXIT: Received 0 lines of input
+[2026-01-15 23:16:10] ADD/MOD: ============================================================
+[2026-01-15 23:16:10] ADD/MOD: Hook starting
+[2026-01-15 23:16:10] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:16:10] ADD/MOD: Hook completed
+[2026-01-15 23:16:10] EXIT: ============================================================
+[2026-01-15 23:16:10] EXIT: on-exit hook started
+[2026-01-15 23:16:10] EXIT: Received 1 lines of input
+[2026-01-15 23:16:10] EXIT: Parsed 1 tasks
+[2026-01-15 23:16:10] EXIT: Task 0: uuid=2858360d-3ade-4b18-b2a4-01845a624d3a, status=pending, desc=pay Conni for utilities
+[2026-01-15 23:16:10] EXIT: Processing task: uuid=2858360d-3ade-4b18-b2a4-01845a624d3a, status=pending, rtemplate=a07739f4-dbb7-4149-a766-0119f5de5fe1, rindex=1.0
+[2026-01-15 23:16:10] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 23:16:20] EXIT: ============================================================
+[2026-01-15 23:16:20] EXIT: on-exit hook started
+[2026-01-15 23:16:20] EXIT: Received 0 lines of input
+[2026-01-15 23:16:42] EXIT: ============================================================
+[2026-01-15 23:16:42] EXIT: on-exit hook started
+[2026-01-15 23:16:42] EXIT: Received 0 lines of input
+[2026-01-15 23:17:00] EXIT: ============================================================
+[2026-01-15 23:17:00] EXIT: on-exit hook started
+[2026-01-15 23:17:00] EXIT: Received 0 lines of input
+[2026-01-15 23:17:47] EXIT: ============================================================
+[2026-01-15 23:17:47] EXIT: on-exit hook started
+[2026-01-15 23:17:47] EXIT: Received 0 lines of input
+[2026-01-15 23:30:17] EXIT: ============================================================
+[2026-01-15 23:30:17] EXIT: on-exit hook started
+[2026-01-15 23:30:17] EXIT: Received 0 lines of input
+[2026-01-15 23:32:34] EXIT: ============================================================
+[2026-01-15 23:32:34] EXIT: on-exit hook started
+[2026-01-15 23:32:34] EXIT: Received 0 lines of input
+[2026-01-15 23:36:14] EXIT: ============================================================
+[2026-01-15 23:36:14] EXIT: on-exit hook started
+[2026-01-15 23:36:14] EXIT: Received 0 lines of input
+[2026-01-15 23:38:20] EXIT: ============================================================
+[2026-01-15 23:38:20] EXIT: on-exit hook started
+[2026-01-15 23:38:20] EXIT: Received 0 lines of input
+[2026-01-15 23:39:34] EXIT: ============================================================
+[2026-01-15 23:39:34] EXIT: on-exit hook started
+[2026-01-15 23:39:34] EXIT: Received 0 lines of input
+[2026-01-15 23:40:11] EXIT: ============================================================
+[2026-01-15 23:40:11] EXIT: on-exit hook started
+[2026-01-15 23:40:11] EXIT: Received 0 lines of input
+[2026-01-15 23:41:37] ADD/MOD: ============================================================
+[2026-01-15 23:41:37] ADD/MOD: Hook starting
+[2026-01-15 23:41:37] ADD/MOD: Mode: MODIFY, lines: 2
+[2026-01-15 23:41:37] ADD/MOD: Hook completed
+[2026-01-15 23:41:37] EXIT: ============================================================
+[2026-01-15 23:41:37] EXIT: on-exit hook started
+[2026-01-15 23:41:37] EXIT: Received 1 lines of input
+[2026-01-15 23:41:37] EXIT: Parsed 1 tasks
+[2026-01-15 23:41:37] EXIT: Task 0: uuid=e307655f-5f7e-48a1-9d0a-f90e20e190c9, status=recurring, desc=jrnl work hours and stuff
+[2026-01-15 23:41:37] EXIT: Processing task: uuid=e307655f-5f7e-48a1-9d0a-f90e20e190c9, status=recurring, rtemplate=None, rindex=None
+[2026-01-15 23:41:37] EXIT: on-exit completed with 0 feedback messages
+[2026-01-15 23:41:42] EXIT: ============================================================
+[2026-01-15 23:41:42] EXIT: on-exit hook started
+[2026-01-15 23:41:42] EXIT: Received 0 lines of input
+[2026-01-15 23:45:21] EXIT: ============================================================
+[2026-01-15 23:45:21] EXIT: on-exit hook started
+[2026-01-15 23:45:21] EXIT: Received 0 lines of input
+[2026-01-15 23:46:32] EXIT: ============================================================
+[2026-01-15 23:46:32] EXIT: on-exit hook started
+[2026-01-15 23:46:32] EXIT: Received 0 lines of input

@@ -1,0 +1,99 @@
+Logging to: /home/djp/.task/hooks/recurrence/test/logs/run-20260113-223502-001.txt
+Run ID: 20260113-223502-001
+
+════════════════════════════════════════════════════════════════
+  Taskwarrior Enhanced Recurrence - Test Suite v0.4.0
+════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════
+  Setting up test environment
+════════════════════════════════════════════════════════════════
+[INFO] Test directory: /tmp/taskwarrior-recurrence-test-3152324
+[INFO] Hooks: on-exit v0.5.3, on-add v0.5.3
+[INFO] Run ID: 20260113-223502-001
+[INFO] All test tasks tagged: project:tw.rec.test +test +dummy run:20260113-223502-001
+[INFO] Tests will run in isolated environment
+[INFO] Debug mode ENABLED - hook logs: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+════════════════════════════════════════════════════════════════
+  Running Tests
+════════════════════════════════════════════════════════════════
+[TEST] Basic template creation
+[FAIL] Template not created
+[DEBUG] Additional context:
+  Hook Error: Expected 1 JSON task(s), found 0, in hook script: on-add_recurrence.py
+[TEST] Type abbreviations
+[FAIL] Some abbreviations failed (passed: 0/7)
+[TEST] Chained tasks reject 'until' dates
+[FAIL] Chained + until should be rejected
+[DEBUG] Additional context:
+  Hook Error: Expected 1 JSON task(s), found 0, in hook script: on-add_recurrence.py
+[TEST] Periodic instance #1 matches template due date
+[FAIL] Could not find template
+[TEST] Safety tags present on all tasks
+[FAIL] No tasks found to verify tags
+════════════════════════════════════════════════════════════════
+  Test Summary
+════════════════════════════════════════════════════════════════
+Total tests:  5
+Passed:       0
+Failed:       5
+
+Results saved to: /home/djp/.task/hooks/recurrence/test/logs/run-20260113-223502-001.txt
+
+✗ Some tests failed
+
+════════════════════════════════════════════════════════════════
+  Cleaning up
+════════════════════════════════════════════════════════════════
+[HOOK LOG] Last 50 lines:
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: on-exit completed
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: on-exit completed
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: on-exit completed
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: on-exit completed
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: on-exit completed
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: on-exit completed
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: ============================================================
+  [2026-01-13 22:35:02] EXIT: on-exit hook started
+  [2026-01-13 22:35:02] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3152324/taskrc
+  [2026-01-13 22:35:02] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3152324/data
+  [2026-01-13 22:35:02] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3152324/data/recurrence_debug.log
+  [2026-01-13 22:35:02] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3152324/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3152324/data
+[INFO] Removed /tmp/taskwarrior-recurrence-test-3152324
+[INFO] Environment variables cleared

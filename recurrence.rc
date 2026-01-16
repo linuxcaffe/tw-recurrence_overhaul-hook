@@ -1,0 +1,104 @@
+# ============================================================================
+# Taskwarrior Enhanced Recurrence Configuration
+# Version: 0.4.1
+# Last Updated: 2026-01-12
+# ============================================================================
+# New in 0.4.1:
+#   - Bug fixes for UUID filter syntax
+# New in 0.4.0:
+#   - Enhanced rinstances report (shows all instances by default)
+#   - Removed +RECURRING tag dependency (use rtemplate UDA)
+#   - Removed type.values restriction (hooks handle validation)
+#   - Cleaner report columns
+# ============================================================================
+# Include this file in your main .taskrc with:
+#   include ~/.task/hooks/recurrence/recurrence.rc
+#
+# Or if you keep this in your task directory:
+#   include ~/path/to/task/recurrence.rc
+# ============================================================================
+
+# Disable built-in recurrence (required)
+recurrence=no
+
+# Enhanced Recurrence UDAs
+# ------------------------
+# type: chained or periodic (supports abbreviations: c/ch/chain/chained, p/pe/per/periodic)
+uda.type.type=string
+uda.type.label=Recurrence Type
+
+# r: recurrence period (e.g., 1d, 1w, 1mo, 1y)
+uda.r.type=duration
+uda.r.label=Recurrence Period
+
+# rtemplate: UUID of the template task (for instances)
+uda.rtemplate.type=string
+uda.rtemplate.label=Recur
+uda.rtemplate.indicator=R
+
+# rlast: index of the last spawned instance
+uda.rlast.type=numeric
+uda.rlast.label=Last Instance Index
+
+# rindex: index of this instance
+uda.rindex.type=numeric
+uda.rindex.label=Instance Index
+
+# rwait: internal storage for relative wait dates
+uda.rwait.type=string
+uda.rwait.label=Template Wait
+uda.rwait.indicator=W
+
+# rscheduled: internal storage for relative scheduled dates
+uda.rscheduled.type=string
+uda.rscheduled.label=Template Scheduled
+
+# ranchor: which date field is the anchor (due or scheduled)
+uda.ranchor.type=string
+uda.ranchor.label=Anchor Field
+
+# rend: when to stop creating new instances (separate from 'until')
+uda.rend.type=date
+uda.rend.label=Recurrence End
+
+# Custom Reports
+# --------------
+
+# templates: show all recurrence templates
+report.templates.description=Recurring task templates
+report.templates.filter=status:recurring
+report.templates.columns=id,type,ranchor,r,rlast,priority,description,project,tags,due,rscheduled,rwait,until,rend,urgency
+report.templates.labels=ID,Type,Anc,Time,Last,Pri,Description,Project,Tags,Due,Sched,Wait,Until,rEnd,Urg
+# report.templates.indicator=R
+report.templates.sort=due+,description+
+
+# Enhanced recurring report (replaces default)
+report.recurring.description=Recurring task templates and instances
+report.recurring.filter=status:recurring or ( ( status:pending or status:waiting ) and rtemplate.any: )
+report.recurring.columns=id,rtemplate.indicator,rindex,rlast,type,ranchor,r,priority,description,project,tags,due,rscheduled,scheduled,rwait.indicator,wait,until,rend
+report.recurring.labels=ID,R,I,L,Type,Anc,Time,Pri,Description,Project,Tags,Due,rSched,Sched,rWait,Wait,Until,rEnd
+report.recurring.sort=description+,due+
+
+# instances: show all recurring task instances (or filter by template)
+# Usage: task instances                    # Show all instances
+#        task instances rtemplate:UUID     # Show instances of specific template
+report.instances.description=Recurring task instances
+report.instances.filter=( +PENDING or status:waiting ) rtemplate.any:
+report.instances.columns=id,rtemplate.indicator,rindex,rlast,type,priority,description,project,tags,due,scheduled,wait,until,urgency
+report.instances.labels=ID,R,I,L,Type,Pri,Description,Project,Tags,Due,Sched,Wait,Until,Urg
+report.instances.sort=due+,rindex+
+
+#update other reports
+report.list.columns=id,rtemplate.indicator,start.age,entry.age,depends.indicator,priority,project,tags,recur.indicator,scheduled.countdown,due,until.remaining,description.count,urgency
+report.list.labels=ID,R,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg                                                                                  
+
+
+# Debug Mode
+# ----------
+# Uncomment to enable debug logging to ~/.task/hooks/recurrence/test/logs/recurrence_debug.log
+# You can also set this via environment variable: DEBUG_RECURRENCE=1
+# export.DEBUG_RECURRENCE=1
+
+# ============================================================================
+# End of recurrence configuration
+# ============================================================================
