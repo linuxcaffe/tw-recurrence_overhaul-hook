@@ -1,0 +1,48 @@
+# Disable built-in recurrence
+recurrence=no
+
+# Enhanced recurrence UDAs
+uda.type.type=string
+uda.type.label=Recurrence Type
+uda.type.values=chained,periodic
+
+uda.r.type=duration
+uda.r.label=Recurrence Period
+
+uda.rtemplate.type=string
+uda.rtemplate.label=Template UUID
+
+uda.rlast.type=numeric
+uda.rlast.label=Last Instance Index
+
+uda.rindex.type=numeric
+uda.rindex.label=Instance Index
+
+uda.rwait.type=duration
+uda.rwait.label=Template Wait
+
+uda.rscheduled.type=duration
+uda.rscheduled.label=Template Scheduled
+
+uda.ranchor.type=string
+uda.ranchor.label=Anchor Field
+
+uda.rend.type=date
+uda.rend.label=Recurrence End
+
+# Note: rwait, rscheduled are internal storage
+# Users just use wait:, scheduled:, until: normally
+# rend: is for stopping recurrence creation
+
+# Recurring templates report
+report.rtemplates.description=Recurring task templates
+report.rtemplates.filter=status:recurring
+report.rtemplates.columns=id,description,type,r,ranchor,rlast,rend,tags,project
+report.rtemplates.labels=ID,Description,Type,Recur,Anchor,Last,End,Tags,Project
+report.rtemplates.sort=project+,description+
+
+# Optional: enhanced recurring report
+report.recurring.filter=status:recurring
+report.recurring.columns=id,description,type,r,ranchor,rlast,rend,entry,modified
+report.recurring.labels=ID,Description,Type,Recur,Anchor,Last,End,Entry,Modified
+

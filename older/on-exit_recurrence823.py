@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.3.7
-Date: 2026-01-17
 Spawns new recurrence instances when needed
 
 Installation:
@@ -38,11 +36,6 @@ class RecurrenceSpawner:
     
     def __init__(self):
         self.now = datetime.utcnow()
-    
-    def get_anchor_field_name(self, anchor_field):
-        """Map our short anchor name to taskwarrior's actual field name"""
-        field_map = {'sched': 'scheduled', 'due': 'due'}
-        return field_map.get(anchor_field, anchor_field)
     
     def parse_duration(self, duration_str):
         """Parse duration string to timedelta"""
@@ -104,26 +97,25 @@ class RecurrenceSpawner:
         return dt.strftime('%Y%m%dT%H%M%SZ')
     
     def parse_relative_date(self, rel_str, anchor_date):
-        """Parse relative date like 'due-2d' or 'due-2days' given anchor date"""
+        """Parse relative date like 'due-2d' given anchor date"""
         if not rel_str or not anchor_date:
             return None
         
-        match = re.match(r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|d|days?|w|weeks?|mo|months?|y|years?)', 
+        match = re.match(r'(due|scheduled|wait)\s*([+-])\s*(\d+)(s|d|w|mo|y)', 
                         str(rel_str).lower())
         if match:
             ref_field, sign, num, unit = match.groups()
             num = int(num)
             
-            # Normalize unit to category
-            if unit.startswith('s'):
+            if unit == 's':
                 delta = timedelta(seconds=num)
-            elif unit.startswith('d'):
+            elif unit == 'd':
                 delta = timedelta(days=num)
-            elif unit.startswith('w'):
+            elif unit == 'w':
                 delta = timedelta(weeks=num)
-            elif unit.startswith('mo'):
+            elif unit == 'mo':
                 delta = timedelta(days=num * 30)
-            elif unit.startswith('y'):
+            elif unit == 'y':
                 delta = timedelta(days=num * 365)
             else:
                 return None
@@ -207,8 +199,7 @@ class RecurrenceSpawner:
         
         rend_str = template['rend']
         anchor_field = template.get('ranchor', 'due')
-        actual_field = self.get_anchor_field_name(anchor_field)
-        anchor_date = self.parse_date(template.get(actual_field))
+        anchor_date = self.parse_date(template.get(anchor_field))
         rend_date = self.parse_relative_date(rend_str, anchor_date)
         
         if not rend_date:
@@ -228,30 +219,28 @@ class RecurrenceSpawner:
         if not recur_delta:
             return None
         
-        rtype = template.get('type', 'period')
+        rtype = template.get('type', 'periodic')
         anchor_field = template.get('ranchor', 'due')
         
         # Build command
         cmd = ['task', 'rc.hooks=off', 'add', template['description']]
         
-        # Get template anchor date
-        actual_field = self.get_anchor_field_name(anchor_field)
-        template_anchor = self.parse_date(template.get(actual_field))
-        if not template_anchor:
-            return None
-        
         # Calculate anchor date
-        if index == 1:
-            # Instance 1 always uses template's anchor date
-            anchor_date = template_anchor
-        else:
-            if rtype == 'chain':
-                # Instance 2+: completion_time + period
-                base = completion_time or self.now
-                anchor_date = base + recur_delta
-            else:  # period
-                # Instance 2+: template + (index-1) * period
-                anchor_date = template_anchor + (recur_delta * (index - 1))
+        if rtype == 'chained':
+            base = completion_time or self.now
+            anchor_date = base + recur_delta
+        else:  # periodic
+            template_anchor = self.parse_date(template.get(anchor_field))
+            if not template_anchor:
+                return None
+            
+            # Find next occurrence after now
+            idx = index
+            anchor_date = template_anchor + (recur_delta * idx)
+            while anchor_date < self.now:
+                idx += 1
+                anchor_date = template_anchor + (recur_delta * idx)
+            index = idx
         
         # Check rend date
         if self.check_rend(template, anchor_date):
@@ -270,11 +259,11 @@ class RecurrenceSpawner:
             if wait_date:
                 cmd.append(f'wait:{self.format_date(wait_date)}')
         
-        # Process sched
-        if 'rscheduled' in template and anchor_field != 'sched':
+        # Process scheduled
+        if 'rscheduled' in template and anchor_field != 'scheduled':
             sched_date = self.parse_relative_date(template['rscheduled'], anchor_date)
             if sched_date:
-                cmd.append(f'sched:{self.format_date(sched_date)}')
+                cmd.append(f'scheduled:{self.format_date(sched_date)}')
         
         # Copy attributes
         if 'project' in template:
@@ -287,7 +276,7 @@ class RecurrenceSpawner:
         # Metadata
         cmd.extend([
             f'rtemplate:{template["uuid"]}',
-            f'rindex:{int(index)}'
+            f'rindex:{index}'
         ])
         
         # Execute
@@ -296,7 +285,7 @@ class RecurrenceSpawner:
             
             # Update template's rlast
             subprocess.run(
-                ['task', 'rc.hooks=off', template['uuid'], 'modify', f'rlast:{int(index)}'],
+                ['task', 'rc.hooks=off', template['uuid'], 'modify', f'rlast:{index}'],
                 capture_output=True,
                 check=True
             )
@@ -304,7 +293,7 @@ class RecurrenceSpawner:
             if DEBUG:
                 debug_log(f"Instance {index} created successfully")
             
-            return f"Created instance {index} of '{template['description']}'"
+            return f"Created instance {index}"
         except subprocess.CalledProcessError as e:
             if DEBUG:
                 debug_log(f"Error creating instance: {e}")
@@ -319,51 +308,12 @@ class RecurrenceSpawner:
                 debug_log(f"Processing task: uuid={task.get('uuid')}, status={task.get('status')}, "
                          f"rtemplate={task.get('rtemplate')}, rindex={task.get('rindex')}")
             
-            # Template being deleted or completed?
-            if ((task.get('status') in ['deleted', 'completed']) and 
-                'r' in task and 
-                'rtemplate' not in task):
-                
-                if DEBUG:
-                    debug_log(f"Template {task.get('status')}: {task.get('uuid')}")
-                
-                # Find pending instances
-                try:
-                    result = subprocess.run(
-                        ['task', 'rc.hooks=off', f'rtemplate:{task.get("uuid")}', 'status:pending', 'export'],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    instances = json.loads(result.stdout.strip()) if result.stdout.strip() else []
-                    instance_ids = [str(inst.get('id', '')) for inst in instances if inst.get('id')]
-                except Exception as e:
-                    if DEBUG:
-                        debug_log(f"Could not fetch instances: {e}")
-                    instance_ids = []
-                
-                if task.get('status') == 'deleted':
-                    feedback.append(f"Deleted template '{task.get('description')}' - all future instances stopped.")
-                    if instance_ids:
-                        if len(instance_ids) == 1:
-                            feedback.append(f"To delete the pending instance: task {instance_ids[0]} delete")
-                        else:
-                            feedback.append(f"To delete pending instances: task {' '.join(instance_ids)} delete")
-                else:  # completed
-                    feedback.append(f"Completed template '{task.get('description')}' - all future instances stopped.")
-                    if instance_ids:
-                        if len(instance_ids) == 1:
-                            feedback.append(f"To complete the pending instance: task {instance_ids[0]} done")
-                        else:
-                            feedback.append(f"To complete pending instances: task {' '.join(instance_ids)} done")
-                continue
-            
-            # Completed or deleted instance?
+            # Completed/deleted instance?
             if (task.get('status') in ['completed', 'deleted'] and 
                 'rtemplate' in task and 'rindex' in task):
                 
                 if DEBUG:
-                    debug_log(f"Found {task.get('status')} instance: rindex={task['rindex']}")
+                    debug_log(f"Found completed/deleted instance: rindex={task['rindex']}")
                 
                 template = self.get_template(task['rtemplate'])
                 if not template:
@@ -371,14 +321,8 @@ class RecurrenceSpawner:
                         debug_log(f"Could not fetch template: {task['rtemplate']}")
                     continue
                 
-                # Check if template has been deleted or completed
-                if template.get('status') in ['deleted', 'completed']:
-                    if DEBUG:
-                        debug_log(f"Template is {template.get('status')}, not spawning")
-                    continue
-                
                 if DEBUG:
-                    debug_log(f"Template found: {template.get('description')}, rlast={template.get('rlast')}, type={template.get('type')}")
+                    debug_log(f"Template found: {template.get('description')}, rlast={template.get('rlast')}")
                 
                 current_idx = int(task['rindex'])
                 last_idx = int(template.get('rlast', '0'))
@@ -387,22 +331,15 @@ class RecurrenceSpawner:
                     debug_log(f"Checking: current_idx={current_idx}, last_idx={last_idx}")
                 
                 # Only spawn if this is the latest instance
-                # Both periodic and chained spawn on completion/deletion
                 if current_idx >= last_idx:
                     if DEBUG:
-                        debug_log(f"Will spawn next instance")
+                        debug_log(f"Will spawn next instance (current >= last)")
                     
-                    # Get completion/deletion time for chained type
                     completion = None
                     if task.get('status') == 'completed' and 'end' in task:
                         completion = self.parse_date(task['end'])
                         if DEBUG:
                             debug_log(f"Completion time: {completion}")
-                    elif task.get('status') == 'deleted':
-                        # For deleted tasks, use deletion time (now)
-                        completion = self.now
-                        if DEBUG:
-                            debug_log(f"Deletion time: {completion}")
                     
                     msg = self.create_instance(template, current_idx + 1, completion)
                     if msg:
@@ -412,13 +349,6 @@ class RecurrenceSpawner:
                 else:
                     if DEBUG:
                         debug_log(f"Skipping spawn: not the latest instance")
-            
-            # Deleted instance? (just acknowledge, don't spawn)
-            elif (task.get('status') == 'deleted' and 
-                  'rtemplate' in task and 'rindex' in task):
-                
-                if DEBUG:
-                    debug_log(f"Instance deleted (not spawning): rindex={task['rindex']}")
             
             # New template? (handle both string and int rlast)
             elif (task.get('status') == 'recurring' and 

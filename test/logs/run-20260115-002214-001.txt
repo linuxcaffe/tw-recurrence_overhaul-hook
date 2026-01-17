@@ -1,0 +1,330 @@
+Logging to: /home/djp/.task/hooks/recurrence/test/logs/run-20260115-002214-001.txt
+Run ID: 20260115-002214-001
+
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Taskwarrior Enhanced Recurrence - Test Suite v0.5.0
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Setting up test environment
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+[INFO] Test directory: /tmp/taskwarrior-recurrence-test-3366416
+[INFO] Hooks: on-exit v0.5.7, on-add v0.5.7
+[INFO] Run ID: 20260115-002214-001
+[INFO] All test tasks tagged: project:tw.rec.test +test +dummy run:20260115-002214-001
+[INFO] Tests will run in isolated environment
+[INFO] Debug mode ENABLED - hook logs: /tmp/taskwarrior-recurrence-test-3366416/data/recurrence_debug.log
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Running Tests
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+[TEST] Basic template creation
+[PASS] Template created
+[PASS] First instance created (count: 1)
+[PASS] Safety tag +test present
+[TEST] Type abbreviations
+[PASS] All abbreviations accepted (7/7)
+[TEST] Chained tasks reject 'until' dates
+[FAIL] Chained + until should be rejected
+[DEBUG] Additional context:
+  Created recurrence template. First instance will be generated on exit.
+[TEST] Periodic instance #1 matches template due date
+[DEBUG] Templates JSON: [
+  {
+    "id": 1,
+    "description": "[run-20260115-002214-001] Basic test",
+    "due": "20260116T050000Z",
+    "entry": "20260115T052214Z",
+    "modified": "20260115T052214Z",
+    "project": "tw.rec.test",
+    "r": "P7D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "periodic",
+    "uuid": "f27f15c1-2619-49f9-a98d-b1b5897c8528",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.2499
+  },
+  {
+    "id": 3,
+    "description": "[run-20260115-002214-001] Test c",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052214Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "chained",
+    "uuid": "76672c88-2b4d-499e-82d8-f44ad80b7437",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 5,
+    "description": "[run-20260115-002214-001] Test ch",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "chained",
+    "uuid": "11cd9b6a-44a3-480d-8e5a-819893919b45",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 7,
+    "description": "[run-20260115-002214-001] Test chai",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "chained",
+    "uuid": "db484dec-be62-49cc-a396-30ddf796ec8c",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 9,
+    "description": "[run-20260115-002214-001] Test chained",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "chained",
+    "uuid": "2dc2938d-9092-4fd1-b593-43835c68b688",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 11,
+    "description": "[run-20260115-002214-001] Test p",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "periodic",
+    "uuid": "2af4fd1d-4733-4bcb-b487-c11fbfc1d52b",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 13,
+    "description": "[run-20260115-002214-001] Test per",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "periodic",
+    "uuid": "2358fa67-1385-41ce-a773-f85979c2c3c5",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 15,
+    "description": "[run-20260115-002214-001] Test periodic",
+    "due": "20260115T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P1D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "periodic",
+    "uuid": "184ad4d8-2234-494d-9cce-88acb96541b3",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.7071
+  },
+  {
+    "id": 17,
+    "description": "[run-20260115-002214-001] Bad chained",
+    "due": "20260116T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052215Z",
+    "project": "tw.rec.test",
+    "r": "P7D",
+    "ranchor": "due",
+    "rlast": 1,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "chained",
+    "until": "20260201T045959Z",
+    "uuid": "7e3aacae-13a6-4ffb-85aa-9c4c3c6ab966",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 10.2499
+  },
+  {
+    "id": 19,
+    "description": "[run-20260115-002214-001] Due test",
+    "due": "20250215T050000Z",
+    "entry": "20260115T052215Z",
+    "modified": "20260115T052216Z",
+    "project": "tw.rec.test",
+    "r": "P30D",
+    "ranchor": "due",
+    "rlast": 12,
+    "rtype": "periodic",
+    "status": "recurring",
+    "type": "periodic",
+    "uuid": "61c6f53f-f4d0-4d3e-af45-4c0128d51a1e",
+    "tags": [
+      "dummy",
+      "test"
+    ],
+    "urgency": 13.9
+  }
+]
+[FAIL] Instance due () != template (20250215T050000Z)
+[TEST] Safety tags present on all tasks
+[PASS] All 20 tasks have safety tags
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Multi-Iteration Tests
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+[TEST] Chained recurrence - 3 iterations
+[DEBUG] Template creation output: Created recurrence template. First instance will be generated on exit.
+[DEBUG] Searching for recurring template 'Chained test'
+[DEBUG] Template UUID: c1996f79-a62e-4a1e-88bb-bcfc90493cb1
+[PASS] Instance #1 created
+[FAIL] Instance #2 not spawned after completing #1 (count: 0)
+[TEST] Periodic recurrence - 3 iterations
+[DEBUG] Template UUID: 074af725-c387-4721-8087-35d9c73aeec2
+[PASS] Instance #1 created
+[FAIL] Instance #2 not spawned after completing #1 (count: 0)
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Message Tests
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+[TEST] Delete instance shows warning message
+[FAIL] Delete instance warning message not found
+[DEBUG] Additional context:
+  Created recurrence template. First instance will be generated on exit.
+[TEST] Complete template shows warning with pending instance IDs
+[FAIL] Complete template warning message not found
+[DEBUG] Additional context:
+  Task 28 '[run-20260115-002214-001] Complete template test' is neither pending nor waiting.
+[TEST] Delete template shows warning with pending instance IDs
+[FAIL] Delete template warning message not found
+[DEBUG] Additional context:
+  Created recurrence template. First instance will be generated on exit.
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Test Summary
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+Total tests:  10
+Passed:       7
+Failed:       7
+
+Results saved to: /home/djp/.task/hooks/recurrence/test/logs/run-20260115-002214-001.txt
+
+âœ— Some tests failed
+
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+  Cleaning up
+â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�â•�
+[HOOK LOG] Last 50 lines:
+  [2026-01-15 00:22:30] EXIT: on-exit stdin received 1 lines
+  [2026-01-15 00:22:30] EXIT: First line sample: {"description":"[run-20260115-002214-001] Delete template test","due":"20260115T052232Z","entry":"20
+  [2026-01-15 00:22:30] EXIT: Parsed 1 tasks
+  [2026-01-15 00:22:30] EXIT:   Task: [run-20260115-002214-001] Delete template test status=recurring
+  [2026-01-15 00:22:30] EXIT: Found new template: [run-20260115-002214-001] Delete template test
+  [2026-01-15 00:22:30] EXIT: Creating instance 1 from 0c060afd-62d5-486a-a5d9-7e798e3eda3d
+  [2026-01-15 00:22:30] EXIT: Instance command: task rc:/tmp/taskwarrior-recurrence-test-3366416/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3366416/data rc.hooks=off add [run-20260115-002214-001] Delete template test due:20260115T052237Z project:tw.rec.test +dummy +test rtemplate:0c060afd-62d5-486a-a5d9-7e798e3eda3d rindex:1
+  [2026-01-15 00:22:30] EXIT: Instance 1 created successfully
+  [2026-01-15 00:22:30] EXIT: on-exit completed
+  [2026-01-15 00:22:32] EXIT: ============================================================
+  [2026-01-15 00:22:32] EXIT: on-exit hook started
+  [2026-01-15 00:22:32] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3366416/taskrc
+  [2026-01-15 00:22:32] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3366416/data/recurrence_debug.log
+  [2026-01-15 00:22:32] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3366416/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] EXIT: on-exit stdin received 0 lines
+  [2026-01-15 00:22:32] EXIT: No input received, exiting normally
+  [2026-01-15 00:22:32] EXIT: ============================================================
+  [2026-01-15 00:22:32] EXIT: on-exit hook started
+  [2026-01-15 00:22:32] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3366416/taskrc
+  [2026-01-15 00:22:32] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3366416/data/recurrence_debug.log
+  [2026-01-15 00:22:32] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3366416/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] EXIT: on-exit stdin received 0 lines
+  [2026-01-15 00:22:32] EXIT: No input received, exiting normally
+  [2026-01-15 00:22:32] ADD/MOD: ============================================================
+  [2026-01-15 00:22:32] ADD/MOD: Hook starting
+  [2026-01-15 00:22:32] ADD/MOD: TASKRC: /tmp/taskwarrior-recurrence-test-3366416/taskrc
+  [2026-01-15 00:22:32] ADD/MOD: TASKDATA: /tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] ADD/MOD: LOG_FILE: /tmp/taskwarrior-recurrence-test-3366416/data/recurrence_debug.log
+  [2026-01-15 00:22:32] ADD/MOD: Mode: MODIFY, lines: 2
+  [2026-01-15 00:22:32] ADD/MOD: Creating template: [run-20260115-002214-001] Delete template test
+  [2026-01-15 00:22:32] ADD/MOD:   Type: periodic, r=PT5S
+  [2026-01-15 00:22:32] ADD/MOD:   Template created: status=recurring, rlast=0
+  [2026-01-15 00:22:32] ADD/MOD: Hook completed
+  [2026-01-15 00:22:32] EXIT: ============================================================
+  [2026-01-15 00:22:32] EXIT: on-exit hook started
+  [2026-01-15 00:22:32] EXIT: TASKRC: /tmp/taskwarrior-recurrence-test-3366416/taskrc
+  [2026-01-15 00:22:32] EXIT: TASKDATA: /tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] EXIT: LOG_FILE: /tmp/taskwarrior-recurrence-test-3366416/data/recurrence_debug.log
+  [2026-01-15 00:22:32] EXIT: Task base command: task rc:/tmp/taskwarrior-recurrence-test-3366416/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3366416/data
+  [2026-01-15 00:22:32] EXIT: on-exit stdin received 1 lines
+  [2026-01-15 00:22:32] EXIT: First line sample: {"description":"[run-20260115-002214-001] Delete template test","due":"20260115T052232Z","end":"2026
+  [2026-01-15 00:22:32] EXIT: Parsed 1 tasks
+  [2026-01-15 00:22:32] EXIT:   Task: [run-20260115-002214-001] Delete template test status=recurring
+  [2026-01-15 00:22:32] EXIT: Found new template: [run-20260115-002214-001] Delete template test
+  [2026-01-15 00:22:32] EXIT: Creating instance 1 from 0c060afd-62d5-486a-a5d9-7e798e3eda3d
+  [2026-01-15 00:22:32] EXIT: Instance command: task rc:/tmp/taskwarrior-recurrence-test-3366416/taskrc rc.data.location=/tmp/taskwarrior-recurrence-test-3366416/data rc.hooks=off add [run-20260115-002214-001] Delete template test due:20260115T052237Z project:tw.rec.test +dummy +test rtemplate:0c060afd-62d5-486a-a5d9-7e798e3eda3d rindex:1
+  [2026-01-15 00:22:32] EXIT: Instance 1 created successfully
+  [2026-01-15 00:22:32] EXIT: on-exit completed
+[INFO] Removed /tmp/taskwarrior-recurrence-test-3366416
+[INFO] Environment variables cleared
