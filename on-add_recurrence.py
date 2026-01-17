@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 0.3.4
+Version: 0.3.5
 Date: 2026-01-17
 Handles both adding new recurring tasks and modifying existing ones
 
@@ -129,7 +129,7 @@ class RecurrenceHandler:
         if not date_str:
             return None, None
         
-        match = re.match(r'(due|scheduled|wait)\s*([+-])\s*(\d+)(s|d|days?|w|weeks?|mo|months?|y|years?)', 
+        match = re.match(r'(due|sched|wait)\s*([+-])\s*(\d+)(s|d|days?|w|weeks?|mo|months?|y|years?)', 
                         str(date_str).lower())
         if match:
             ref_field, sign, num, unit = match.groups()
@@ -165,11 +165,11 @@ class RecurrenceHandler:
         return 'rtemplate' in task and 'rindex' in task
     
     def get_anchor_date(self, task):
-        """Get the anchor date (due or scheduled) for recurrence"""
+        """Get the anchor date (due or sched) for recurrence"""
         if 'due' in task:
             return 'due', self.parse_date(task['due'])
         elif 'scheduled' in task:
-            return 'scheduled', self.parse_date(task['scheduled'])
+            return 'sched', self.parse_date(task['scheduled'])
         return None, None
     
     def create_template(self, task):
@@ -226,8 +226,8 @@ class RecurrenceHandler:
                         task['rwait'] = f'{anchor_field}{delta_sec:+d}s'
                     del task['wait']
         
-        # Process scheduled
-        if 'scheduled' in task and anchor_field != 'scheduled':
+        # Process sched
+        if 'scheduled' in task and anchor_field != 'sched':
             sched_str = task['scheduled']
             ref_field, offset = self.parse_relative_date(sched_str)
             

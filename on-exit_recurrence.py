@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.3.4
+Version: 0.3.5
 Date: 2026-01-17
 Spawns new recurrence instances when needed
 
@@ -103,7 +103,7 @@ class RecurrenceSpawner:
         if not rel_str or not anchor_date:
             return None
         
-        match = re.match(r'(due|scheduled|wait)\s*([+-])\s*(\d+)(s|seconds?|d|days?|w|weeks?|mo|months?|y|years?)', 
+        match = re.match(r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|d|days?|w|weeks?|mo|months?|y|years?)', 
                         str(rel_str).lower())
         if match:
             ref_field, sign, num, unit = match.groups()
@@ -258,11 +258,11 @@ class RecurrenceSpawner:
             if wait_date:
                 cmd.append(f'wait:{self.format_date(wait_date)}')
         
-        # Process scheduled
-        if 'rscheduled' in template and anchor_field != 'scheduled':
+        # Process sched
+        if 'rscheduled' in template and anchor_field != 'sched':
             sched_date = self.parse_relative_date(template['rscheduled'], anchor_date)
             if sched_date:
-                cmd.append(f'scheduled:{self.format_date(sched_date)}')
+                cmd.append(f'sched:{self.format_date(sched_date)}')
         
         # Copy attributes
         if 'project' in template:
