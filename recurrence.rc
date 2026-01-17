@@ -67,16 +67,15 @@ uda.rend.label=Recurrence End
 # templates: show all recurrence templates
 report.templates.description=Recurring task templates
 report.templates.filter=status:recurring
-report.templates.columns=id,type,ranchor,r,rlast,priority,description,project,tags,due,rscheduled,rwait,until,rend,urgency
-report.templates.labels=ID,Type,Anc,Time,Last,Pri,Description,Project,Tags,Due,Sched,Wait,Until,rEnd,Urg
-# report.templates.indicator=R
+report.templates.columns=id,rlast,type,ranchor,r,priority,description,project,tags,due,rscheduled,rwait,until,rend,urgency
+report.templates.labels=ID,L,Type,Anc,Time,Pri,Description,Project,Tags,Due,Sched,Wait,Until,rEnd,Urg
 report.templates.sort=due+,description+
 
 # Enhanced recurring report (replaces default)
 report.recurring.description=Recurring task templates and instances
 report.recurring.filter=status:recurring or ( ( status:pending or status:waiting ) and rtemplate.any: )
-report.recurring.columns=id,rtemplate.indicator,rindex,rlast,type,ranchor,r,priority,description,project,tags,due,rscheduled,scheduled,rwait.indicator,wait,until,rend
-report.recurring.labels=ID,R,I,L,Type,Anc,Time,Pri,Description,Project,Tags,Due,rSched,Sched,rWait,Wait,Until,rEnd
+report.recurring.columns=id,rtemplate.indicator,rindex,rlast,entry.age,type,ranchor,r,priority,description,project,tags,due,rscheduled,scheduled,rwait.indicator,wait,until,rend
+report.recurring.labels=ID,R,I,L,Age,Type,Anc,Time,Pri,Description,Project,Tags,Due,rSched,Sched,rWait,Wait,Until,rEnd
 report.recurring.sort=description+,due+
 
 # instances: show all recurring task instances (or filter by template)
