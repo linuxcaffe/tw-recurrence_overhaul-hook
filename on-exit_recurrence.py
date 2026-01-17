@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.3.5
+Version: 0.3.6
 Date: 2026-01-17
 Spawns new recurrence instances when needed
 
@@ -38,6 +38,11 @@ class RecurrenceSpawner:
     
     def __init__(self):
         self.now = datetime.utcnow()
+    
+    def get_anchor_field_name(self, anchor_field):
+        """Map our short anchor name to taskwarrior's actual field name"""
+        field_map = {'sched': 'scheduled', 'due': 'due'}
+        return field_map.get(anchor_field, anchor_field)
     
     def parse_duration(self, duration_str):
         """Parse duration string to timedelta"""
@@ -202,7 +207,8 @@ class RecurrenceSpawner:
         
         rend_str = template['rend']
         anchor_field = template.get('ranchor', 'due')
-        anchor_date = self.parse_date(template.get(anchor_field))
+        actual_field = self.get_anchor_field_name(anchor_field)
+        anchor_date = self.parse_date(template.get(actual_field))
         rend_date = self.parse_relative_date(rend_str, anchor_date)
         
         if not rend_date:
@@ -233,7 +239,8 @@ class RecurrenceSpawner:
             base = completion_time or self.now
             anchor_date = base + recur_delta
         else:  # periodic
-            template_anchor = self.parse_date(template.get(anchor_field))
+            actual_field = self.get_anchor_field_name(anchor_field)
+            template_anchor = self.parse_date(template.get(actual_field))
             if not template_anchor:
                 return None
             
@@ -275,7 +282,7 @@ class RecurrenceSpawner:
         # Metadata
         cmd.extend([
             f'rtemplate:{template["uuid"]}',
-            f'rindex:{index}'
+            f'rindex:{int(index)}'
         ])
         
         # Execute
@@ -284,7 +291,7 @@ class RecurrenceSpawner:
             
             # Update template's rlast
             subprocess.run(
-                ['task', 'rc.hooks=off', template['uuid'], 'modify', f'rlast:{index}'],
+                ['task', 'rc.hooks=off', template['uuid'], 'modify', f'rlast:{int(index)}'],
                 capture_output=True,
                 check=True
             )

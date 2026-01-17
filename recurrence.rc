@@ -37,11 +37,11 @@ uda.rtemplate.label=Recur
 uda.rtemplate.indicator=R
 
 # rlast: index of the last spawned instance
-uda.rlast.type=numeric
+uda.rlast.type=string
 uda.rlast.label=Last Instance Index
 
 # rindex: index of this instance
-uda.rindex.type=numeric
+uda.rindex.type=string
 uda.rindex.label=Instance Index
 
 # rwait: internal storage for relative wait dates
