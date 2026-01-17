@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
+Version: 0.3.4
+Date: 2026-01-17
 Spawns new recurrence instances when needed
 
 Installation:
@@ -220,14 +222,14 @@ class RecurrenceSpawner:
         if not recur_delta:
             return None
         
-        rtype = template.get('type', 'periodic')
+        rtype = template.get('type', 'period')
         anchor_field = template.get('ranchor', 'due')
         
         # Build command
         cmd = ['task', 'rc.hooks=off', 'add', template['description']]
         
         # Calculate anchor date
-        if rtype == 'chained':
+        if rtype == 'chain':
             base = completion_time or self.now
             anchor_date = base + recur_delta
         else:  # periodic

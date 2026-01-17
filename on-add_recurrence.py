@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
+Version: 0.3.4
+Date: 2026-01-17
 Handles both adding new recurring tasks and modifying existing ones
 
 Installation:
@@ -47,18 +49,18 @@ class RecurrenceHandler:
     def normalize_type(self, type_str):
         """Normalize type abbreviations to full names"""
         if not type_str:
-            return 'periodic'
+            return 'period'
         
         type_lower = str(type_str).lower()
         
         # Handle abbreviations
-        if type_lower in ['c', 'ch', 'cha', 'chai', 'chain', 'chained']:
-            return 'chained'
-        elif type_lower in ['p', 'pe', 'per', 'peri', 'perio', 'period', 'periodic']:
-            return 'periodic'
+        if type_lower in ['c', 'ch', 'cha', 'chai', 'chain', 'chain']:
+            return 'chain'
+        elif type_lower in ['p', 'pe', 'per', 'peri', 'perio', 'period', 'period']:
+            return 'period'
         
         # Default to periodic for unknown
-        return 'periodic'
+        return 'period'
     
     def parse_duration(self, duration_str):
         """Parse duration string (7d, 1w, 1mo, etc.) to timedelta"""
