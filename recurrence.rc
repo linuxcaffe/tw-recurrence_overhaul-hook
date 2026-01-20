@@ -70,6 +70,7 @@ report.templates.filter=status:recurring
 report.templates.columns=id,rlast,type,ranchor,r,priority,description,project,tags,due,rscheduled,rwait,until,rend,urgency
 report.templates.labels=ID,L,Type,Anc,Time,Pri,Description,Project,Tags,Due,Sched,Wait,Until,rEnd,Urg
 report.templates.sort=due+,description+
+report.tamplates.context=0
 
 # Enhanced recurring report (replaces default)
 report.recurring.description=Recurring task templates and instances
@@ -77,6 +78,7 @@ report.recurring.filter=status:recurring or ( ( status:pending or status:waiting
 report.recurring.columns=id,rtemplate.indicator,rindex,rlast,entry.age,type,ranchor,r,priority,description,project,tags,due,rscheduled,scheduled,rwait.indicator,wait,until,rend
 report.recurring.labels=ID,R,I,L,Age,Type,Anc,Time,Pri,Description,Project,Tags,Due,rSched,Sched,rWait,Wait,Until,rEnd
 report.recurring.sort=description+,due+
+report.recurring.context=0
 
 # instances: show all recurring task instances (or filter by template)
 # Usage: task instances                    # Show all instances
@@ -86,6 +88,7 @@ report.instances.filter=( +PENDING or status:waiting ) rtemplate.any:
 report.instances.columns=id,rtemplate.indicator,rindex,rlast,type,priority,description,project,tags,due,scheduled,wait,until,urgency
 report.instances.labels=ID,R,I,L,Type,Pri,Description,Project,Tags,Due,Sched,Wait,Until,Urg
 report.instances.sort=due+,rindex+
+report.instances.context=0
 
 #update other reports
 report.list.columns=id,rtemplate.indicator,start.age,entry.age,depends.indicator,priority,project,tags,recur.indicator,scheduled.countdown,due,until.remaining,description.count,urgency

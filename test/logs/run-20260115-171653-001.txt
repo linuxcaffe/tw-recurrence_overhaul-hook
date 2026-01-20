@@ -1,0 +1,186 @@
+Logging to: /home/djp/.task/hooks/recurrence/test/logs/run-20260115-171653-001.txt
+Run ID: 20260115-171653-001
+
+
+════════════════════════════════════════════════════════════════
+  Taskwarrior Enhanced Recurrence - Test Suite v2.0
+════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════
+  Test Environment Setup
+════════════════════════════════════════════════════════════════
+[INFO] Using hooks from: /home/djp/.task/hooks/recurrence (real: /home/djp/.task/hooks/recurrence)
+[INFO] Test directory: /tmp/taskwarrior-recurrence-test-3480776
+[INFO] Debug mode: true
+[INFO] Debug logging enabled in hooks
+
+──────────────────────────────────────────────────────────────
+  Setup & Configuration
+──────────────────────────────────────────────────────────────
+[TEST] UDAs are properly configured
+[DEBUG] Found UDA: uda.type
+[DEBUG] Found UDA: uda.rperiod
+[DEBUG] Found UDA: uda.rtemplate
+[DEBUG] Found UDA: uda.rindex
+[DEBUG] Found UDA: uda.rlimit
+[DEBUG] Found UDA: uda.rend
+[PASS] All required UDAs configured
+[TEST] Hook files are executable
+[PASS] Hook files are executable
+
+──────────────────────────────────────────────────────────────
+  Template Creation
+──────────────────────────────────────────────────────────────
+[TEST] Basic template creation with recurrence
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Template not created (count: 0)
+[TEST] Template has correct UDA values
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Type incorrect: 'periodic
+c' (expected 'chained')
+[TEST] Type abbreviations normalized correctly
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Abbreviation 'c' not normalized to 'chained' (got: '')
+[TEST] Default type is 'periodic' when not specified
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Default type incorrect: '' (expected 'periodic')
+
+──────────────────────────────────────────────────────────────
+  Chained Recurrence (Completion-Based)
+──────────────────────────────────────────────────────────────
+[TEST] Chained: First instance spawned on template creation
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Template UUID: 
+[DEBUG] All instances found:
+[PASS] Instance(s) created (count: 5)
+[INFO] Note: Expected 1 instance but got 5 (possible duplicate spawn bug)
+[TEST] Chained: Instance has rindex:1
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Found rindex: 'null'
+[FAIL] Instance missing rindex field
+[TEST] Chained: Completing instance spawns next
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Initial pending count: 7
+[FAIL] Could not find rindex:1 instance
+[TEST] Chained: Next due date relative to completion time
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 2s for hooks to execute
+[FAIL] Could not parse due date: 
+[TEST] Chained: Multiple completions create chain
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Initial pending count: 9
+[PASS] Chain continues through multiple completions (reached rindex:12)
+
+──────────────────────────────────────────────────────────────
+  Periodic Recurrence (Time-Based)
+──────────────────────────────────────────────────────────────
+[TEST] Periodic: First instance spawned on template creation
+[DEBUG] Waiting 1s for hooks to execute
+[PASS] Instance(s) created (count: 10)
+[INFO] Note: Expected 1 instance but got 10 (possible duplicate spawn bug)
+[TEST] Periodic: New instance spawns when period elapses
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 4s for hooks to execute
+[PASS] Additional instance(s) spawned (count: 11)
+[TEST] Periodic: Due dates anchored to template, not completion
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 5s for hooks to execute
+[FAIL] Second instance missing due date
+[TEST] Periodic: Schedule maintained regardless of completion time
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Could not find rindex:1 instance
+
+──────────────────────────────────────────────────────────────
+  Date Field Propagation
+──────────────────────────────────────────────────────────────
+[TEST] Wait date propagates to instances
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Wait date not propagated
+[TEST] Scheduled date propagates to instances
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Scheduled date not propagated
+[TEST] Relative wait dates calculated (wait:due-2s)
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Relative wait date not calculated
+[TEST] Relative scheduled dates calculated (scheduled:due-1s)
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Relative scheduled date not calculated
+
+──────────────────────────────────────────────────────────────
+  Boundary Conditions
+──────────────────────────────────────────────────────────────
+[TEST] rlimit controls instance pile-up
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 10s for hooks to execute
+[FAIL] Too many instances spawned (count: 18, limit: 3)
+[TEST] rend date stops new instance creation
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Initial count after template creation: 19
+[DEBUG] Waiting 5s for hooks to execute
+[FAIL] Instances spawned past rend (initial: 19, final: 19)
+[DEBUG] Template rend value:
+[TEST] until date expires pending instances (periodic only)
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 4s for hooks to execute
+[FAIL] Instance not expired (count: 20)
+
+──────────────────────────────────────────────────────────────
+  Warning Messages
+──────────────────────────────────────────────────────────────
+[TEST] Deleting instance shows warning message
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] No warning message found
+[DEBUG] Additional context:
+  No expression to evaluate.
+[TEST] Completing template shows warning
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] No template warning found
+[DEBUG] Additional context:
+  No expression to evaluate.
+[TEST] Deleting template shows warning
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] No template warning found
+[DEBUG] Additional context:
+  No expression to evaluate.
+
+──────────────────────────────────────────────────────────────
+  Edge Cases & Robustness
+──────────────────────────────────────────────────────────────
+[TEST] Template without due date handled gracefully
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Unclear handling of missing due date
+[TEST] Modifying template period updates future instances
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Period not updated (got: '')
+[TEST] Modifying template type changes behavior
+[DEBUG] Waiting 1s for hooks to execute
+[DEBUG] Waiting 1s for hooks to execute
+[FAIL] Type not changed (got: '')
+[TEST] Chained templates reject 'until' attribute
+[FAIL] Chained + until should be rejected
+
+──────────────────────────────────────────────────────────────
+  Safety & Tags
+──────────────────────────────────────────────────────────────
+[TEST] Safety tags present on all test tasks
+[DEBUG] Waiting 1s for hooks to execute
+[PASS] Safety tags present on template
+[PASS] Safety tags propagated to instance
+[INFO] Cleaning up test environment
+[DEBUG] Removed test directory: /tmp/taskwarrior-recurrence-test-3480776
+
+════════════════════════════════════════════════════════════════
+  Test Summary
+════════════════════════════════════════════════════════════════
+Total tests:  30
+Passed:       8
+Failed:       23
+Pass rate:    26%
+
+Results saved to: /home/djp/.task/hooks/recurrence/test/logs/run-20260115-171653-001.txt
+
+✗ Some tests failed
+
+[INFO] Cleaning up test environment
