@@ -17,8 +17,7 @@ This hook system adds:
 - ✅ **Periodic recurrence** - "Pay rent on 1st of every month"
 - ✅ **Better date handling** - Relative dates that actually work
 - ✅ **Clean indexing** - No mask growth issues
-- ✅ **Instance pile-up control** - Maintain multiple pending instances
-- ✅ **Type abbreviations** - Use `ty:c` or `ty:p` for brevity
+- ✅ **Type abbreviations** - `type:chain` can be abbreviated to `ty:c` - `ty:p` is the default
 
 Based on the [Taskwarrior Recurrence RFC](https://djmitche.github.io/taskwarrior/rfcs/recurrence.html).
 
@@ -41,7 +40,7 @@ cp recurrence.rc ~/.task/
 
 Add to your `~/.taskrc`:
 ```ini
-include ~/.task/recurrence.rc
+include ~/.task/hooks/recurrence/recurrence.rc
 ```
 
 Verify installation:
