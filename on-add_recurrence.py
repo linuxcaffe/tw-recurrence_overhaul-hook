@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 0.4.2
+Version: 0.4.1
 Date: 2026-02-01
 Handles both adding new recurring tasks and modifying existing ones
 
@@ -15,7 +15,7 @@ Installation:
     1. Save to ~/.task/hooks/on-add_recurrence.py
     2. chmod +x ~/.task/hooks/on-add_recurrence.py
     3. cd ~/.task/hooks && ln -s on-add_recurrence.py on-modify_recurrence.py
-    4. Ensure recurrence_common_hook.py is in ~/.task/hooks/
+    4. Ensure recurrence_common_hook-x.py is in ~/.task/hooks/ (not executable)
 """
 
 import sys
@@ -24,6 +24,11 @@ import subprocess
 from datetime import datetime, timedelta
 import os
 
+# Add hooks directory to Python path for imports
+HOOKS_DIR = os.path.expanduser("~/.task/hooks")
+if HOOKS_DIR not in sys.path:
+    sys.path.insert(0, HOOKS_DIR)
+
 # Import common utilities
 try:
     from recurrence_common_hook import (
@@ -31,8 +36,10 @@ try:
         parse_relative_date, is_template, is_instance, 
         get_anchor_field_name, debug_log, DEBUG
     )
-except ImportError:
-    sys.stderr.write("ERROR: recurrence_common_hook.py not found in hooks directory\n")
+except ImportError as e:
+    sys.stderr.write(f"ERROR: recurrence_common_hook.py not found in hooks directory\n")
+    sys.stderr.write(f"Import error: {e}\n")
+    sys.stderr.write(f"Python path: {sys.path}\n")
     sys.exit(1)
 
 if DEBUG:
@@ -233,6 +240,47 @@ class RecurrenceHandler:
         if new_rlast != old_rlast:
             if DEBUG:
                 debug_log(f"rlast modified: {old_rlast} → {new_rlast}", "ADD/MOD")
+            
+            # Sync current pending instance rindex to match template rlast
+            try:
+                result = subprocess.run(
+                    ['task', 'rc.hooks=off', f'rtemplate:{modified["uuid"]}', 
+                     'status:pending', 'export'],
+                    capture_output=True, text=True, check=True
+                )
+                instances = json.loads(result.stdout.strip()) if result.stdout.strip() else []
+                
+                if instances:
+                    inst = instances[0]
+                    old_rindex = int(inst.get('rindex', '0'))
+                    
+                    if old_rindex != new_rlast:
+                        # Update instance rindex to match template rlast
+                        if DEBUG:
+                            debug_log(f"Attempting to sync instance {inst['uuid']} rindex: {old_rindex} → {new_rlast}", "ADD/MOD")
+                        
+                        result = subprocess.run(
+                            ['task', 'rc.hooks=off', inst['uuid'], 'modify', f'rindex:{new_rlast}'],
+                            capture_output=True,
+                            text=True,
+                            check=False
+                        )
+                        
+                        if DEBUG:
+                            debug_log(f"Subprocess returncode: {result.returncode}", "ADD/MOD")
+                            debug_log(f"Subprocess stdout: {result.stdout}", "ADD/MOD")
+                            debug_log(f"Subprocess stderr: {result.stderr}", "ADD/MOD")
+                        
+                        if result.returncode == 0:
+                            feedback.append(f"Synced current instance rindex to {new_rlast}.")
+                        else:
+                            feedback.append(f"Warning: Could not sync instance rindex (may sync on next interaction).")
+                        
+                        if DEBUG:
+                            debug_log(f"Synced instance rindex to {new_rlast}", "ADD/MOD")
+            except Exception as e:
+                if DEBUG:
+                    debug_log(f"Could not sync instance rindex: {e}", "ADD/MOD")
             
             # Calculate next instance details for period types
             if modified.get('type') == 'period':
