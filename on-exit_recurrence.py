@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.4.0
+Version: 0.4.1
 Date: 2026-01-31
 Spawns new recurrence instances when needed
 
@@ -12,9 +12,15 @@ Installation:
 """
 
 import sys
+import os
 import json
 import subprocess
 from datetime import datetime
+
+# Add hooks directory to Python path so we can import recurrence_common
+hooks_dir = os.path.dirname(os.path.abspath(__file__))
+if hooks_dir not in sys.path:
+    sys.path.insert(0, hooks_dir)
 
 # Import shared utilities
 from recurrence_common import (

@@ -1,0 +1,175 @@
+=============================================================================
+Recurrence Hooks - Import Path Fix
+Version: 0.4.0 (hotfix)
+Date: 2026-01-31
+=============================================================================
+
+ISSUE
+-----
+
+After refactoring, hooks failed with:
+  ModuleNotFoundError: No module named 'recurrence_common'
+
+This occurred because Python, when executed by taskwarrior as a hook script,
+doesn't automatically include the script's directory in the module search path.
+
+
+ROOT CAUSE
+----------
+
+When taskwarrior runs a hook script like:
+  /home/user/.task/hooks/on-exit_recurrence.py
+
+Python's sys.path does NOT include:
+  /home/user/.task/hooks/
+
+So the statement:
+  from recurrence_common import ...
+
+Fails because Python can't find recurrence_common.py even though it's in
+the same directory.
+
+
+THE FIX
+-------
+
+Added path manipulation at the top of both hook files:
+
+```python
+import sys
+import os
+
+# Add hooks directory to Python path
+hooks_dir = os.path.dirname(os.path.abspath(__file__))
+if hooks_dir not in sys.path:
+    sys.path.insert(0, hooks_dir)
+
+# Now imports work
+from recurrence_common import ...
+```
+
+This:
+1. Gets the absolute path of the hook script (__file__)
+2. Extracts the directory name (hooks_dir)
+3. Adds it to sys.path if not already present
+4. Allows Python to find recurrence_common.py
+
+
+AFFECTED FILES
+--------------
+
+Fixed in both:
+  - on-add_recurrence.py (added 6 lines)
+  - on-exit_recurrence.py (added 6 lines)
+
+No changes needed to:
+  - recurrence_common.py (works fine once found)
+
+
+WHY THIS WORKS
+--------------
+
+__file__ is a Python builtin that contains the path to the current script.
+
+Example:
+  __file__ = '/home/djp/.task/hooks/on-exit_recurrence.py'
+  
+  os.path.abspath(__file__) ensures it's absolute (not relative)
+  os.path.dirname(...) gets '/home/djp/.task/hooks'
+  sys.path.insert(0, ...) adds to front of search path
+  
+Now when Python sees:
+  from recurrence_common import ...
+  
+It looks in '/home/djp/.task/hooks' and finds recurrence_common.py!
+
+
+TESTING
+-------
+
+Before fix:
+  $ task recurring
+  ModuleNotFoundError: No module named 'recurrence_common'
+
+After fix:
+  $ task recurring
+  [works normally]
+
+
+ALTERNATIVE APPROACHES
+----------------------
+
+We considered but rejected:
+
+1. **PYTHONPATH environment variable**
+   - Would require user configuration
+   - Not portable
+   - Extra setup step
+
+2. **Installing as system module**
+   - pip install would be overkill
+   - Defeats "close to metal" philosophy
+   - Harder for users to customize
+
+3. **Absolute imports**
+   - Would hardcode paths
+   - Not portable across users
+   - Fragile
+
+Our solution (dynamic path manipulation) is:
+  ✓ Self-contained
+  ✓ Works for all users
+  ✓ No configuration needed
+  ✓ Standard Python practice
+
+
+VERIFICATION
+------------
+
+To verify the fix is working:
+
+1. Check hooks directory has all three files:
+   $ ls ~/.task/hooks/recurrence*.py
+   Should show:
+     recurrence_common.py
+     on-add_recurrence.py  (or symlink on-modify_recurrence.py)
+     on-exit_recurrence.py
+
+2. Check permissions:
+   $ ls -l ~/.task/hooks/on-*.py
+   Should show executable bit: -rwxr-xr-x
+
+3. Test with debug:
+   $ DEBUG_RECURRENCE=1 task add "test recur" due:tomorrow r:1d
+   Should create template without errors
+
+4. Check debug log:
+   $ tail ~/.task/recurrence_debug.log
+   Should show "recurrence_common v0.4.0 loaded"
+
+
+LESSONS LEARNED
+---------------
+
+When creating Python modules for taskwarrior hooks:
+  1. Always manipulate sys.path at the top
+  2. Use os.path.dirname(os.path.abspath(__file__))
+  3. Test in actual hook environment, not just standalone
+  4. Remember: taskwarrior runs hooks differently than terminal
+
+
+NO FUNCTIONALITY CHANGES
+-------------------------
+
+This is purely a technical fix. All functionality remains identical:
+  - Same recurrence behavior
+  - Same UDAs
+  - Same debug logging
+  - Same everything
+
+Just... now it actually works! 😅
+
+
+=============================================================================
+The refactoring was solid - we just needed to teach Python where to look!
+=============================================================================
