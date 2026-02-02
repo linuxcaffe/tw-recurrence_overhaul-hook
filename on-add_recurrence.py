@@ -164,6 +164,10 @@ if DEBUG:
 class RecurrenceHandler:
     """Handles enhanced recurrence for Taskwarrior"""
     
+    # Define which attributes belong to templates vs instances
+    TEMPLATE_ONLY_ATTRS = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled'}
+    INSTANCE_ONLY_ATTRS = {'rtemplate', 'rindex'}
+    
     def __init__(self):
         self.messages = []  # Collect messages to output at end
     
@@ -176,6 +180,68 @@ class RecurrenceHandler:
         if self.messages:
             for msg in self.messages:
                 sys.stderr.write(f"{msg}\n")
+    
+    def cleanup_template_attributes(self, task):
+        """Remove instance-only attributes from a template
+        
+        Args:
+            task: Task dictionary (modified in place)
+            
+        Returns:
+            List of removed attributes (for reporting)
+        """
+        removed = []
+        for attr in self.INSTANCE_ONLY_ATTRS:
+            if attr in task:
+                del task[attr]
+                removed.append(attr)
+                if DEBUG:
+                    debug_log(f"Removed instance-only attribute '{attr}' from template", "ADD/MOD")
+        return removed
+    
+    def cleanup_instance_attributes(self, task):
+        """Remove template-only attributes from an instance
+        
+        Args:
+            task: Task dictionary (modified in place)
+            
+        Returns:
+            List of removed attributes (for reporting)
+        """
+        removed = []
+        for attr in self.TEMPLATE_ONLY_ATTRS:
+            if attr in task:
+                del task[attr]
+                removed.append(attr)
+                if DEBUG:
+                    debug_log(f"Removed template-only attribute '{attr}' from instance", "ADD/MOD")
+        return removed
+    
+    def validate_and_cleanup(self, task, is_template_task):
+        """Validate and cleanup a task based on its type
+        
+        Args:
+            task: Task dictionary (modified in place)
+            is_template_task: True if template, False if instance
+            
+        Returns:
+            Warning message if attributes were removed, None otherwise
+        """
+        if is_template_task:
+            removed = self.cleanup_template_attributes(task)
+            if removed:
+                return (
+                    f"WARNING: Removed instance-only attributes from template: {', '.join(removed)}\n"
+                    f"  Templates should not have: rindex, rtemplate"
+                )
+        else:
+            removed = self.cleanup_instance_attributes(task)
+            if removed:
+                return (
+                    f"WARNING: Removed template-only attributes from instance: {', '.join(removed)}\n"
+                    f"  Instances should not have: r, type, ranchor, rlast, rend, rwait, rscheduled"
+                )
+        return None
     
     def get_anchor_date(self, task):
         """Get the anchor date (due or sched) for recurrence"""
@@ -350,6 +416,11 @@ class RecurrenceHandler:
         
         if DEBUG:
             debug_log(f"  Template created: status={task['status']}, rlast={task['rlast']}", "ADD/MOD")
+        
+        # Validate and cleanup - ensure no instance-only attributes
+        warning = self.validate_and_cleanup(task, is_template_task=True)
+        if warning:
+            self.add_message(warning)
         
         self.add_message(
             "Created recurrence template. First instance will be generated on exit."
@@ -615,6 +686,11 @@ class RecurrenceHandler:
             msg += "\n".join(changes)
             self.add_message(msg)
         
+        # Validate and cleanup - ensure no instance-only attributes
+        warning = self.validate_and_cleanup(modified, is_template_task=True)
+        if warning:
+            self.add_message(warning)
+        
         return modified
     
     def handle_instance_modification(self, original, modified):
@@ -740,6 +816,11 @@ class RecurrenceHandler:
             msg += "\n".join(changes)
             self.add_message(msg)
         
+        # Validate and cleanup - ensure no template-only attributes
+        warning = self.validate_and_cleanup(modified, is_template_task=False)
+        if warning:
+            self.add_message(warning)
+        
         return modified
     
     def handle_instance_completion(self, original, modified):
@@ -817,6 +898,11 @@ class RecurrenceHandler:
         
         if DEBUG:
             debug_log(f"Instance {rindex} {status_word.lower()}", "ADD/MOD")
+        
+        # Validate and cleanup - ensure no template-only attributes
+        warning = self.validate_and_cleanup(modified, is_template_task=False)
+        if warning:
+            self.add_message(warning)
         
         return modified
 
