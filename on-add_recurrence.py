@@ -15,7 +15,7 @@ Installation:
     1. Save to ~/.task/hooks/on-add_recurrence.py
     2. chmod +x ~/.task/hooks/on-add_recurrence.py
     3. cd ~/.task/hooks && ln -s on-add_recurrence.py on-modify_recurrence.py
-    4. Ensure recurrence_common_hook-x.py is in ~/.task/hooks/ (not executable)
+    4. Ensure recurrence_common_hook.py is in ~/.task/hooks/ (library, not executable)
 """
 
 import sys

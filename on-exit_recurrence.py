@@ -8,7 +8,7 @@ Spawns new recurrence instances when needed
 Installation:
     1. Save to ~/.task/hooks/on-exit_recurrence.py
     2. chmod +x ~/.task/hooks/on-exit_recurrence.py
-    3. Ensure recurrence_common_hook-x.py is in the same directory (not executable)
+    3. Ensure recurrence_common_hook.py is in the same directory (library, not executable)
 """
 
 import sys
