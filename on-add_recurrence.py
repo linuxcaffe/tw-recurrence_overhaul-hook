@@ -39,7 +39,7 @@ try:
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG,
-        query_instances, check_instance_count
+        query_instances, check_instance_count, spawn_instance, delete_instance
     )
 except ImportError as e:
     # Fallback error handling
@@ -392,7 +392,7 @@ class RecurrenceHandler:
         
         # Mark as template
         task['status'] = 'recurring'
-        task['rlast'] = '0'
+        task['rlast'] = '1'
         
         # Get anchor date
         anchor_field, anchor_date = self.get_anchor_date(task)
@@ -531,35 +531,47 @@ class RecurrenceHandler:
                 status, data = check_instance_count(template_uuid)
                 
                 if status == 'missing':
-                    # ERROR: No instance exists (violates one-to-one rule)
+                    # No instance exists - will spawn on next task command via on-exit
                     if DEBUG:
                         debug_log(f"No instance found for template {template_uuid}", "ADD/MOD")
                     
                     sync_msg = (
-                        f"  ERROR: No pending instance exists (violates one-to-one rule)\n"
-                        f"  Expected: Exactly 1 instance with rindex={old_rlast}\n"
-                        f"  Found: 0 instances\n"
-                        f"  Fix: On-exit hook will spawn instance #{new_rlast} when this template's instance completes"
+                        f"  No pending instance exists.\n"
+                        f"  On-exit hook will spawn instance #{new_rlast} when this template's instance completes."
                     )
                 
                 elif status == 'ok':
-                    # CORRECT: Exactly one instance exists - update its rindex
+                    # CORRECT: Exactly one instance exists
+                    # DELETE old instance and RE-SPAWN new one with recalculated dates
                     instance = data
                     
                     inst_uuid = instance['uuid']
                     inst_id = instance.get('id', '?')
                     old_inst_rindex = int(instance.get('rindex', 0))
                     
-                    # Auto-sync: update instance rindex to match new rlast
-                    if update_task(inst_uuid, {'rindex': new_rlast}):
-                        if DEBUG:
-                            debug_log(f"Auto-synced instance {inst_id} rindex: {old_inst_rindex} -> {new_rlast}", "ADD/MOD")
+                    if DEBUG:
+                        debug_log(f"Deleting old instance #{old_inst_rindex} and re-spawning as #{new_rlast}", "ADD/MOD")
+                    
+                    # Delete the old instance
+                    if delete_instance(inst_uuid, inst_id):
+                        # Spawn new instance with correct rindex and recalculated dates
+                        spawn_msg = spawn_instance(modified, new_rlast)
                         
-                        sync_msg = f"  Instance #{old_inst_rindex} (task {inst_id}) rindex auto-synced to {new_rlast}."
+                        if spawn_msg:
+                            sync_msg = (
+                                f"  Instance #{old_inst_rindex} (task {inst_id}) deleted and re-spawned as #{new_rlast}\n"
+                                f"  {spawn_msg}"
+                            )
+                        else:
+                            sync_msg = (
+                                f"  Instance #{old_inst_rindex} (task {inst_id}) deleted\n"
+                                f"  WARNING: Failed to re-spawn instance #{new_rlast}\n"
+                                f"  On-exit will attempt to spawn on next task command"
+                            )
                     else:
                         sync_msg = (
-                            f"  WARNING: Failed to auto-sync instance #{old_inst_rindex} rindex\n"
-                            f"  Manual sync needed: task {inst_id} mod rindex:{new_rlast}"
+                            f"  WARNING: Failed to delete instance #{old_inst_rindex} (task {inst_id})\n"
+                            f"  Manual intervention needed: task {inst_id} delete"
                         )
                 
                 elif status == 'multiple':

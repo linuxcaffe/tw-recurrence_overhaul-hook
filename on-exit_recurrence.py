@@ -28,12 +28,15 @@ try:
     from recurrence_common_hook import (
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
-        get_anchor_field_name, debug_log, DEBUG
+        get_anchor_field_name, debug_log, DEBUG,
+        spawn_instance
     )
+    COMMON_MODULE_AVAILABLE = True
 except ImportError as e:
     # Fallback - use local functions if common module not available
     DEBUG = os.environ.get('DEBUG_RECURRENCE', '0') == '1'
     LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
+    COMMON_MODULE_AVAILABLE = False
     
     def debug_log(msg, prefix="EXIT"):
         """Write debug message to log file if debug enabled"""
@@ -404,25 +407,30 @@ class RecurrenceSpawner:
                 # Both periodic and chained spawn on completion/deletion
                 if current_idx >= last_idx:
                     if DEBUG:
-                        debug_log(f"Will spawn next instance")
+                        debug_log(f"Will spawn next instance", "EXIT")
                     
                     # Get completion/deletion time for chained type
                     completion = None
                     if task.get('status') == 'completed' and 'end' in task:
-                        completion = self.parse_date(task['end'])
+                        completion = parse_date(task['end']) if COMMON_MODULE_AVAILABLE else self.parse_date(task['end'])
                         if DEBUG:
-                            debug_log(f"Completion time: {completion}")
+                            debug_log(f"Completion time: {completion}", "EXIT")
                     elif task.get('status') == 'deleted':
                         # For deleted tasks, use deletion time (now)
                         completion = self.now
                         if DEBUG:
-                            debug_log(f"Deletion time: {completion}")
+                            debug_log(f"Deletion time: {completion}", "EXIT")
                     
-                    msg = self.create_instance(template, current_idx + 1, completion)
+                    # Use common spawn_instance if available, otherwise fallback to local
+                    if COMMON_MODULE_AVAILABLE:
+                        msg = spawn_instance(template, current_idx + 1, completion)
+                    else:
+                        msg = self.create_instance(template, current_idx + 1, completion)
+                    
                     if msg:
                         feedback.append(msg)
                         if DEBUG:
-                            debug_log(f"Result: {msg}")
+                            debug_log(f"Result: {msg}", "EXIT")
                 else:
                     if DEBUG:
                         debug_log(f"Skipping spawn: not the latest instance")
@@ -437,12 +445,17 @@ class RecurrenceSpawner:
             # New template? (handle both string and int rlast)
             elif (task.get('status') == 'recurring' and 
                   'r' in task and 
-                  str(task.get('rlast', '')).strip() in ['0', '']):
+                  str(task.get('rlast', '')).strip() in ['0', '1', '']):
                 
                 if DEBUG:
-                    debug_log(f"Found new template: {task.get('description')}")
+                    debug_log(f"Found new template: {task.get('description')}", "EXIT")
                 
-                msg = self.create_instance(task, 1)
+                # Use common spawn_instance if available, otherwise fallback to local
+                if COMMON_MODULE_AVAILABLE:
+                    msg = spawn_instance(task, 1)  # First instance is always index 1
+                else:
+                    msg = self.create_instance(task, 1)
+                
                 if msg:
                     feedback.append(msg)
         

@@ -336,6 +336,163 @@ def check_instance_count(template_uuid):
         return ('multiple', instances)
 
 
+def spawn_instance(template, rindex, completion_time=None):
+    """Spawn a new instance for a template
+    
+    This is the ONLY way to spawn instances - can be called from on-exit (normal)
+    or on-modify (re-spawn when rlast changes).
+    
+    Args:
+        template: Template task dictionary
+        rindex: Instance index to create
+        completion_time: For chain types, when previous instance completed
+        
+    Returns:
+        Success message string or None on failure
+    """
+    import subprocess
+    from datetime import datetime
+    
+    if DEBUG:
+        debug_log(f"Spawning instance {rindex} from template {template.get('uuid')}", "COMMON")
+    
+    # Parse recurrence interval
+    recur_delta = parse_duration(template.get('r'))
+    if not recur_delta:
+        if DEBUG:
+            debug_log(f"Failed to parse recurrence interval: {template.get('r')}", "COMMON")
+        return None
+    
+    rtype = template.get('type', 'period')
+    anchor_field = template.get('ranchor', 'due')
+    actual_field = get_anchor_field_name(anchor_field)
+    
+    # Get template anchor date
+    template_anchor = parse_date(template.get(actual_field))
+    if not template_anchor:
+        if DEBUG:
+            debug_log(f"Failed to parse template anchor date: {template.get(actual_field)}", "COMMON")
+        return None
+    
+    # Calculate anchor date for this instance
+    if rindex == 1:
+        # Instance 1 always uses template's anchor date
+        anchor_date = template_anchor
+    else:
+        if rtype == 'chain':
+            # Chain: completion_time + period
+            base = completion_time or datetime.utcnow()
+            anchor_date = base + recur_delta
+        else:
+            # Period: template + (rindex - 1) * period
+            anchor_date = template_anchor + (recur_delta * (rindex - 1))
+    
+    # Check if recurrence has ended (rend)
+    if 'rend' in template:
+        rend_str = template['rend']
+        rend_date = parse_relative_date(rend_str, template_anchor)
+        if not rend_date:
+            rend_date = parse_date(rend_str)
+        
+        if rend_date and anchor_date > rend_date:
+            if DEBUG:
+                debug_log(f"Recurrence ended: anchor_date {anchor_date} > rend {rend_date}", "COMMON")
+            return "Recurrence ended (rend date reached)"
+    
+    # Build task add command
+    cmd = ['task', 'rc.hooks=off', 'rc.confirmation=off', 'add', template['description']]
+    
+    # Add anchor date
+    cmd.append(f'{anchor_field}:{format_date(anchor_date)}')
+    
+    # Copy until from template if present
+    if 'until' in template:
+        cmd.append(f'until:{template["until"]}')
+    
+    # Process relative wait
+    if 'rwait' in template:
+        wait_date = parse_relative_date(template['rwait'], anchor_date)
+        if wait_date:
+            cmd.append(f'wait:{format_date(wait_date)}')
+    
+    # Process relative scheduled
+    if 'rscheduled' in template and anchor_field != 'sched':
+        sched_date = parse_relative_date(template['rscheduled'], anchor_date)
+        if sched_date:
+            cmd.append(f'scheduled:{format_date(sched_date)}')
+    
+    # Copy attributes from template
+    if 'project' in template:
+        cmd.append(f'project:{template["project"]}')
+    if 'priority' in template:
+        cmd.append(f'priority:{template["priority"]}')
+    if 'tags' in template and template['tags']:
+        cmd.extend([f'+{tag}' for tag in template['tags']])
+    
+    # Add recurrence metadata
+    cmd.extend([
+        f'rtemplate:{template["uuid"]}',
+        f'rindex:{int(rindex)}'
+    ])
+    
+    # Execute task creation
+    try:
+        result = subprocess.run(cmd, capture_output=True, check=True, text=True)
+        
+        # Update template's rlast to match
+        subprocess.run(
+            ['task', 'rc.hooks=off', 'rc.confirmation=off', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
+            capture_output=True,
+            check=True
+        )
+        
+        if DEBUG:
+            debug_log(f"Instance {rindex} spawned successfully", "COMMON")
+        
+        return f"Created instance {rindex} of '{template['description']}'"
+    
+    except subprocess.CalledProcessError as e:
+        if DEBUG:
+            debug_log(f"Failed to spawn instance {rindex}: {e}", "COMMON")
+            if e.stderr:
+                debug_log(f"Error output: {e.stderr}", "COMMON")
+        return None
+
+
+def delete_instance(instance_uuid, instance_id=None):
+    """Delete an instance task
+    
+    Args:
+        instance_uuid: Instance UUID to delete
+        instance_id: Optional task ID for logging
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    import subprocess
+    
+    if DEBUG:
+        debug_log(f"Deleting instance {instance_id or instance_uuid}", "COMMON")
+    
+    try:
+        subprocess.run(
+            ['task', 'rc.hooks=off', 'rc.confirmation=off', instance_uuid, 'delete'],
+            capture_output=True,
+            check=True
+        )
+        
+        if DEBUG:
+            debug_log(f"Instance {instance_id or instance_uuid} deleted successfully", "COMMON")
+        
+        return True
+    
+    except subprocess.CalledProcessError as e:
+        if DEBUG:
+            debug_log(f"Failed to delete instance {instance_id or instance_uuid}: {e}", "COMMON")
+        
+        return False
+
+
 # Version info
 __version__ = '0.4.0'
 __date__ = '2026-01-31'
