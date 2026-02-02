@@ -1,64 +1,181 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 0.4.1
-Date: 2026-02-01
-Handles both adding new recurring tasks and modifying existing ones
+Version: 0.4.0
+Date: 2026-02-02
+
+Handles both adding new recurring tasks and modifying existing ones with
+sophisticated modification tracking and user feedback.
 
 Features:
-- Template creation from tasks with 'r' field
-- Smart modification handling (type, anchor, rlast, rwait changes)
-- Instance rindex/template rlast synchronization
-- Comprehensive user feedback with actionable suggestions
+- Template creation with type normalization
+- Smart modification detection and handling
+- Bidirectional rindex ↔ rlast synchronization
+- Anchor change detection with automatic rwait/rscheduled updates
+- Time machine functionality (rlast modifications)
+- Comprehensive user messaging following awesome-taskwarrior standard
+- Attribute change propagation suggestions
 
 Installation:
     1. Save to ~/.task/hooks/on-add_recurrence.py
     2. chmod +x ~/.task/hooks/on-add_recurrence.py
     3. cd ~/.task/hooks && ln -s on-add_recurrence.py on-modify_recurrence.py
-    4. Ensure recurrence_common_hook.py is in ~/.task/hooks/ (library, not executable)
+    4. Ensure recurrence_common_hook.py is in ~/.task/hooks/
 """
 
 import sys
 import json
-import subprocess
-from datetime import datetime, timedelta
 import os
+import re
+import subprocess
 
-# Add hooks directory to Python path for imports
-HOOKS_DIR = os.path.expanduser("~/.task/hooks")
-if HOOKS_DIR not in sys.path:
-    sys.path.insert(0, HOOKS_DIR)
+# Add hooks directory to Python path for importing common module
+hooks_dir = os.path.expanduser('~/.task/hooks')
+if hooks_dir not in sys.path:
+    sys.path.insert(0, hooks_dir)
 
-# Import common utilities
 try:
     from recurrence_common_hook import (
         normalize_type, parse_duration, parse_date, format_date,
-        parse_relative_date, is_template, is_instance, 
+        parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG
     )
 except ImportError as e:
-    sys.stderr.write(f"ERROR: recurrence_common_hook.py not found in hooks directory\n")
-    sys.stderr.write(f"Import error: {e}\n")
-    sys.stderr.write(f"Python path: {sys.path}\n")
+    # Fallback error handling
+    sys.stderr.write(f"ERROR: Cannot import recurrence_common_hook: {e}\n")
+    sys.stderr.write("Please ensure recurrence_common_hook.py is in ~/.task/hooks/\n")
     sys.exit(1)
 
-if DEBUG:
-    debug_log("="*60, "ADD/MOD")
-    debug_log("Hook starting", "ADD/MOD")
+
+def query_task(uuid):
+    """Query Taskwarrior for a task by UUID
+    
+    Args:
+        uuid: Task UUID to query
+        
+    Returns:
+        Task dictionary or None if not found/error
+    """
+    try:
+        result = subprocess.run(
+            ['task', 'rc.hooks=off', uuid, 'export'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            tasks = json.loads(result.stdout)
+            if tasks:
+                if DEBUG:
+                    debug_log(f"Queried task {uuid}: found", "ADD/MOD")
+                return tasks[0]
+        
+        if DEBUG:
+            debug_log(f"Queried task {uuid}: not found", "ADD/MOD")
+        return None
+        
+    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        if DEBUG:
+            debug_log(f"Query task {uuid} failed: {e}", "ADD/MOD")
+        return None
+
+
+def query_instances(template_uuid):
+    """Query all pending instances for a template
+    
+    Args:
+        template_uuid: Template UUID
+        
+    Returns:
+        List of instance task dictionaries
+    """
+    try:
+        result = subprocess.run(
+            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 'status:pending', 'export'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            instances = json.loads(result.stdout)
+            if DEBUG:
+                debug_log(f"Queried instances for {template_uuid}: {len(instances)} found", "ADD/MOD")
+            return instances
+        
+        if DEBUG:
+            debug_log(f"Queried instances for {template_uuid}: none found", "ADD/MOD")
+        return []
+        
+    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        if DEBUG:
+            debug_log(f"Query instances for {template_uuid} failed: {e}", "ADD/MOD")
+        return []
+
+
+def update_task(uuid, modifications):
+    """Update a task via Taskwarrior command
+    
+    Args:
+        uuid: Task UUID to update
+        modifications: Dictionary of field:value to modify
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Build modification command
+        mod_args = []
+        for field, value in modifications.items():
+            mod_args.append(f'{field}:{value}')
+        
+        result = subprocess.run(
+            ['task', 'rc.hooks=off', 'rc.confirmation=off', uuid, 'mod'] + mod_args,
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        success = result.returncode == 0
+        
+        if DEBUG:
+            if success:
+                debug_log(f"Updated task {uuid} with {modifications}", "ADD/MOD")
+            else:
+                debug_log(f"Failed to update task {uuid}: {result.stderr}", "ADD/MOD")
+        
+        return success
+        
+    except subprocess.SubprocessError as e:
+        if DEBUG:
+            debug_log(f"Update task {uuid} failed: {e}", "ADD/MOD")
+        return False
 
 # Read all input
 lines = sys.stdin.readlines()
 IS_ON_ADD = len(lines) == 1
 
 if DEBUG:
-    debug_log(f"Mode: {'ADD' if IS_ON_ADD else 'MODIFY'}, lines: {len(lines)}", "ADD/MOD")
+    debug_log("="*60, "ADD/MOD")
+    debug_log(f"Hook starting - Mode: {'ADD' if IS_ON_ADD else 'MODIFY'}, lines: {len(lines)}", "ADD/MOD")
 
 
 class RecurrenceHandler:
     """Handles enhanced recurrence for Taskwarrior"""
     
     def __init__(self):
-        self.now = datetime.utcnow()
+        self.messages = []  # Collect messages to output at end
+    
+    def add_message(self, message):
+        """Add a message to be output to user"""
+        self.messages.append(message)
+    
+    def output_messages(self):
+        """Output all collected messages to stderr"""
+        if self.messages:
+            for msg in self.messages:
+                sys.stderr.write(f"{msg}\n")
     
     def get_anchor_date(self, task):
         """Get the anchor date (due or sched) for recurrence"""
@@ -68,31 +185,137 @@ class RecurrenceHandler:
             return 'sched', parse_date(task['scheduled'])
         return None, None
     
-    def get_task_id(self, uuid):
-        """Get task ID from UUID for user messaging"""
-        try:
-            result = subprocess.run(
-                ['task', 'rc.hooks=off', f'uuid:{uuid}', 'export'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            tasks = json.loads(result.stdout.strip())
-            if tasks and len(tasks) > 0:
-                return tasks[0].get('id', '?')
-        except Exception:
-            pass
-        return '?'
+    def convert_wait_to_relative(self, task, anchor_field, anchor_date):
+        """Convert absolute wait to relative rwait
+        
+        Args:
+            task: Task dictionary (modified in place)
+            anchor_field: 'due' or 'sched'
+            anchor_date: Datetime object for anchor
+            
+        Returns:
+            True if conversion was performed
+        """
+        if 'wait' not in task:
+            return False
+        
+        wait_str = task['wait']
+        ref_field, offset = parse_relative_date(wait_str)
+        
+        if ref_field and offset:
+            # Already in relative format - preserve it
+            task['rwait'] = wait_str
+            del task['wait']
+            return False  # No conversion needed
+        else:
+            # Absolute date - convert to relative offset in seconds
+            wait_dt = parse_date(wait_str)
+            if wait_dt and anchor_date:
+                delta_sec = int((wait_dt - anchor_date).total_seconds())
+                if delta_sec != 0:
+                    task['rwait'] = f'{anchor_field}{delta_sec:+d}s'
+                else:
+                    task['rwait'] = f'{anchor_field}+0s'
+                del task['wait']
+                
+                if DEBUG:
+                    debug_log(f"Converted absolute wait to relative: {task['rwait']}", "ADD/MOD")
+                
+                self.add_message(
+                    f"Converted absolute wait to relative: rwait={task['rwait']}\n"
+                    f"This will apply to all future instances."
+                )
+                return True
+        
+        return False
+    
+    def convert_scheduled_to_relative(self, task, anchor_field, anchor_date):
+        """Convert absolute scheduled to relative rscheduled (if anchor is not sched)
+        
+        Args:
+            task: Task dictionary (modified in place)
+            anchor_field: 'due' or 'sched'
+            anchor_date: Datetime object for anchor
+            
+        Returns:
+            True if conversion was performed
+        """
+        if 'scheduled' not in task or anchor_field == 'sched':
+            return False
+        
+        sched_str = task['scheduled']
+        ref_field, offset = parse_relative_date(sched_str)
+        
+        if ref_field and offset:
+            # Already in relative format - preserve it
+            task['rscheduled'] = sched_str
+            del task['scheduled']
+            return False
+        else:
+            # Absolute date - convert to relative offset
+            sched_dt = parse_date(sched_str)
+            if sched_dt and anchor_date:
+                delta_sec = int((sched_dt - anchor_date).total_seconds())
+                if delta_sec != 0:
+                    task['rscheduled'] = f'{anchor_field}{delta_sec:+d}s'
+                else:
+                    task['rscheduled'] = f'{anchor_field}+0s'
+                del task['scheduled']
+                
+                if DEBUG:
+                    debug_log(f"Converted absolute scheduled to relative: {task['rscheduled']}", "ADD/MOD")
+                
+                return True
+        
+        return False
+    
+    def update_relative_dates_for_anchor_change(self, task, old_anchor, new_anchor):
+        """Update rwait and rscheduled when anchor changes
+        
+        Args:
+            task: Task dictionary (modified in place)
+            old_anchor: Previous anchor field ('due' or 'sched')
+            new_anchor: New anchor field ('due' or 'sched')
+        """
+        updated_fields = []
+        
+        # Update rwait if it exists
+        if 'rwait' in task:
+            old_rwait = task['rwait']
+            # Replace old anchor reference with new anchor
+            new_rwait = re.sub(r'^(due|sched)', new_anchor, old_rwait)
+            if new_rwait != old_rwait:
+                task['rwait'] = new_rwait
+                updated_fields.append('rwait')
+                if DEBUG:
+                    debug_log(f"Updated rwait: {old_rwait} -> {new_rwait}", "ADD/MOD")
+        
+        # Update rscheduled if it exists
+        if 'rscheduled' in task:
+            old_rsched = task['rscheduled']
+            new_rsched = re.sub(r'^(due|sched)', new_anchor, old_rsched)
+            if new_rsched != old_rsched:
+                task['rscheduled'] = new_rsched
+                updated_fields.append('rscheduled')
+                if DEBUG:
+                    debug_log(f"Updated rscheduled: {old_rsched} -> {new_rsched}", "ADD/MOD")
+        
+        return updated_fields
     
     def create_template(self, task):
-        """Convert a new task with r (recurrence) into a template"""
+        """Convert a new task with r (recurrence) into a template
+        
+        Args:
+            task: Task dictionary
+            
+        Returns:
+            Modified task dictionary as template
+        """
         if DEBUG:
             debug_log(f"Creating template: {task.get('description')}", "ADD/MOD")
         
         if 'r' not in task:
-            return task, []
-        
-        feedback = []
+            return task
         
         # Normalize and set type (with abbreviation support)
         task['type'] = normalize_type(task.get('type'))
@@ -112,363 +335,490 @@ class RecurrenceHandler:
                 debug_log(f"  ERROR: No valid anchor date found", "ADD/MOD")
                 debug_log(f"  Task due: {task.get('due')}", "ADD/MOD")
                 debug_log(f"  Task scheduled: {task.get('scheduled')}", "ADD/MOD")
-            sys.stderr.write("ERROR: Recurring task must have either 'due' or 'scheduled' date\n")
-            sys.stderr.write(f"       Provided: due={task.get('due')}, scheduled={task.get('scheduled')}\n")
-            # Return the task unchanged rather than crashing
-            if DEBUG:
-                debug_log("  Returning task unchanged", "ADD/MOD")
-            return task, []
+            
+            self.add_message(
+                "ERROR: Recurring task must have either 'due' or 'scheduled' date\n"
+                f"       Provided: due={task.get('due')}, scheduled={task.get('scheduled')}"
+            )
+            return task
         
         task['ranchor'] = anchor_field
         
-        # Process wait
-        if 'wait' in task:
-            wait_str = task['wait']
-            ref_field, offset = parse_relative_date(wait_str)
-            
-            if ref_field and offset:
-                # Already in relative format - preserve it as-is
-                task['rwait'] = wait_str
-                del task['wait']
-            else:
-                # Absolute date - convert to relative offset in seconds
-                wait_dt = parse_date(wait_str)
-                if wait_dt and anchor_date:
-                    delta_sec = int((wait_dt - anchor_date).total_seconds())
-                    # Use negative offset since wait is typically before due
-                    if delta_sec != 0:
-                        task['rwait'] = f'{anchor_field}{delta_sec:+d}s'
-                    del task['wait']
-        
-        # Process sched
-        if 'scheduled' in task and anchor_field != 'sched':
-            sched_str = task['scheduled']
-            ref_field, offset = parse_relative_date(sched_str)
-            
-            if ref_field and offset:
-                # Already in relative format - preserve it as-is
-                task['rscheduled'] = sched_str
-                del task['scheduled']
-            else:
-                # Absolute date - convert to relative offset in seconds
-                sched_dt = parse_date(sched_str)
-                if sched_dt and anchor_date:
-                    delta_sec = int((sched_dt - anchor_date).total_seconds())
-                    if delta_sec != 0:
-                        task['rscheduled'] = f'{anchor_field}{delta_sec:+d}s'
-                    del task['scheduled']
+        # Convert wait and scheduled to relative
+        self.convert_wait_to_relative(task, anchor_field, anchor_date)
+        self.convert_scheduled_to_relative(task, anchor_field, anchor_date)
         
         if DEBUG:
             debug_log(f"  Template created: status={task['status']}, rlast={task['rlast']}", "ADD/MOD")
         
-        return task, feedback
-    
-    def handle_anchor_change(self, original, modified):
-        """Handle change in anchor field (due â†” sched)"""
-        old_anchor = original.get('ranchor')
-        feedback = []
+        self.add_message(
+            "Created recurrence template. First instance will be generated on exit."
+        )
         
-        # Detect new anchor based on what fields exist
-        new_anchor = None
-        if 'due' in modified and 'scheduled' not in modified:
-            new_anchor = 'due'
-        elif 'scheduled' in modified and 'due' not in modified:
-            new_anchor = 'sched'
-        
-        if new_anchor and new_anchor != old_anchor:
-            if DEBUG:
-                debug_log(f"Anchor change detected: {old_anchor} â†’ {new_anchor}", "ADD/MOD")
-            
-            modified['ranchor'] = new_anchor
-            
-            # Update relative dates to use new anchor
-            if 'rwait' in modified and old_anchor in modified['rwait']:
-                modified['rwait'] = modified['rwait'].replace(old_anchor, new_anchor)
-            
-            if 'rscheduled' in modified and old_anchor in modified.get('rscheduled', ''):
-                modified['rscheduled'] = modified['rscheduled'].replace(old_anchor, new_anchor)
-            
-            feedback.append(
-                f"Modified template anchor: {old_anchor} â†’ {new_anchor}\n"
-                f"Relative dates (rwait, rscheduled) updated to use new anchor."
-            )
-        
-        return modified, feedback
-    
-    def handle_wait_modification(self, original, modified):
-        """Handle changes to wait field on templates"""
-        feedback = []
-        
-        # If absolute wait added/changed on template
-        if 'wait' in modified and is_template(modified):
-            wait_str = modified['wait']
-            ref_field, offset = parse_relative_date(wait_str)
-            
-            if ref_field and offset:
-                # Already relative - convert to rwait
-                modified['rwait'] = wait_str
-                del modified['wait']
-                if DEBUG:
-                    debug_log(f"Converted wait to rwait: {wait_str}", "ADD/MOD")
-            else:
-                # Absolute date - convert to relative
-                anchor_field, anchor_date = self.get_anchor_date(modified)
-                wait_dt = parse_date(wait_str)
-                
-                if wait_dt and anchor_date:
-                    delta_sec = int((wait_dt - anchor_date).total_seconds())
-                    modified['rwait'] = f'{anchor_field}{delta_sec:+d}s'
-                    del modified['wait']
-                    
-                    if DEBUG:
-                        debug_log(f"Converted absolute wait to rwait: {modified['rwait']}", "ADD/MOD")
-                    
-                    feedback.append(
-                        f"Converted absolute wait to relative: rwait={modified['rwait']}\n"
-                        f"This will apply to all future instances."
-                    )
-        
-        return modified, feedback
-    
-    def handle_rlast_modification(self, original, modified):
-        """Handle time-machine functionality via rlast modification"""
-        feedback = []
-        
-        old_rlast = int(original.get('rlast', '0'))
-        new_rlast = int(modified.get('rlast', '0'))
-        
-        if new_rlast != old_rlast:
-            if DEBUG:
-                debug_log(f"rlast modified: {old_rlast} â†’ {new_rlast}", "ADD/MOD")
-            
-            # Sync current pending instance rindex to match template rlast
-            try:
-                result = subprocess.run(
-                    ['task', 'rc.hooks=off', f'rtemplate:{modified["uuid"]}', 
-                     'status:pending', 'export'],
-                    capture_output=True, text=True, check=True
-                )
-                instances = json.loads(result.stdout.strip()) if result.stdout.strip() else []
-                
-                if instances:
-                    inst = instances[0]
-                    old_rindex = int(inst.get('rindex', '0'))
-                    
-                    if old_rindex != new_rlast:
-                        # Update instance rindex to match template rlast
-                        if DEBUG:
-                            debug_log(f"Attempting to sync instance {inst['uuid']} rindex: {old_rindex} â†’ {new_rlast}", "ADD/MOD")
-                        
-                        result = subprocess.run(
-                            ['task', 'rc.hooks=off', inst['uuid'], 'modify', f'rindex:{new_rlast}'],
-                            capture_output=True,
-                            text=True,
-                            check=False
-                        )
-                        
-                        if DEBUG:
-                            debug_log(f"Subprocess returncode: {result.returncode}", "ADD/MOD")
-                            debug_log(f"Subprocess stdout: {result.stdout}", "ADD/MOD")
-                            debug_log(f"Subprocess stderr: {result.stderr}", "ADD/MOD")
-                        
-                        if result.returncode == 0:
-                            feedback.append(f"Synced current instance rindex to {new_rlast}.")
-                        else:
-                            feedback.append(f"Warning: Could not sync instance rindex (may sync on next interaction).")
-                        
-                        if DEBUG:
-                            debug_log(f"Synced instance rindex to {new_rlast}", "ADD/MOD")
-            except Exception as e:
-                if DEBUG:
-                    debug_log(f"Could not sync instance rindex: {e}", "ADD/MOD")
-            
-            # Calculate next instance details for period types
-            if modified.get('type') == 'period':
-                r_delta = parse_duration(modified.get('r'))
-                anchor_field, anchor_date = self.get_anchor_date(modified)
-                
-                if r_delta and anchor_date:
-                    # Next instance will be (new_rlast + 1)
-                    next_idx = new_rlast + 1
-                    next_due = anchor_date + (r_delta * next_idx)
-                    
-                    skip_count = new_rlast - old_rlast
-                    direction = "forward" if skip_count > 0 else "backward"
-                    
-                    feedback.append(
-                        f"Template rlast modified: {old_rlast} â†’ {new_rlast} "
-                        f"({abs(skip_count)} instance{'s' if abs(skip_count) != 1 else ''} {direction})\n"
-                        f"Next instance will be #{next_idx} due {format_date(next_due)}"
-                    )
-            else:
-                # Chain type - simpler message
-                feedback.append(
-                    f"Template rlast modified: {old_rlast} â†’ {new_rlast}\n"
-                    f"Next instance will be #{new_rlast + 1} (spawns on completion)."
-                )
-        
-        return modified, feedback
+        return task
     
     def handle_template_modification(self, original, modified):
-        """Handle modifications to a template"""
-        feedback = []
+        """Handle modifications to a template with comprehensive feedback
+        
+        Args:
+            original: Original task state
+            modified: Modified task state
+            
+        Returns:
+            Updated modified task
+        """
+        if DEBUG:
+            debug_log(f"Handling template modification: {modified.get('description')}", "ADD/MOD")
+        
+        task_id = modified.get('id', '?')
+        description = modified.get('description', 'untitled')
+        
+        # Track what changed
+        changes = []
         
         # If template is being deleted/completed, remove r field so it can be purged
         if modified.get('status') in ['deleted', 'completed']:
             if 'r' in modified:
                 del modified['r']
-            return modified, feedback
+            self.add_message(
+                f"Modified task {task_id} -- {description} (recurrence template)\n"
+                f"Template marked for deletion. Recurrence will stop."
+            )
+            return modified
         
         # Check for type change
-        if 'type' in modified and modified.get('type') != original.get('type'):
+        if 'type' in modified and modified['type'] != original.get('type'):
             old_type = original.get('type', 'period')
-            new_type = normalize_type(modified.get('type'))
+            new_type = normalize_type(modified['type'])
             modified['type'] = new_type
             
-            if old_type != new_type:
-                if DEBUG:
-                    debug_log(f"Type change: {old_type} â†’ {new_type}", "ADD/MOD")
-                
-                spawn_msg = "on completion" if new_type == "chain" else "on schedule"
-                feedback.append(
-                    f"Modified template type: {old_type} â†’ {new_type}\n"
-                    f"This changes how future instances spawn ({spawn_msg}).\n"
-                    f"Current rlast={modified.get('rlast', '0')} preserved."
-                )
-        elif 'type' in modified:
-            # Normalize even if not changed
-            modified['type'] = normalize_type(modified['type'])
-        
-        # Check for anchor change
-        modified, anchor_feedback = self.handle_anchor_change(original, modified)
-        feedback.extend(anchor_feedback)
-        
-        # Check for wait modification
-        modified, wait_feedback = self.handle_wait_modification(original, modified)
-        feedback.extend(wait_feedback)
-        
-        # Check for rlast modification (time machine)
-        if 'rlast' in modified and modified.get('rlast') != original.get('rlast'):
-            modified, rlast_feedback = self.handle_rlast_modification(original, modified)
-            feedback.extend(rlast_feedback)
-        
-        # Check for attribute changes that might propagate to current instance
-        changed_attrs = {}
-        for attr in ['project', 'priority', 'tags', 'due', 'scheduled']:
-            if attr in modified and modified.get(attr) != original.get(attr):
-                changed_attrs[attr] = modified.get(attr)
-        
-        if changed_attrs:
-            # Find current pending instance
-            try:
-                result = subprocess.run(
-                    ['task', 'rc.hooks=off', f'rtemplate:{modified["uuid"]}', 
-                     'status:pending', 'export'],
-                    capture_output=True, text=True, check=True
-                )
-                instances = json.loads(result.stdout.strip()) if result.stdout.strip() else []
-                
-                if instances:
-                    inst = instances[0]
-                    inst_id = inst.get('id')
-                    
-                    # Build modify command
-                    mod_parts = []
-                    if 'project' in changed_attrs:
-                        mod_parts.append(f"project:{changed_attrs['project']}")
-                    if 'priority' in changed_attrs:
-                        mod_parts.append(f"priority:{changed_attrs['priority']}")
-                    if 'tags' in changed_attrs:
-                        # This is simplified - full tag handling is complex
-                        for tag in changed_attrs['tags']:
-                            mod_parts.append(f"+{tag}")
-                    if 'due' in changed_attrs:
-                        mod_parts.append(f"due:{changed_attrs['due']}")
-                    if 'scheduled' in changed_attrs:
-                        mod_parts.append(f"scheduled:{changed_attrs['scheduled']}")
-                    
-                    if mod_parts:
-                        task_id = self.get_task_id(modified['uuid'])
-                        feedback.append(
-                            f"Modified task {task_id} -- {modified.get('description', '')} (recurrence template)\n"
-                            f"This will affect future instances. To apply to current instance #{inst.get('rindex')}:\n"
-                            f"task {inst_id} mod {' '.join(mod_parts)}"
-                        )
-            except Exception as e:
-                if DEBUG:
-                    debug_log(f"Could not fetch instances: {e}", "ADD/MOD")
-        
-        return modified, feedback
-    
-    def handle_instance_modification(self, original, modified):
-        """Handle modifications to an instance"""
-        feedback = []
-        
-        # Sync rindex to template rlast
-        if 'rindex' in modified and modified.get('rindex') != original.get('rindex'):
-            new_idx = int(modified['rindex'])
-            old_idx = int(original.get('rindex', '0'))
+            spawn_behavior = {
+                'period': 'on anchor date arrival',
+                'chain': 'on completion of current instance'
+            }
+            
+            changes.append(
+                f"Modified template type: {old_type} → {new_type}\n"
+                f"  This changes how future instances spawn ({spawn_behavior[new_type]}).\n"
+                f"  Current rlast={modified.get('rlast', '0')} preserved."
+            )
             
             if DEBUG:
-                debug_log(f"Instance rindex modified: {old_idx} â†’ {new_idx}", "ADD/MOD")
+                debug_log(f"Type changed: {old_type} -> {new_type}", "ADD/MOD")
+        
+        # Check for recurrence interval change
+        if 'r' in modified and modified['r'] != original.get('r'):
+            old_r = original.get('r', '')
+            new_r = modified['r']
             
-            try:
-                subprocess.run(
-                    ['task', 'rc.hooks=off', modified['rtemplate'], 'modify', f'rlast:{new_idx}'],
-                    capture_output=True,
-                    check=True
-                )
-                feedback.append(
-                    f"Modified instance rindex: {old_idx} â†’ {new_idx}\n"
-                    f"Template rlast synced to {new_idx}."
-                )
-                if DEBUG:
-                    debug_log(f"Synced template rlast to {new_idx}", "ADD/MOD")
-            except Exception as e:
-                if DEBUG:
-                    debug_log(f"Failed to sync template rlast: {e}", "ADD/MOD")
+            changes.append(
+                f"Modified recurrence interval: {old_r} → {new_r}\n"
+                f"  This changes the spacing between future instances."
+            )
+            
+            if DEBUG:
+                debug_log(f"Recurrence interval changed: {old_r} -> {new_r}", "ADD/MOD")
         
-        # Check for attribute changes that might want to propagate to template
-        changed_attrs = {}
-        for attr in ['project', 'priority', 'tags']:
-            if attr in modified and modified.get(attr) != original.get(attr):
-                changed_attrs[attr] = modified.get(attr)
+        # Check for anchor change (due ↔ sched)
+        old_anchor = original.get('ranchor')
+        new_anchor_field, new_anchor_date = self.get_anchor_date(modified)
         
-        if changed_attrs and 'rtemplate' in modified:
-            try:
-                # Get template info
-                result = subprocess.run(
-                    ['task', 'rc.hooks=off', f'uuid:{modified["rtemplate"]}', 'export'],
-                    capture_output=True, text=True, check=True
-                )
-                templates = json.loads(result.stdout.strip())
+        if new_anchor_field and old_anchor and new_anchor_field != old_anchor:
+            # Update ranchor
+            modified['ranchor'] = new_anchor_field
+            
+            # Update all relative date references
+            updated_fields = self.update_relative_dates_for_anchor_change(
+                modified, old_anchor, new_anchor_field
+            )
+            
+            updated_str = ', '.join(updated_fields) if updated_fields else 'none'
+            
+            changes.append(
+                f"Modified template anchor: {old_anchor} → {new_anchor_field}\n"
+                f"  Relative dates ({updated_str}) updated to use new anchor."
+            )
+            
+            if DEBUG:
+                debug_log(f"Anchor changed: {old_anchor} -> {new_anchor_field}", "ADD/MOD")
+        
+        # Check for rlast change (time machine)
+        if 'rlast' in modified and modified['rlast'] != original.get('rlast'):
+            old_rlast = int(original.get('rlast', 0))
+            new_rlast = int(modified['rlast'])
+            delta = new_rlast - old_rlast
+            direction = "forward" if delta > 0 else "backward"
+            
+            type_str = modified.get('type', 'period')
+            
+            # Query for current pending instance to sync rindex
+            template_uuid = modified.get('uuid')
+            if template_uuid:
+                instances = query_instances(template_uuid)
                 
-                if templates:
-                    tmpl = templates[0]
-                    tmpl_id = tmpl.get('id')
+                # Find instance with rindex matching old_rlast (the "current" instance)
+                current_instance = None
+                for inst in instances:
+                    if int(inst.get('rindex', 0)) == old_rlast:
+                        current_instance = inst
+                        break
+                
+                if current_instance:
+                    # Auto-sync: update instance rindex to match new rlast
+                    inst_uuid = current_instance['uuid']
+                    inst_id = current_instance.get('id', '?')
                     
-                    # Build modify command for template
-                    mod_parts = []
-                    if 'project' in changed_attrs:
-                        mod_parts.append(f"project:{changed_attrs['project']}")
-                    if 'priority' in changed_attrs:
-                        mod_parts.append(f"priority:{changed_attrs['priority']}")
-                    if 'tags' in changed_attrs:
-                        for tag in changed_attrs['tags']:
-                            mod_parts.append(f"+{tag}")
-                    
-                    if mod_parts:
-                        inst_id = self.get_task_id(modified['uuid'])
-                        feedback.append(
-                            f"Modified task {inst_id} -- {modified.get('description', '')} (instance #{modified.get('rindex')})\n"
-                            f"To apply this change to all future instances:\n"
-                            f"task {tmpl_id} mod {' '.join(mod_parts)}"
-                        )
-            except Exception as e:
-                if DEBUG:
-                    debug_log(f"Could not fetch template: {e}", "ADD/MOD")
+                    if update_task(inst_uuid, {'rindex': new_rlast}):
+                        if DEBUG:
+                            debug_log(f"Auto-synced instance {inst_id} rindex: {old_rlast} -> {new_rlast}", "ADD/MOD")
+                        
+                        sync_msg = f"  Instance #{old_rlast} (task {inst_id}) rindex auto-synced to {new_rlast}."
+                    else:
+                        sync_msg = f"  WARNING: Failed to auto-sync instance #{old_rlast} rindex. Manual sync needed:\n  task {inst_uuid} mod rindex:{new_rlast}"
+                else:
+                    if DEBUG:
+                        debug_log(f"No instance found with rindex={old_rlast} to sync", "ADD/MOD")
+                    sync_msg = None
+            else:
+                sync_msg = None
+            
+            if type_str == 'period':
+                # Calculate next instance date for period types
+                anchor_field, anchor_date = self.get_anchor_date(modified)
+                if anchor_date and 'r' in modified:
+                    r_delta = parse_duration(modified['r'])
+                    if r_delta:
+                        from datetime import timedelta
+                        next_date = anchor_date + (r_delta * (new_rlast + 1))
+                        next_date_str = format_date(next_date)
+                        
+                        msg = f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
+                        msg += f"  Next instance will be #{new_rlast + 1} due {next_date_str}"
+                        if sync_msg:
+                            msg += f"\n{sync_msg}"
+                        changes.append(msg)
+                    else:
+                        msg = f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
+                        msg += f"  Next instance will be #{new_rlast + 1}"
+                        if sync_msg:
+                            msg += f"\n{sync_msg}"
+                        changes.append(msg)
+                else:
+                    msg = f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})"
+                    if sync_msg:
+                        msg += f"\n{sync_msg}"
+                    changes.append(msg)
+            else:
+                # Chain type
+                msg = f"Template rlast modified: {old_rlast} → {new_rlast}\n"
+                msg += f"  Next instance will be #{new_rlast + 1} (spawns on completion)."
+                if sync_msg:
+                    msg += f"\n{sync_msg}"
+                changes.append(msg)
+            
+            if DEBUG:
+                debug_log(f"rlast changed: {old_rlast} -> {new_rlast}", "ADD/MOD")
         
-        return modified, feedback
+        # Check for rend change
+        if 'rend' in modified and modified.get('rend') != original.get('rend'):
+            old_rend = original.get('rend', 'none')
+            new_rend = modified['rend']
+            
+            changes.append(
+                f"Modified recurrence end: {old_rend} → {new_rend}\n"
+                f"  Template will stop repeating after this limit."
+            )
+            
+            if DEBUG:
+                debug_log(f"rend changed: {old_rend} -> {new_rend}", "ADD/MOD")
+        
+        # Check for wait modifications (absolute → relative conversion)
+        anchor_field, anchor_date = self.get_anchor_date(modified)
+        if anchor_field and anchor_date:
+            self.convert_wait_to_relative(modified, anchor_field, anchor_date)
+        
+        # Check for anchor date changes (the actual due/scheduled date value)
+        if anchor_field:
+            old_anchor_date = None
+            if anchor_field == 'due' and 'due' in original:
+                old_anchor_date = parse_date(original['due'])
+            elif anchor_field == 'sched' and 'scheduled' in original:
+                old_anchor_date = parse_date(original['scheduled'])
+            
+            if old_anchor_date and anchor_date and old_anchor_date != anchor_date:
+                type_str = modified.get('type', 'period')
+                
+                if type_str == 'period':
+                    changes.append(
+                        f"Modified template {anchor_field} date: {format_date(old_anchor_date)} → {format_date(anchor_date)}\n"
+                        f"  This shifts all future instances by the same offset."
+                    )
+                else:
+                    changes.append(
+                        f"Modified template {anchor_field} date: {format_date(old_anchor_date)} → {format_date(anchor_date)}\n"
+                        f"  This affects next instance only (chain type)."
+                    )
+                
+                if DEBUG:
+                    debug_log(f"Anchor date changed: {old_anchor_date} -> {anchor_date}", "ADD/MOD")
+        
+        # Check for non-recurrence attribute changes (suggest propagation to current instance)
+        non_recurrence_attrs = ['project', 'priority', 'tags', 'description']
+        attr_changes = []
+        
+        for attr in non_recurrence_attrs:
+            if attr in modified and modified.get(attr) != original.get(attr):
+                attr_changes.append(attr)
+        
+        if attr_changes:
+            attr_list = ', '.join(attr_changes)
+            
+            # Try to find current instance to provide specific command
+            template_uuid = modified.get('uuid')
+            current_instance_id = None
+            
+            if template_uuid:
+                instances = query_instances(template_uuid)
+                rlast = int(modified.get('rlast', 0))
+                
+                # Find instance with rindex matching rlast
+                for inst in instances:
+                    if int(inst.get('rindex', 0)) == rlast:
+                        current_instance_id = inst.get('id')
+                        break
+            
+            if current_instance_id:
+                # Build modification command for specific instance
+                mod_cmd_parts = []
+                for attr in attr_changes:
+                    if attr == 'tags':
+                        # Tags need special handling
+                        mod_cmd_parts.append(f"{attr}:{','.join(modified[attr])}")
+                    else:
+                        mod_cmd_parts.append(f"{attr}:{modified[attr]}")
+                
+                changes.append(
+                    f"Modified template attributes: {attr_list}\n"
+                    f"  This will affect future instances. To apply to current instance #{rlast}:\n"
+                    f"  task {current_instance_id} mod {' '.join(mod_cmd_parts)}"
+                )
+            else:
+                changes.append(
+                    f"Modified template attributes: {attr_list}\n"
+                    f"  This will affect future instances. To apply to current instance:\n"
+                    f"  Find current instance and apply the same modifications."
+                )
+        
+        # Output comprehensive message
+        if changes:
+            msg = f"Modified task {task_id} -- {description} (recurrence template)\n"
+            msg += "\n".join(changes)
+            self.add_message(msg)
+        
+        return modified
+    
+    def handle_instance_modification(self, original, modified):
+        """Handle modifications to an instance with rindex ↔ rlast sync
+        
+        Args:
+            original: Original task state
+            modified: Modified task state
+            
+        Returns:
+            Updated modified task
+        """
+        if DEBUG:
+            debug_log(f"Handling instance modification: {modified.get('description')}", "ADD/MOD")
+        
+        task_id = modified.get('id', '?')
+        description = modified.get('description', 'untitled')
+        rtemplate_uuid = modified.get('rtemplate', '')
+        
+        # Track changes
+        changes = []
+        
+        # Query template to check current rlast and detect desync
+        template = None
+        template_id = None
+        template_rlast = None
+        
+        if rtemplate_uuid:
+            template = query_task(rtemplate_uuid)
+            if template:
+                template_id = template.get('id', '?')
+                template_rlast = int(template.get('rlast', 0))
+        
+        # Check for rindex change (must sync with template rlast)
+        if 'rindex' in modified and modified['rindex'] != original.get('rindex'):
+            old_rindex = int(original.get('rindex', 0))
+            new_rindex = int(modified['rindex'])
+            
+            # Auto-sync template rlast to match new rindex
+            if template:
+                # Check for desync first
+                if template_rlast != old_rindex:
+                    changes.append(
+                        f"WARNING: Detected desync - instance rindex={old_rindex} but template rlast={template_rlast}\n"
+                        f"  Auto-fixing: Template rlast will be updated to {new_rindex}"
+                    )
+                    if DEBUG:
+                        debug_log(f"Desync detected: rindex={old_rindex}, rlast={template_rlast}", "ADD/MOD")
+                
+                # Update template rlast
+                if update_task(rtemplate_uuid, {'rlast': new_rindex}):
+                    if DEBUG:
+                        debug_log(f"Auto-synced template {template_id} rlast: {template_rlast} -> {new_rindex}", "ADD/MOD")
+                    
+                    changes.append(
+                        f"Modified instance rindex: {old_rindex} → {new_rindex}\n"
+                        f"  Template rlast auto-synced to {new_rindex}."
+                    )
+                else:
+                    changes.append(
+                        f"Modified instance rindex: {old_rindex} → {new_rindex}\n"
+                        f"  WARNING: Failed to auto-sync template rlast. Manual sync needed:\n"
+                        f"  task {template_id} mod rlast:{new_rindex}"
+                    )
+            else:
+                # Could not query template
+                changes.append(
+                    f"Modified instance rindex: {old_rindex} → {new_rindex}\n"
+                    f"  Template rlast should be synced to {new_rindex}.\n"
+                    f"  Update template with: task {rtemplate_uuid} mod rlast:{new_rindex}"
+                )
+            
+            if DEBUG:
+                debug_log(f"rindex changed: {old_rindex} -> {new_rindex}", "ADD/MOD")
+        else:
+            # No rindex change, but check for desync
+            if template and template_rlast is not None:
+                current_rindex = int(modified.get('rindex', 0))
+                if template_rlast != current_rindex:
+                    # Detected desync - auto-fix it
+                    if update_task(rtemplate_uuid, {'rlast': current_rindex}):
+                        changes.append(
+                            f"WARNING: Detected desync - instance rindex={current_rindex} but template rlast={template_rlast}\n"
+                            f"  Auto-fixed: Template rlast updated to {current_rindex}"
+                        )
+                        if DEBUG:
+                            debug_log(f"Auto-fixed desync: updated rlast {template_rlast} -> {current_rindex}", "ADD/MOD")
+        
+        # Check for non-recurrence attribute changes (suggest propagation to template)
+        non_recurrence_attrs = ['project', 'priority', 'tags']
+        attr_changes = []
+        attr_mod_parts = []
+        
+        for attr in non_recurrence_attrs:
+            if attr in modified and modified.get(attr) != original.get(attr):
+                attr_changes.append(attr)
+                if attr == 'tags':
+                    attr_mod_parts.append(f"{attr}:{','.join(modified[attr])}")
+                else:
+                    attr_mod_parts.append(f"{attr}:{modified[attr]}")
+        
+        if attr_changes:
+            rindex = modified.get('rindex', '?')
+            attr_list = ', '.join(attr_changes)
+            
+            if template_id:
+                changes.append(
+                    f"Modified instance attributes: {attr_list}\n"
+                    f"  To apply this change to all future instances:\n"
+                    f"  task {template_id} mod {' '.join(attr_mod_parts)}"
+                )
+            else:
+                changes.append(
+                    f"Modified instance attributes: {attr_list}\n"
+                    f"  To apply this change to all future instances:\n"
+                    f"  task {rtemplate_uuid} mod {' '.join(attr_mod_parts)}"
+                )
+        
+        # Output message
+        if changes:
+            rindex = modified.get('rindex', '?')
+            msg = f"Modified task {task_id} -- {description} (instance #{rindex})\n"
+            msg += "\n".join(changes)
+            self.add_message(msg)
+        
+        return modified
+    
+    def handle_instance_completion(self, original, modified):
+        """Handle completion/deletion of an instance with validation
+        
+        Args:
+            original: Original task state
+            modified: Modified task state
+            
+        Returns:
+            Updated modified task
+        """
+        if DEBUG:
+            debug_log(f"Handling instance completion: {modified.get('description')}", "ADD/MOD")
+        
+        # Check if being completed or deleted
+        if modified.get('status') not in ['completed', 'deleted']:
+            return modified
+        
+        task_id = modified.get('id', '?')
+        description = modified.get('description', 'untitled')
+        rindex = int(modified.get('rindex', 0))
+        rtemplate_uuid = modified.get('rtemplate', '')
+        
+        status_word = 'Completed' if modified['status'] == 'completed' else 'Deleted'
+        messages = []
+        
+        # Query template to check rlast and detect issues
+        template = None
+        template_id = None
+        template_rlast = None
+        
+        if rtemplate_uuid:
+            template = query_task(rtemplate_uuid)
+            if template:
+                template_id = template.get('id', '?')
+                template_rlast = int(template.get('rlast', 0))
+        
+        if template:
+            # Check for rlast/rindex desync
+            if template_rlast != rindex:
+                messages.append(
+                    f"WARNING: Instance rindex={rindex} doesn't match template rlast={template_rlast}\n"
+                    f"  This may indicate out-of-order completion or missed instances."
+                )
+                if DEBUG:
+                    debug_log(f"Completion desync: rindex={rindex}, rlast={template_rlast}", "ADD/MOD")
+            
+            # Check if any pending instances exist
+            instances = query_instances(rtemplate_uuid)
+            
+            if not instances:
+                # No pending instances exist!
+                messages.append(
+                    f"ERROR: No pending instances exist for this template.\n"
+                    f"  On-exit hook should spawn next instance, but may need manual intervention."
+                )
+                if DEBUG:
+                    debug_log(f"No pending instances found for template {template_id}", "ADD/MOD")
+            else:
+                if DEBUG:
+                    debug_log(f"Found {len(instances)} pending instance(s) for template {template_id}", "ADD/MOD")
+        
+        # Build final message
+        msg = f"{status_word} task {task_id} -- {description} (instance #{rindex})\n"
+        if template_id:
+            msg += f"  Template: task {template_id}"
+        else:
+            msg += f"  Template: {rtemplate_uuid}"
+        
+        if messages:
+            msg += "\n" + "\n".join(messages)
+        
+        self.add_message(msg)
+        
+        if DEBUG:
+            debug_log(f"Instance {rindex} {status_word.lower()}", "ADD/MOD")
+        
+        return modified
 
 
 def main():
@@ -488,12 +838,10 @@ def main():
         
         # Check if this should be a template (but not if being deleted)
         if 'r' in task and task.get('status') != 'deleted':
-            task, feedback = handler.create_template(task)
-            sys.stderr.write("Created recurrence template. First instance will be generated on exit.\n")
-            for msg in feedback:
-                sys.stderr.write(f"{msg}\n")
+            task = handler.create_template(task)
         
         print(json.dumps(task))
+        handler.output_messages()
     
     else:
         # On-modify: two task inputs
@@ -509,29 +857,24 @@ def main():
             sys.stderr.write(f"Error parsing JSON: {e}\n")
             sys.exit(1)
         
-        feedback = []
-        
         # Adding recurrence to existing task? (but not if being deleted)
-        if 'r' in modified and modified.get('status') not in ['recurring', 'deleted']:
-            modified, fb = handler.create_template(modified)
-            feedback.extend(fb)
-            sys.stderr.write("Created recurrence template. First instance will be generated on exit.\n")
+        if 'r' in modified and 'r' not in original and modified.get('status') != 'deleted':
+            modified = handler.create_template(modified)
         
         # Modifying a template?
         elif is_template(original):
-            modified, fb = handler.handle_template_modification(original, modified)
-            feedback.extend(fb)
+            modified = handler.handle_template_modification(original, modified)
         
         # Modifying an instance?
         elif is_instance(original):
-            modified, fb = handler.handle_instance_modification(original, modified)
-            feedback.extend(fb)
-        
-        # Output feedback
-        for msg in feedback:
-            sys.stderr.write(f"{msg}\n")
+            # Check if being completed/deleted
+            if modified.get('status') in ['completed', 'deleted']:
+                modified = handler.handle_instance_completion(original, modified)
+            else:
+                modified = handler.handle_instance_modification(original, modified)
         
         print(json.dumps(modified))
+        handler.output_messages()
     
     if DEBUG:
         debug_log("Hook completed", "ADD/MOD")
