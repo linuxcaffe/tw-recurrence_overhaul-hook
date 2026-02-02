@@ -522,36 +522,64 @@ class RecurrenceHandler:
             
             type_str = modified.get('type', 'period')
             
-            # Query for current pending instance to sync rindex
+            # Query for pending instances to sync rindex and enforce one-to-one rule
             template_uuid = modified.get('uuid')
+            sync_msg = None
+            
             if template_uuid:
                 instances = query_instances(template_uuid)
                 
-                # Find instance with rindex matching old_rlast (the "current" instance)
-                current_instance = None
-                for inst in instances:
-                    if int(inst.get('rindex', 0)) == old_rlast:
-                        current_instance = inst
-                        break
+                if len(instances) == 0:
+                    # ERROR: No instance exists (violates one-to-one rule)
+                    if DEBUG:
+                        debug_log(f"ERROR: No pending instance found for template {template_uuid}", "ADD/MOD")
+                    
+                    sync_msg = (
+                        f"  ERROR: No pending instance exists (violates one-to-one rule)\n"
+                        f"  Expected: Exactly 1 instance with rindex={old_rlast}\n"
+                        f"  Found: 0 instances\n"
+                        f"  Fix: On-exit hook will spawn instance #{new_rlast} on next task command"
+                    )
                 
-                if current_instance:
-                    # Auto-sync: update instance rindex to match new rlast
+                elif len(instances) == 1:
+                    # CORRECT: Exactly one instance exists - update its rindex
+                    current_instance = instances[0]
+                    
                     inst_uuid = current_instance['uuid']
                     inst_id = current_instance.get('id', '?')
+                    old_inst_rindex = int(current_instance.get('rindex', 0))
                     
+                    # Auto-sync: update instance rindex to match new rlast
                     if update_task(inst_uuid, {'rindex': new_rlast}):
                         if DEBUG:
-                            debug_log(f"Auto-synced instance {inst_id} rindex: {old_rlast} -> {new_rlast}", "ADD/MOD")
+                            debug_log(f"Auto-synced instance {inst_id} rindex: {old_inst_rindex} -> {new_rlast}", "ADD/MOD")
                         
-                        sync_msg = f"  Instance #{old_rlast} (task {inst_id}) rindex auto-synced to {new_rlast}."
+                        sync_msg = f"  Instance #{old_inst_rindex} (task {inst_id}) rindex auto-synced to {new_rlast}."
                     else:
-                        sync_msg = f"  WARNING: Failed to auto-sync instance #{old_rlast} rindex. Manual sync needed:\n  task {inst_uuid} mod rindex:{new_rlast}"
+                        sync_msg = (
+                            f"  WARNING: Failed to auto-sync instance #{old_inst_rindex} rindex\n"
+                            f"  Manual sync needed: task {inst_id} mod rindex:{new_rlast}"
+                        )
+                
                 else:
+                    # ERROR: Multiple instances exist (violates one-to-one rule - data corruption)
                     if DEBUG:
-                        debug_log(f"No instance found with rindex={old_rlast} to sync", "ADD/MOD")
-                    sync_msg = None
-            else:
-                sync_msg = None
+                        debug_log(f"ERROR: Multiple instances found for template {template_uuid}: {len(instances)}", "ADD/MOD")
+                    
+                    inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
+                                          for inst in instances])
+                    
+                    sync_msg = (
+                        f"  ERROR: Multiple instances exist (violates one-to-one rule - DATA CORRUPTION)\n"
+                        f"  Expected: Exactly 1 instance\n"
+                        f"  Found: {len(instances)} instances: {inst_list}\n"
+                        f"  This indicates a serious bug or external data corruption.\n"
+                        f"  Manual fix required:\n"
+                        f"    1. Decide which instance to keep (usually the one with rindex={new_rlast})\n"
+                        f"    2. Delete the others: task <id> delete\n"
+                        f"    3. Ensure remaining instance has rindex={new_rlast}\n"
+                        f"  Or delete all and let on-exit spawn fresh: task {' '.join([str(i.get('id')) for i in instances])} delete"
+                    )
             
             if type_str == 'period':
                 # Calculate next instance date for period types
@@ -723,6 +751,28 @@ class RecurrenceHandler:
             if template:
                 template_id = template.get('id', '?')
                 template_rlast = int(template.get('rlast', 0))
+                
+                # Check one-to-one rule: are there other instances?
+                all_instances = query_instances(rtemplate_uuid)
+                
+                if len(all_instances) > 1:
+                    # ERROR: Multiple instances exist (violates one-to-one rule)
+                    inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
+                                          for inst in all_instances])
+                    
+                    changes.append(
+                        f"ERROR: Multiple instances exist (violates one-to-one rule - DATA CORRUPTION)\n"
+                        f"  Expected: Exactly 1 instance\n"
+                        f"  Found: {len(all_instances)} instances: {inst_list}\n"
+                        f"  This indicates a serious bug or external data corruption.\n"
+                        f"  Manual fix required:\n"
+                        f"    1. Decide which instance to keep\n"
+                        f"    2. Delete the others: task <id> delete\n"
+                        f"    3. Ensure remaining instance has rindex matching template rlast={template_rlast}"
+                    )
+                    
+                    if DEBUG:
+                        debug_log(f"ERROR: Multiple instances detected for template {rtemplate_uuid}: {len(all_instances)}", "ADD/MOD")
         
         # Check for rindex change (must sync with template rlast)
         if 'rindex' in modified and modified['rindex'] != original.get('rindex'):
