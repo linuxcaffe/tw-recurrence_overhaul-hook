@@ -265,6 +265,77 @@ def get_anchor_field_name(anchor_field):
     return field_map.get(anchor_field, anchor_field)
 
 
+def query_instances(template_uuid):
+    """Query all instances (pending OR waiting) for a specific template
+    
+    Args:
+        template_uuid: Template UUID to query instances for
+        
+    Returns:
+        List of instance task dictionaries
+    """
+    import subprocess
+    import json
+    
+    try:
+        # Query for both pending AND waiting status
+        # Waiting tasks are still "active" instances, just not ready yet
+        result = subprocess.run(
+            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 
+             '(status:pending or status:waiting)', 'export'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            instances = json.loads(result.stdout)
+            if DEBUG:
+                debug_log(f"Queried instances for {template_uuid}: {len(instances)} found", "COMMON")
+            return instances
+        
+        if DEBUG:
+            debug_log(f"Queried instances for {template_uuid}: none found", "COMMON")
+        return []
+        
+    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        if DEBUG:
+            debug_log(f"Query instances for {template_uuid} failed: {e}", "COMMON")
+        return []
+
+
+def check_instance_count(template_uuid):
+    """Check instance count for a specific template (targeted checking)
+    
+    This is the ONLY way to check instances - never check all templates globally!
+    
+    Args:
+        template_uuid: Template UUID to check
+        
+    Returns:
+        Tuple: (status, data)
+            - ('missing', None): No instances exist
+            - ('ok', instance): Exactly one instance exists
+            - ('multiple', instances): Multiple instances exist (corruption)
+    """
+    instances = query_instances(template_uuid)
+    
+    if len(instances) == 0:
+        if DEBUG:
+            debug_log(f"Instance check for {template_uuid}: MISSING (0 found)", "COMMON")
+        return ('missing', None)
+    
+    elif len(instances) == 1:
+        if DEBUG:
+            debug_log(f"Instance check for {template_uuid}: OK (1 found)", "COMMON")
+        return ('ok', instances[0])
+    
+    else:
+        if DEBUG:
+            debug_log(f"Instance check for {template_uuid}: MULTIPLE ({len(instances)} found - CORRUPTION)", "COMMON")
+        return ('multiple', instances)
+
+
 # Version info
 __version__ = '0.4.0'
 __date__ = '2026-01-31'
