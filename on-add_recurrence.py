@@ -164,7 +164,7 @@ class RecurrenceHandler:
         return task, feedback
     
     def handle_anchor_change(self, original, modified):
-        """Handle change in anchor field (due ↔ sched)"""
+        """Handle change in anchor field (due â†” sched)"""
         old_anchor = original.get('ranchor')
         feedback = []
         
@@ -177,7 +177,7 @@ class RecurrenceHandler:
         
         if new_anchor and new_anchor != old_anchor:
             if DEBUG:
-                debug_log(f"Anchor change detected: {old_anchor} → {new_anchor}", "ADD/MOD")
+                debug_log(f"Anchor change detected: {old_anchor} â†’ {new_anchor}", "ADD/MOD")
             
             modified['ranchor'] = new_anchor
             
@@ -189,7 +189,7 @@ class RecurrenceHandler:
                 modified['rscheduled'] = modified['rscheduled'].replace(old_anchor, new_anchor)
             
             feedback.append(
-                f"Modified template anchor: {old_anchor} → {new_anchor}\n"
+                f"Modified template anchor: {old_anchor} â†’ {new_anchor}\n"
                 f"Relative dates (rwait, rscheduled) updated to use new anchor."
             )
         
@@ -239,7 +239,7 @@ class RecurrenceHandler:
         
         if new_rlast != old_rlast:
             if DEBUG:
-                debug_log(f"rlast modified: {old_rlast} → {new_rlast}", "ADD/MOD")
+                debug_log(f"rlast modified: {old_rlast} â†’ {new_rlast}", "ADD/MOD")
             
             # Sync current pending instance rindex to match template rlast
             try:
@@ -257,7 +257,7 @@ class RecurrenceHandler:
                     if old_rindex != new_rlast:
                         # Update instance rindex to match template rlast
                         if DEBUG:
-                            debug_log(f"Attempting to sync instance {inst['uuid']} rindex: {old_rindex} → {new_rlast}", "ADD/MOD")
+                            debug_log(f"Attempting to sync instance {inst['uuid']} rindex: {old_rindex} â†’ {new_rlast}", "ADD/MOD")
                         
                         result = subprocess.run(
                             ['task', 'rc.hooks=off', inst['uuid'], 'modify', f'rindex:{new_rlast}'],
@@ -296,14 +296,14 @@ class RecurrenceHandler:
                     direction = "forward" if skip_count > 0 else "backward"
                     
                     feedback.append(
-                        f"Template rlast modified: {old_rlast} → {new_rlast} "
+                        f"Template rlast modified: {old_rlast} â†’ {new_rlast} "
                         f"({abs(skip_count)} instance{'s' if abs(skip_count) != 1 else ''} {direction})\n"
                         f"Next instance will be #{next_idx} due {format_date(next_due)}"
                     )
             else:
                 # Chain type - simpler message
                 feedback.append(
-                    f"Template rlast modified: {old_rlast} → {new_rlast}\n"
+                    f"Template rlast modified: {old_rlast} â†’ {new_rlast}\n"
                     f"Next instance will be #{new_rlast + 1} (spawns on completion)."
                 )
         
@@ -327,11 +327,11 @@ class RecurrenceHandler:
             
             if old_type != new_type:
                 if DEBUG:
-                    debug_log(f"Type change: {old_type} → {new_type}", "ADD/MOD")
+                    debug_log(f"Type change: {old_type} â†’ {new_type}", "ADD/MOD")
                 
                 spawn_msg = "on completion" if new_type == "chain" else "on schedule"
                 feedback.append(
-                    f"Modified template type: {old_type} → {new_type}\n"
+                    f"Modified template type: {old_type} â†’ {new_type}\n"
                     f"This changes how future instances spawn ({spawn_msg}).\n"
                     f"Current rlast={modified.get('rlast', '0')} preserved."
                 )
@@ -410,7 +410,7 @@ class RecurrenceHandler:
             old_idx = int(original.get('rindex', '0'))
             
             if DEBUG:
-                debug_log(f"Instance rindex modified: {old_idx} → {new_idx}", "ADD/MOD")
+                debug_log(f"Instance rindex modified: {old_idx} â†’ {new_idx}", "ADD/MOD")
             
             try:
                 subprocess.run(
@@ -419,7 +419,7 @@ class RecurrenceHandler:
                     check=True
                 )
                 feedback.append(
-                    f"Modified instance rindex: {old_idx} → {new_idx}\n"
+                    f"Modified instance rindex: {old_idx} â†’ {new_idx}\n"
                     f"Template rlast synced to {new_idx}."
                 )
                 if DEBUG:

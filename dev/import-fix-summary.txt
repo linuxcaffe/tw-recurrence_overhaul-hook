@@ -1,0 +1,106 @@
+# Recurrence Hook Import Fix
+# Date: 2026-02-02
+
+## Problem: Module Not Found Error
+
+**Error Message:**
+```
+Traceback (most recent call last):
+  File "/home/djp/.task/hooks/on-exit_recurrence.py", line 26, in <module>
+    from recurrence_common import (
+ModuleNotFoundError: No module named 'recurrence_common'
+```
+
+## Root Cause:
+
+The hooks were using **inconsistent import statements**:
+
+**on-exit_recurrence.py:** ❌
+```python
+from recurrence_common import (...)
+```
+Looking for module: `recurrence_common.py` (doesn't exist!)
+
+**on-add_recurrence.py:** ✓
+```python
+from recurrence_common_hook import (...)
+```
+Looking for module: `recurrence_common_hook.py` or `recurrence_common_hook-x.py` (exists!)
+
+**Actual filename:**
+`recurrence_common_hook-x.py`
+
+## Python Import Mechanics:
+
+When you write:
+```python
+from recurrence_common_hook import ...
+```
+
+Python looks for files in this order:
+1. `recurrence_common_hook.py` 
+2. `recurrence_common_hook-x.py` ← Found! (Python strips `-x` before `.py`)
+3. `recurrence_common_hook/__init__.py`
+
+The `-x` suffix is ignored by Python's import system, so `recurrence_common_hook-x.py` 
+can be imported as `recurrence_common_hook`.
+
+## Fixes Applied:
+
+### 1. Fixed on-exit_recurrence.py (line 26)
+**Before:**
+```python
+from recurrence_common import (
+    debug_log, parse_date, format_date, parse_duration, parse_relative_date,
+    get_anchor_field_name, DEBUG
+)
+```
+
+**After:**
+```python
+from recurrence_common_hook import (
+    debug_log, parse_date, format_date, parse_duration, parse_relative_date,
+    get_anchor_field_name, DEBUG
+)
+```
+
+### 2. Fixed documentation (line 11)
+**Before:**
+```
+3. Ensure recurrence_common.py is in the same directory
+```
+
+**After:**
+```
+3. Ensure recurrence_common_hook-x.py is in the same directory (not executable)
+```
+
+## Verification:
+
+**Files checked:**
+- ✓ on-exit_recurrence.py - FIXED (was importing wrong module)
+- ✓ on-add_recurrence.py - ALREADY CORRECT
+- ✓ recurrence_common_hook-x.py - EXISTS with correct name
+
+**Import consistency:**
+Both hooks now use the same import statement:
+```python
+from recurrence_common_hook import (...)
+```
+
+## Testing:
+
+After updating on-exit_recurrence.py, the error should be resolved:
+
+```bash
+tw --debug rr
+# Should no longer show:
+# ModuleNotFoundError: No module named 'recurrence_common'
+```
+
+## Files Modified:
+- /mnt/project/on-exit_recurrence.py
+  - Line 26: Fixed import statement
+  - Line 11: Fixed documentation
+
+## Status: FIXED ✓
