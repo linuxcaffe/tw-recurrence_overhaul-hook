@@ -39,7 +39,8 @@ try:
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG,
-        query_instances, check_instance_count, spawn_instance, delete_instance
+        query_instances, check_instance_count, spawn_instance, delete_instance,
+        should_respawn
     )
 except ImportError as e:
     # Fallback error handling
@@ -360,11 +361,6 @@ class RecurrenceHandler:
                 return True
         
         return False
-                    debug_log(f"Converted absolute scheduled to relative: {task['rscheduled']}", "ADD/MOD")
-                
-                return True
-        
-        return False
     
     def update_relative_dates_for_anchor_change(self, task, old_anchor, new_anchor):
         """Update rwait and rscheduled when anchor changes
@@ -488,6 +484,73 @@ class RecurrenceHandler:
             )
             return modified
         
+        # RESPAWN LOGIC - Check if any changes require deleting + recreating instance
+        template_uuid = modified.get('uuid')
+        respawn_triggered = should_respawn(original, modified)
+        
+        # Always check for childless template (missing instance)
+        status, data = check_instance_count(template_uuid) if template_uuid else ('unknown', None)
+        childless = (status == 'missing')
+        
+        # Respawn if: (1) respawn-triggering field changed, OR (2) template is childless
+        if (respawn_triggered or childless) and template_uuid:
+            if DEBUG:
+                if respawn_triggered:
+                    debug_log(f"Respawn triggered by field change", "ADD/MOD")
+                if childless:
+                    debug_log(f"Respawn triggered by childless template", "ADD/MOD")
+            
+            # Get current rlast for respawning
+            current_rlast = int(modified.get('rlast', 1))
+            
+            if status == 'ok':
+                # Have an instance - delete it first
+                instance = data
+                inst_uuid = instance['uuid']
+                inst_id = instance.get('id', '?')
+                old_rindex = int(instance.get('rindex', 0))
+                
+                if DEBUG:
+                    debug_log(f"Deleting instance #{old_rindex} for respawn", "ADD/MOD")
+                
+                if delete_instance(inst_uuid, inst_id):
+                    # Spawn new instance with current rlast (no increment!)
+                    spawn_msg = spawn_instance(modified, current_rlast)
+                    
+                    if spawn_msg:
+                        if childless:
+                            changes.append(f"WARNING: Childless template detected - respawned instance #{current_rlast}")
+                        # Note: Individual field handlers will add their own messages
+                    else:
+                        changes.append(f"ERROR: Failed to respawn instance #{current_rlast}")
+                else:
+                    changes.append(f"ERROR: Failed to delete instance #{old_rindex} for respawn")
+            
+            elif status == 'missing':
+                # No instance - just spawn one
+                if DEBUG:
+                    debug_log(f"Spawning missing instance #{current_rlast}", "ADD/MOD")
+                
+                spawn_msg = spawn_instance(modified, current_rlast)
+                
+                if spawn_msg:
+                    changes.append(f"WARNING: Childless template detected - spawned instance #{current_rlast}")
+                else:
+                    changes.append(f"ERROR: Failed to spawn instance #{current_rlast}")
+            
+            elif status == 'multiple':
+                # Multiple instances - error (don't respawn, let user fix)
+                instances = data
+                inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
+                                      for inst in instances])
+                
+                changes.append(
+                    f"ERROR: Multiple instances exist (data corruption)\n"
+                    f"  Expected: 1 instance\n"
+                    f"  Found: {len(instances)} instances: {inst_list}\n"
+                    f"  Cannot respawn - manual fix required"
+                )
+        
         # Check for type change
         if 'type' in modified and modified['type'] != original.get('type'):
             old_type = original.get('type', 'period')
@@ -544,87 +607,14 @@ class RecurrenceHandler:
             if DEBUG:
                 debug_log(f"Anchor changed: {old_anchor} -> {new_anchor_field}", "ADD/MOD")
         
-        # Check for rlast change (time machine)
+        # Check for rlast change (time machine) - respawn already done above
         if 'rlast' in modified and modified['rlast'] != original.get('rlast'):
-            old_rlast = int(original.get('rlast', 0))
+            old_rlast = int(original.get('rlast', 1))
             new_rlast = int(modified['rlast'])
             delta = new_rlast - old_rlast
             direction = "forward" if delta > 0 else "backward"
             
             type_str = modified.get('type', 'period')
-            
-            # Use targeted checking - only check THIS template's instances
-            template_uuid = modified.get('uuid')
-            sync_msg = None
-            
-            if template_uuid:
-                status, data = check_instance_count(template_uuid)
-                
-                if status == 'missing':
-                    # No instance exists - will spawn on next task command via on-exit
-                    if DEBUG:
-                        debug_log(f"No instance found for template {template_uuid}", "ADD/MOD")
-                    
-                    sync_msg = (
-                        f"  No pending instance exists.\n"
-                        f"  On-exit hook will spawn instance #{new_rlast} when this template's instance completes."
-                    )
-                
-                elif status == 'ok':
-                    # CORRECT: Exactly one instance exists
-                    # DELETE old instance and RE-SPAWN new one with recalculated dates
-                    instance = data
-                    
-                    inst_uuid = instance['uuid']
-                    inst_id = instance.get('id', '?')
-                    old_inst_rindex = int(instance.get('rindex', 0))
-                    
-                    if DEBUG:
-                        debug_log(f"Deleting old instance #{old_inst_rindex} and re-spawning as #{new_rlast}", "ADD/MOD")
-                    
-                    # Delete the old instance
-                    if delete_instance(inst_uuid, inst_id):
-                        # Spawn new instance with correct rindex and recalculated dates
-                        spawn_msg = spawn_instance(modified, new_rlast)
-                        
-                        if spawn_msg:
-                            sync_msg = (
-                                f"  Instance #{old_inst_rindex} (task {inst_id}) deleted and re-spawned as #{new_rlast}\n"
-                                f"  {spawn_msg}"
-                            )
-                        else:
-                            sync_msg = (
-                                f"  Instance #{old_inst_rindex} (task {inst_id}) deleted\n"
-                                f"  WARNING: Failed to re-spawn instance #{new_rlast}\n"
-                                f"  On-exit will attempt to spawn on next task command"
-                            )
-                    else:
-                        sync_msg = (
-                            f"  WARNING: Failed to delete instance #{old_inst_rindex} (task {inst_id})\n"
-                            f"  Manual intervention needed: task {inst_id} delete"
-                        )
-                
-                elif status == 'multiple':
-                    # ERROR: Multiple instances exist (violates one-to-one rule - data corruption)
-                    instances = data
-                    
-                    if DEBUG:
-                        debug_log(f"Multiple instances found for template {template_uuid}: {len(instances)}", "ADD/MOD")
-                    
-                    inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
-                                          for inst in instances])
-                    
-                    sync_msg = (
-                        f"  ERROR: Multiple instances exist (violates one-to-one rule - DATA CORRUPTION)\n"
-                        f"  Expected: Exactly 1 instance\n"
-                        f"  Found: {len(instances)} instances: {inst_list}\n"
-                        f"  This indicates a serious bug or external data corruption.\n"
-                        f"  Manual fix required:\n"
-                        f"    1. Decide which instance to keep (usually the one with rindex={new_rlast})\n"
-                        f"    2. Delete the others: task <id> delete\n"
-                        f"    3. Ensure remaining instance has rindex={new_rlast}\n"
-                        f"  Or delete all and let on-exit spawn fresh: task {' '.join([str(i.get('id')) for i in instances])} delete"
-                    )
             
             if type_str == 'period':
                 # Calculate next instance date for period types
@@ -636,29 +626,29 @@ class RecurrenceHandler:
                         next_date = anchor_date + (r_delta * (new_rlast + 1))
                         next_date_str = format_date(next_date)
                         
-                        msg = f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
-                        msg += f"  Next instance will be #{new_rlast + 1} due {next_date_str}"
-                        if sync_msg:
-                            msg += f"\n{sync_msg}"
-                        changes.append(msg)
+                        changes.append(
+                            f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
+                            f"  Instance #{old_rlast} respawned as instance #{new_rlast} (dates recalculated)\n"
+                            f"  Next instance will be #{new_rlast + 1} due {next_date_str}"
+                        )
                     else:
-                        msg = f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
-                        msg += f"  Next instance will be #{new_rlast + 1}"
-                        if sync_msg:
-                            msg += f"\n{sync_msg}"
-                        changes.append(msg)
+                        changes.append(
+                            f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
+                            f"  Instance #{old_rlast} respawned as instance #{new_rlast}\n"
+                            f"  Next instance will be #{new_rlast + 1}"
+                        )
                 else:
-                    msg = f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})"
-                    if sync_msg:
-                        msg += f"\n{sync_msg}"
-                    changes.append(msg)
+                    changes.append(
+                        f"Template rlast modified: {old_rlast} → {new_rlast} ({abs(delta)} instances {direction})\n"
+                        f"  Instance #{old_rlast} respawned as instance #{new_rlast}"
+                    )
             else:
                 # Chain type
-                msg = f"Template rlast modified: {old_rlast} → {new_rlast}\n"
-                msg += f"  Next instance will be #{new_rlast + 1} (spawns on completion)."
-                if sync_msg:
-                    msg += f"\n{sync_msg}"
-                changes.append(msg)
+                changes.append(
+                    f"Template rlast modified: {old_rlast} → {new_rlast}\n"
+                    f"  Instance #{old_rlast} respawned as instance #{new_rlast}\n"
+                    f"  Next instance will be #{new_rlast + 1} (spawns on completion)"
+                )
             
             if DEBUG:
                 debug_log(f"rlast changed: {old_rlast} -> {new_rlast}", "ADD/MOD")

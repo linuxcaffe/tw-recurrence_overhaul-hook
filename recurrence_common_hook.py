@@ -428,6 +428,30 @@ def spawn_instance(template, rindex, completion_time=None):
         cmd.append(f'priority:{template["priority"]}')
     if 'tags' in template and template['tags']:
         cmd.extend([f'+{tag}' for tag in template['tags']])
+    if 'depends' in template:
+        cmd.append(f'depends:{template["depends"]}')
+    
+    # Copy ALL UDAs (user-defined attributes) from template
+    # Skip recurrence-specific fields and standard taskwarrior fields
+    skip_fields = {
+        # Standard taskwarrior fields
+        'id', 'uuid', 'status', 'entry', 'modified', 'start', 'end',
+        'description', 'project', 'priority', 'tags', 'depends', 'annotations',
+        'due', 'scheduled', 'wait', 'until', 'recur', 'mask', 'imask', 'parent',
+        # Recurrence template-only fields
+        'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled',
+        # Recurrence instance fields (will be added separately)
+        'rtemplate', 'rindex'
+    }
+    
+    for key, value in template.items():
+        if key not in skip_fields and value:
+            # This is a UDA - copy it
+            if isinstance(value, list):
+                # Handle list UDAs (unlikely but possible)
+                cmd.append(f'{key}:{",".join(str(v) for v in value)}')
+            else:
+                cmd.append(f'{key}:{value}')
     
     # Add recurrence metadata
     cmd.extend([
@@ -438,6 +462,36 @@ def spawn_instance(template, rindex, completion_time=None):
     # Execute task creation
     try:
         result = subprocess.run(cmd, capture_output=True, check=True, text=True)
+        
+        # Copy annotations (must be done after task is created)
+        if 'annotations' in template and template['annotations']:
+            # Get the newly created instance UUID from output
+            # We need to query for it since we don't get UUID back
+            query_result = subprocess.run(
+                ['task', 'rc.hooks=off', f'rtemplate:{template["uuid"]}', f'rindex:{int(rindex)}', 'export'],
+                capture_output=True,
+                check=True,
+                text=True
+            )
+            
+            if query_result.stdout.strip():
+                import json
+                instances = json.loads(query_result.stdout)
+                if instances:
+                    new_instance_uuid = instances[0]['uuid']
+                    
+                    # Copy each annotation
+                    for ann in template['annotations']:
+                        ann_text = ann.get('description', '')
+                        if ann_text:
+                            subprocess.run(
+                                ['task', 'rc.hooks=off', 'rc.confirmation=off', new_instance_uuid, 'annotate', ann_text],
+                                capture_output=True,
+                                check=False  # Don't fail if annotation fails
+                            )
+                    
+                    if DEBUG:
+                        debug_log(f"Copied {len(template['annotations'])} annotations to instance", "COMMON")
         
         # Update template's rlast to match
         subprocess.run(
@@ -491,6 +545,54 @@ def delete_instance(instance_uuid, instance_id=None):
             debug_log(f"Failed to delete instance {instance_id or instance_uuid}: {e}", "COMMON")
         
         return False
+
+
+def should_respawn(original, modified):
+    """Check if template modification requires respawn
+    
+    Respawn = delete old instance + create new instance (no rlast increment)
+    
+    Respawn-triggering fields:
+    - rlast (time machine)
+    - type (period ↔ chain)
+    - ranchor (due ↔ sched)
+    - r (recurrence interval)
+    - rwait or wait (wait time)
+    - rscheduled or scheduled (scheduled time)
+    - due or scheduled (anchor date value)
+    
+    Args:
+        original: Original template state
+        modified: Modified template state
+        
+    Returns:
+        Boolean: True if respawn needed
+    """
+    # List of fields that trigger respawn when changed
+    respawn_fields = [
+        'rlast',        # Time machine
+        'type',         # Period ↔ chain
+        'ranchor',      # Due ↔ sched
+        'r',            # Recurrence interval
+        'rwait',        # Relative wait
+        'wait',         # Absolute wait (converted to rwait)
+        'rscheduled',   # Relative scheduled
+        'scheduled',    # Absolute scheduled (converted to rscheduled) OR anchor date if ranchor=sched
+        'due',          # Anchor date if ranchor=due
+    ]
+    
+    # Check each field
+    for field in respawn_fields:
+        if field in modified:
+            old_value = original.get(field)
+            new_value = modified.get(field)
+            
+            if old_value != new_value:
+                if DEBUG:
+                    debug_log(f"Respawn triggered by {field} change: {old_value} -> {new_value}", "COMMON")
+                return True
+    
+    return False
 
 
 # Version info
