@@ -270,10 +270,18 @@ class RecurrenceHandler:
         ref_field, offset = parse_relative_date(wait_str)
         
         if ref_field and offset:
-            # Already in relative format - preserve it
+            # Already in relative format - store as rwait
             task['rwait'] = wait_str
             del task['wait']
-            return False  # No conversion needed
+            
+            if DEBUG:
+                debug_log(f"Stored relative wait as rwait: {task['rwait']}", "ADD/MOD")
+            
+            self.add_message(
+                f"Modified wait time.\n"
+                f"  This will apply to all future instances."
+            )
+            return True
         else:
             # Absolute date - convert to relative offset in seconds
             wait_dt = parse_date(wait_str)
@@ -289,15 +297,15 @@ class RecurrenceHandler:
                     debug_log(f"Converted absolute wait to relative: {task['rwait']}", "ADD/MOD")
                 
                 self.add_message(
-                    f"Converted absolute wait to relative: rwait={task['rwait']}\n"
-                    f"This will apply to all future instances."
+                    f"Modified wait time.\n"
+                    f"  This will apply to all future instances."
                 )
                 return True
         
         return False
     
     def convert_scheduled_to_relative(self, task, anchor_field, anchor_date):
-        """Convert absolute scheduled to relative rscheduled (if anchor is not sched)
+        """Convert absolute scheduled to relative rscheduled
         
         Args:
             task: Task dictionary (modified in place)
@@ -307,17 +315,30 @@ class RecurrenceHandler:
         Returns:
             True if conversion was performed
         """
-        if 'scheduled' not in task or anchor_field == 'sched':
+        if 'scheduled' not in task:
+            return False
+        
+        # If anchor is sched, scheduled becomes the anchor itself, not relative
+        if anchor_field == 'sched':
+            # Don't convert - scheduled IS the anchor
             return False
         
         sched_str = task['scheduled']
         ref_field, offset = parse_relative_date(sched_str)
         
         if ref_field and offset:
-            # Already in relative format - preserve it
+            # Already in relative format - store as rscheduled
             task['rscheduled'] = sched_str
             del task['scheduled']
-            return False
+            
+            if DEBUG:
+                debug_log(f"Stored relative scheduled as rscheduled: {task['rscheduled']}", "ADD/MOD")
+            
+            self.add_message(
+                f"Modified scheduled time.\n"
+                f"  This will apply to all future instances."
+            )
+            return True
         else:
             # Absolute date - convert to relative offset
             sched_dt = parse_date(sched_str)
@@ -330,6 +351,15 @@ class RecurrenceHandler:
                 del task['scheduled']
                 
                 if DEBUG:
+                    debug_log(f"Converted absolute scheduled to relative: {task['rscheduled']}", "ADD/MOD")
+                
+                self.add_message(
+                    f"Modified scheduled time.\n"
+                    f"  This will apply to all future instances."
+                )
+                return True
+        
+        return False
                     debug_log(f"Converted absolute scheduled to relative: {task['rscheduled']}", "ADD/MOD")
                 
                 return True
@@ -650,6 +680,7 @@ class RecurrenceHandler:
         anchor_field, anchor_date = self.get_anchor_date(modified)
         if anchor_field and anchor_date:
             self.convert_wait_to_relative(modified, anchor_field, anchor_date)
+            self.convert_scheduled_to_relative(modified, anchor_field, anchor_date)
         
         # Check for anchor date changes (the actual due/scheduled date value)
         if anchor_field:
