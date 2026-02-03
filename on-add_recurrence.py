@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 0.4.0
+Version: 0.5.1
 Date: 2026-02-02
 
 Handles both adding new recurring tasks and modifying existing ones with
@@ -484,73 +484,6 @@ class RecurrenceHandler:
             )
             return modified
         
-        # RESPAWN LOGIC - Check if any changes require deleting + recreating instance
-        template_uuid = modified.get('uuid')
-        respawn_triggered = should_respawn(original, modified)
-        
-        # Always check for childless template (missing instance)
-        status, data = check_instance_count(template_uuid) if template_uuid else ('unknown', None)
-        childless = (status == 'missing')
-        
-        # Respawn if: (1) respawn-triggering field changed, OR (2) template is childless
-        if (respawn_triggered or childless) and template_uuid:
-            if DEBUG:
-                if respawn_triggered:
-                    debug_log(f"Respawn triggered by field change", "ADD/MOD")
-                if childless:
-                    debug_log(f"Respawn triggered by childless template", "ADD/MOD")
-            
-            # Get current rlast for respawning
-            current_rlast = int(modified.get('rlast', 1))
-            
-            if status == 'ok':
-                # Have an instance - delete it first
-                instance = data
-                inst_uuid = instance['uuid']
-                inst_id = instance.get('id', '?')
-                old_rindex = int(instance.get('rindex', 0))
-                
-                if DEBUG:
-                    debug_log(f"Deleting instance #{old_rindex} for respawn", "ADD/MOD")
-                
-                if delete_instance(inst_uuid, inst_id):
-                    # Spawn new instance with current rlast (no increment!)
-                    spawn_msg = spawn_instance(modified, current_rlast)
-                    
-                    if spawn_msg:
-                        if childless:
-                            changes.append(f"WARNING: Childless template detected - respawned instance #{current_rlast}")
-                        # Note: Individual field handlers will add their own messages
-                    else:
-                        changes.append(f"ERROR: Failed to respawn instance #{current_rlast}")
-                else:
-                    changes.append(f"ERROR: Failed to delete instance #{old_rindex} for respawn")
-            
-            elif status == 'missing':
-                # No instance - just spawn one
-                if DEBUG:
-                    debug_log(f"Spawning missing instance #{current_rlast}", "ADD/MOD")
-                
-                spawn_msg = spawn_instance(modified, current_rlast)
-                
-                if spawn_msg:
-                    changes.append(f"WARNING: Childless template detected - spawned instance #{current_rlast}")
-                else:
-                    changes.append(f"ERROR: Failed to spawn instance #{current_rlast}")
-            
-            elif status == 'multiple':
-                # Multiple instances - error (don't respawn, let user fix)
-                instances = data
-                inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
-                                      for inst in instances])
-                
-                changes.append(
-                    f"ERROR: Multiple instances exist (data corruption)\n"
-                    f"  Expected: 1 instance\n"
-                    f"  Found: {len(instances)} instances: {inst_list}\n"
-                    f"  Cannot respawn - manual fix required"
-                )
-        
         # Check for type change
         if 'type' in modified and modified['type'] != original.get('type'):
             old_type = original.get('type', 'period')
@@ -742,6 +675,78 @@ class RecurrenceHandler:
                     f"Modified template attributes: {attr_list}\n"
                     f"  This will affect future instances. To apply to current instance:\n"
                     f"  Find current instance and apply the same modifications."
+                )
+        
+        # RESPAWN LOGIC - Now that all fields are processed and converted
+        # Check if any changes require deleting + recreating instance
+        template_uuid = modified.get('uuid')
+        respawn_triggered = should_respawn(original, modified)
+        
+        # Always check for childless template (missing instance)
+        status, data = check_instance_count(template_uuid) if template_uuid else ('unknown', None)
+        childless = (status == 'missing')
+        
+        # Respawn if: (1) respawn-triggering field changed, OR (2) template is childless
+        if (respawn_triggered or childless) and template_uuid:
+            if DEBUG:
+                if respawn_triggered:
+                    debug_log(f"Respawn triggered by field change", "ADD/MOD")
+                if childless:
+                    debug_log(f"Respawn triggered by childless template", "ADD/MOD")
+            
+            # Get current rlast for respawning
+            current_rlast = int(modified.get('rlast', 1))
+            
+            if status == 'ok':
+                # Have an instance - delete it first
+                instance = data
+                inst_uuid = instance['uuid']
+                inst_id = instance.get('id', '?')
+                old_rindex = int(instance.get('rindex', 0))
+                
+                if DEBUG:
+                    debug_log(f"Deleting instance #{old_rindex} for respawn", "ADD/MOD")
+                
+                if delete_instance(inst_uuid, inst_id):
+                    # Spawn new instance with current rlast (no increment!)
+                    spawn_msg = spawn_instance(modified, current_rlast)
+                    
+                    if spawn_msg:
+                        if childless:
+                            changes.append(f"WARNING: Childless template detected - respawned instance #{current_rlast}")
+                        if DEBUG:
+                            debug_log(f"Respawn successful: {spawn_msg}", "ADD/MOD")
+                        # Note: Individual field handlers already added their messages
+                    else:
+                        changes.append(f"ERROR: Failed to respawn instance #{current_rlast}")
+                        if DEBUG:
+                            debug_log(f"Respawn failed - spawn_instance returned None", "ADD/MOD")
+                else:
+                    changes.append(f"ERROR: Failed to delete instance #{old_rindex} for respawn")
+            
+            elif status == 'missing':
+                # No instance - just spawn one
+                if DEBUG:
+                    debug_log(f"Spawning missing instance #{current_rlast}", "ADD/MOD")
+                
+                spawn_msg = spawn_instance(modified, current_rlast)
+                
+                if spawn_msg:
+                    changes.append(f"WARNING: Childless template detected - spawned instance #{current_rlast}")
+                else:
+                    changes.append(f"ERROR: Failed to spawn instance #{current_rlast}")
+            
+            elif status == 'multiple':
+                # Multiple instances - error (don't respawn, let user fix)
+                instances = data
+                inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
+                                      for inst in instances])
+                
+                changes.append(
+                    f"ERROR: Multiple instances exist (data corruption)\n"
+                    f"  Expected: 1 instance\n"
+                    f"  Found: {len(instances)} instances: {inst_list}\n"
+                    f"  Cannot respawn - manual fix required"
                 )
         
         # Output comprehensive message
