@@ -336,16 +336,18 @@ def check_instance_count(template_uuid):
         return ('multiple', instances)
 
 
-def spawn_instance(template, rindex, completion_time=None):
+def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
     """Spawn a new instance for a template
     
-    This is the ONLY way to spawn instances - can be called from on-exit (normal)
-    or on-modify (re-spawn when rlast changes).
+    This is the ONLY way to spawn instances - can be called from on-exit (normal spawn)
+    or on-modify (respawn when recurrence fields change).
     
     Args:
         template: Template task dictionary
         rindex: Instance index to create
         completion_time: For chain types, when previous instance completed
+        update_rlast: If True, updates template's rlast (normal spawn).
+                      If False, leaves rlast unchanged (respawn).
         
     Returns:
         Success message string or None on failure
@@ -493,12 +495,18 @@ def spawn_instance(template, rindex, completion_time=None):
                     if DEBUG:
                         debug_log(f"Copied {len(template['annotations'])} annotations to instance", "COMMON")
         
-        # Update template's rlast to match
-        subprocess.run(
-            ['task', 'rc.hooks=off', 'rc.confirmation=off', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
-            capture_output=True,
-            check=True
-        )
+        # Update template's rlast to match (only if this is a normal spawn, not respawn)
+        if update_rlast:
+            subprocess.run(
+                ['task', 'rc.hooks=off', 'rc.confirmation=off', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
+                capture_output=True,
+                check=True
+            )
+            if DEBUG:
+                debug_log(f"Updated template rlast to {rindex}", "COMMON")
+        else:
+            if DEBUG:
+                debug_log(f"Skipped rlast update (respawn mode)", "COMMON")
         
         if DEBUG:
             debug_log(f"Instance {rindex} spawned successfully", "COMMON")
@@ -554,8 +562,8 @@ def should_respawn(original, modified):
     
     Respawn-triggering fields:
     - rlast (time machine)
-    - type (period ↔ chain)
-    - ranchor (due ↔ sched)
+    - type (period â†” chain)
+    - ranchor (due â†” sched)
     - r (recurrence interval)
     - rwait or wait (wait time)
     - rscheduled or scheduled (scheduled time)
@@ -571,8 +579,8 @@ def should_respawn(original, modified):
     # List of fields that trigger respawn when changed
     respawn_fields = [
         'rlast',        # Time machine
-        'type',         # Period ↔ chain
-        'ranchor',      # Due ↔ sched
+        'type',         # Period â†” chain
+        'ranchor',      # Due â†” sched
         'r',            # Recurrence interval
         'rwait',        # Relative wait
         'wait',         # Absolute wait (converted to rwait)
