@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 0.4.0
-Date: 2026-01-31
+Version: 0.5.0
+Date: 2026-02-04
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
 This module contains date/duration parsing, type normalization, and debug logging.
@@ -244,32 +244,57 @@ def is_instance(task):
         task: Task dictionary
         
     Returns:
-        True if task has an rtemplate field
+        True if task is an instance (has rtemplate and rindex)
     """
-    return 'rtemplate' in task and task['rtemplate']
+    return 'rtemplate' in task and 'rindex' in task
 
 
-def get_anchor_field_name(anchor_field):
-    """Map short anchor field name to Taskwarrior's actual field name
+def get_anchor_field_name(ranchor_value):
+    """Convert ranchor value to actual field name
     
     Args:
-        anchor_field: Short name ('sched' or 'due')
+        ranchor_value: Value of ranchor field ('due' or 'sched')
         
     Returns:
-        Full field name ('scheduled' or 'due')
+        Actual field name ('due' or 'scheduled')
     """
-    field_map = {
-        'sched': 'scheduled',
-        'due': 'due'
-    }
-    return field_map.get(anchor_field, anchor_field)
+    if ranchor_value == 'sched':
+        return 'scheduled'
+    return 'due'
+
+
+def query_task(uuid):
+    """Query a task by UUID
+    
+    Args:
+        uuid: Task UUID to query
+        
+    Returns:
+        Task dictionary or None if not found
+    """
+    import subprocess
+    import json
+    
+    try:
+        result = subprocess.run(
+            ['task', 'rc.hooks=off', uuid, 'export'],
+            capture_output=True,
+            check=True,
+            text=True
+        )
+        
+        if result.stdout.strip():
+            tasks = json.loads(result.stdout)
+            return tasks[0] if tasks else None
+    except (subprocess.CalledProcessError, json.JSONDecodeError, IndexError):
+        return None
 
 
 def query_instances(template_uuid):
-    """Query all instances (pending OR waiting) for a specific template
+    """Query all instances for a template
     
     Args:
-        template_uuid: Template UUID to query instances for
+        template_uuid: Template UUID
         
     Returns:
         List of instance task dictionaries
@@ -278,29 +303,17 @@ def query_instances(template_uuid):
     import json
     
     try:
-        # Query for both pending AND waiting status
-        # Waiting tasks are still "active" instances, just not ready yet
         result = subprocess.run(
-            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 
-             '(status:pending or status:waiting)', 'export'],
+            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 'export'],
             capture_output=True,
-            text=True,
-            check=False
+            check=True,
+            text=True
         )
         
-        if result.returncode == 0 and result.stdout.strip():
-            instances = json.loads(result.stdout)
-            if DEBUG:
-                debug_log(f"Queried instances for {template_uuid}: {len(instances)} found", "COMMON")
-            return instances
-        
-        if DEBUG:
-            debug_log(f"Queried instances for {template_uuid}: none found", "COMMON")
+        if result.stdout.strip():
+            return json.loads(result.stdout)
         return []
-        
-    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
-        if DEBUG:
-            debug_log(f"Query instances for {template_uuid} failed: {e}", "COMMON")
+    except (subprocess.CalledProcessError, json.JSONDecodeError):
         return []
 
 
@@ -353,32 +366,32 @@ def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
         Success message string or None on failure
     """
     import subprocess
-    from datetime import datetime
     
     if DEBUG:
         debug_log(f"Spawning instance {rindex} from template {template.get('uuid')}", "COMMON")
     
-    # Parse recurrence interval
+    # Parse recurrence period
     recur_delta = parse_duration(template.get('r'))
     if not recur_delta:
         if DEBUG:
-            debug_log(f"Failed to parse recurrence interval: {template.get('r')}", "COMMON")
+            debug_log(f"Failed to parse recurrence period: {template.get('r')}", "COMMON")
         return None
     
+    # Get type and anchor field
     rtype = template.get('type', 'period')
     anchor_field = template.get('ranchor', 'due')
-    actual_field = get_anchor_field_name(anchor_field)
     
-    # Get template anchor date
+    # Get template's anchor date
+    actual_field = get_anchor_field_name(anchor_field)
     template_anchor = parse_date(template.get(actual_field))
     if not template_anchor:
         if DEBUG:
-            debug_log(f"Failed to parse template anchor date: {template.get(actual_field)}", "COMMON")
+            debug_log(f"Template missing anchor date ({actual_field})", "COMMON")
         return None
     
     # Calculate anchor date for this instance
     if rindex == 1:
-        # Instance 1 always uses template's anchor date
+        # First instance always uses template's anchor date
         anchor_date = template_anchor
     else:
         if rtype == 'chain':
@@ -427,6 +440,7 @@ def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
     if 'project' in template:
         cmd.append(f'project:{template["project"]}')
     if 'priority' in template:
+        # Copy priority as-is - let Taskwarrior validate it
         cmd.append(f'priority:{template["priority"]}')
     if 'tags' in template and template['tags']:
         cmd.extend([f'+{tag}' for tag in template['tags']])
@@ -434,26 +448,38 @@ def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
         cmd.append(f'depends:{template["depends"]}')
     
     # Copy ALL UDAs (user-defined attributes) from template
-    # Skip recurrence-specific fields and standard taskwarrior fields
+    # Skip recurrence-specific fields and standard taskwarrior fields ONLY
     skip_fields = {
         # Standard taskwarrior fields
         'id', 'uuid', 'status', 'entry', 'modified', 'start', 'end',
         'description', 'project', 'priority', 'tags', 'depends', 'annotations',
         'due', 'scheduled', 'wait', 'until', 'recur', 'mask', 'imask', 'parent',
-        # Recurrence template-only fields
+        'urgency',  # Calculated field
+        # Taskwarrior's built-in recurrence fields (we use our own system)
+        # These are added by Taskwarrior even with recurrence=no
+        'rtype',    # Set automatically when Taskwarrior sees 'r:' attribute
+        'rdate',    # Taskwarrior internal recurrence tracking
+        'rperiod',  # Taskwarrior internal recurrence period
+        # Our recurrence template-only fields
         'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled',
-        # Recurrence instance fields (will be added separately)
+        # Our recurrence instance fields (will be added separately)
         'rtemplate', 'rindex'
     }
     
     for key, value in template.items():
         if key not in skip_fields and value:
             # This is a UDA - copy it
-            if isinstance(value, list):
-                # Handle list UDAs (unlikely but possible)
-                cmd.append(f'{key}:{",".join(str(v) for v in value)}')
-            else:
-                cmd.append(f'{key}:{value}')
+            try:
+                if isinstance(value, list):
+                    # Handle list UDAs (unlikely but possible)
+                    cmd.append(f'{key}:{",".join(str(v) for v in value)}')
+                else:
+                    cmd.append(f'{key}:{value}')
+                if DEBUG:
+                    debug_log(f"Copying UDA {key}:{value}", "COMMON")
+            except Exception as e:
+                if DEBUG:
+                    debug_log(f"Failed to copy UDA {key}: {e}", "COMMON")
     
     # Add recurrence metadata
     cmd.extend([
@@ -463,6 +489,9 @@ def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
     
     # Execute task creation
     try:
+        if DEBUG:
+            debug_log(f"Executing: {' '.join(cmd)}", "COMMON")
+        
         result = subprocess.run(cmd, capture_output=True, check=True, text=True)
         
         # Copy annotations (must be done after task is created)
@@ -562,8 +591,8 @@ def should_respawn(original, modified):
     
     Respawn-triggering fields:
     - rlast (time machine)
-    - type (period â†” chain)
-    - ranchor (due â†” sched)
+    - type (period ↔ chain)
+    - ranchor (due ↔ sched)
     - r (recurrence interval)
     - rwait or wait (wait time)
     - rscheduled or scheduled (scheduled time)
@@ -579,8 +608,8 @@ def should_respawn(original, modified):
     # List of fields that trigger respawn when changed
     respawn_fields = [
         'rlast',        # Time machine
-        'type',         # Period â†” chain
-        'ranchor',      # Due â†” sched
+        'type',         # Period ↔ chain
+        'ranchor',      # Due ↔ sched
         'r',            # Recurrence interval
         'rwait',        # Relative wait
         'wait',         # Absolute wait (converted to rwait)
@@ -604,8 +633,8 @@ def should_respawn(original, modified):
 
 
 # Version info
-__version__ = '0.4.0'
-__date__ = '2026-01-31'
+__version__ = '0.5.0'
+__date__ = '2026-02-04'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")
