@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 0.5.0
-Date: 2026-02-04
+Version: 0.4.0
+Date: 2026-01-31
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
 This module contains date/duration parsing, type normalization, and debug logging.
@@ -244,57 +244,32 @@ def is_instance(task):
         task: Task dictionary
         
     Returns:
-        True if task is an instance (has rtemplate and rindex)
+        True if task has an rtemplate field
     """
-    return 'rtemplate' in task and 'rindex' in task
+    return 'rtemplate' in task and task['rtemplate']
 
 
-def get_anchor_field_name(ranchor_value):
-    """Convert ranchor value to actual field name
+def get_anchor_field_name(anchor_field):
+    """Map short anchor field name to Taskwarrior's actual field name
     
     Args:
-        ranchor_value: Value of ranchor field ('due' or 'sched')
+        anchor_field: Short name ('sched' or 'due')
         
     Returns:
-        Actual field name ('due' or 'scheduled')
+        Full field name ('scheduled' or 'due')
     """
-    if ranchor_value == 'sched':
-        return 'scheduled'
-    return 'due'
-
-
-def query_task(uuid):
-    """Query a task by UUID
-    
-    Args:
-        uuid: Task UUID to query
-        
-    Returns:
-        Task dictionary or None if not found
-    """
-    import subprocess
-    import json
-    
-    try:
-        result = subprocess.run(
-            ['task', 'rc.hooks=off', uuid, 'export'],
-            capture_output=True,
-            check=True,
-            text=True
-        )
-        
-        if result.stdout.strip():
-            tasks = json.loads(result.stdout)
-            return tasks[0] if tasks else None
-    except (subprocess.CalledProcessError, json.JSONDecodeError, IndexError):
-        return None
+    field_map = {
+        'sched': 'scheduled',
+        'due': 'due'
+    }
+    return field_map.get(anchor_field, anchor_field)
 
 
 def query_instances(template_uuid):
-    """Query all instances for a template
+    """Query all instances (pending OR waiting) for a specific template
     
     Args:
-        template_uuid: Template UUID
+        template_uuid: Template UUID to query instances for
         
     Returns:
         List of instance task dictionaries
@@ -303,17 +278,29 @@ def query_instances(template_uuid):
     import json
     
     try:
+        # Query for both pending AND waiting status
+        # Waiting tasks are still "active" instances, just not ready yet
         result = subprocess.run(
-            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 'export'],
+            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 
+             '(status:pending or status:waiting)', 'export'],
             capture_output=True,
-            check=True,
-            text=True
+            text=True,
+            check=False
         )
         
-        if result.stdout.strip():
-            return json.loads(result.stdout)
+        if result.returncode == 0 and result.stdout.strip():
+            instances = json.loads(result.stdout)
+            if DEBUG:
+                debug_log(f"Queried instances for {template_uuid}: {len(instances)} found", "COMMON")
+            return instances
+        
+        if DEBUG:
+            debug_log(f"Queried instances for {template_uuid}: none found", "COMMON")
         return []
-    except (subprocess.CalledProcessError, json.JSONDecodeError):
+        
+    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        if DEBUG:
+            debug_log(f"Query instances for {template_uuid} failed: {e}", "COMMON")
         return []
 
 
@@ -349,49 +336,47 @@ def check_instance_count(template_uuid):
         return ('multiple', instances)
 
 
-def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
+def spawn_instance(template, rindex, completion_time=None):
     """Spawn a new instance for a template
     
-    This is the ONLY way to spawn instances - can be called from on-exit (normal spawn)
-    or on-modify (respawn when recurrence fields change).
+    This is the ONLY way to spawn instances - can be called from on-exit (normal)
+    or on-modify (re-spawn when rlast changes).
     
     Args:
         template: Template task dictionary
         rindex: Instance index to create
         completion_time: For chain types, when previous instance completed
-        update_rlast: If True, updates template's rlast (normal spawn).
-                      If False, leaves rlast unchanged (respawn).
         
     Returns:
         Success message string or None on failure
     """
     import subprocess
+    from datetime import datetime
     
     if DEBUG:
         debug_log(f"Spawning instance {rindex} from template {template.get('uuid')}", "COMMON")
     
-    # Parse recurrence period
+    # Parse recurrence interval
     recur_delta = parse_duration(template.get('r'))
     if not recur_delta:
         if DEBUG:
-            debug_log(f"Failed to parse recurrence period: {template.get('r')}", "COMMON")
+            debug_log(f"Failed to parse recurrence interval: {template.get('r')}", "COMMON")
         return None
     
-    # Get type and anchor field
     rtype = template.get('type', 'period')
     anchor_field = template.get('ranchor', 'due')
-    
-    # Get template's anchor date
     actual_field = get_anchor_field_name(anchor_field)
+    
+    # Get template anchor date
     template_anchor = parse_date(template.get(actual_field))
     if not template_anchor:
         if DEBUG:
-            debug_log(f"Template missing anchor date ({actual_field})", "COMMON")
+            debug_log(f"Failed to parse template anchor date: {template.get(actual_field)}", "COMMON")
         return None
     
     # Calculate anchor date for this instance
     if rindex == 1:
-        # First instance always uses template's anchor date
+        # Instance 1 always uses template's anchor date
         anchor_date = template_anchor
     else:
         if rtype == 'chain':
@@ -440,46 +425,9 @@ def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
     if 'project' in template:
         cmd.append(f'project:{template["project"]}')
     if 'priority' in template:
-        # Copy priority as-is - let Taskwarrior validate it
         cmd.append(f'priority:{template["priority"]}')
     if 'tags' in template and template['tags']:
         cmd.extend([f'+{tag}' for tag in template['tags']])
-    if 'depends' in template:
-        cmd.append(f'depends:{template["depends"]}')
-    
-    # Copy ALL UDAs (user-defined attributes) from template
-    # Skip recurrence-specific fields and standard taskwarrior fields ONLY
-    skip_fields = {
-        # Standard taskwarrior fields
-        'id', 'uuid', 'status', 'entry', 'modified', 'start', 'end',
-        'description', 'project', 'priority', 'tags', 'depends', 'annotations',
-        'due', 'scheduled', 'wait', 'until', 'recur', 'mask', 'imask', 'parent',
-        'urgency',  # Calculated field
-        # Taskwarrior's built-in recurrence fields (we use our own system)
-        # These are added by Taskwarrior even with recurrence=no
-        'rtype',    # Set automatically when Taskwarrior sees 'r:' attribute
-        'rdate',    # Taskwarrior internal recurrence tracking
-        'rperiod',  # Taskwarrior internal recurrence period
-        # Our recurrence template-only fields
-        'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled',
-        # Our recurrence instance fields (will be added separately)
-        'rtemplate', 'rindex'
-    }
-    
-    for key, value in template.items():
-        if key not in skip_fields and value:
-            # This is a UDA - copy it
-            try:
-                if isinstance(value, list):
-                    # Handle list UDAs (unlikely but possible)
-                    cmd.append(f'{key}:{",".join(str(v) for v in value)}')
-                else:
-                    cmd.append(f'{key}:{value}')
-                if DEBUG:
-                    debug_log(f"Copying UDA {key}:{value}", "COMMON")
-            except Exception as e:
-                if DEBUG:
-                    debug_log(f"Failed to copy UDA {key}: {e}", "COMMON")
     
     # Add recurrence metadata
     cmd.extend([
@@ -489,53 +437,14 @@ def spawn_instance(template, rindex, completion_time=None, update_rlast=True):
     
     # Execute task creation
     try:
-        if DEBUG:
-            debug_log(f"Executing: {' '.join(cmd)}", "COMMON")
-        
         result = subprocess.run(cmd, capture_output=True, check=True, text=True)
         
-        # Copy annotations (must be done after task is created)
-        if 'annotations' in template and template['annotations']:
-            # Get the newly created instance UUID from output
-            # We need to query for it since we don't get UUID back
-            query_result = subprocess.run(
-                ['task', 'rc.hooks=off', f'rtemplate:{template["uuid"]}', f'rindex:{int(rindex)}', 'export'],
-                capture_output=True,
-                check=True,
-                text=True
-            )
-            
-            if query_result.stdout.strip():
-                import json
-                instances = json.loads(query_result.stdout)
-                if instances:
-                    new_instance_uuid = instances[0]['uuid']
-                    
-                    # Copy each annotation
-                    for ann in template['annotations']:
-                        ann_text = ann.get('description', '')
-                        if ann_text:
-                            subprocess.run(
-                                ['task', 'rc.hooks=off', 'rc.confirmation=off', new_instance_uuid, 'annotate', ann_text],
-                                capture_output=True,
-                                check=False  # Don't fail if annotation fails
-                            )
-                    
-                    if DEBUG:
-                        debug_log(f"Copied {len(template['annotations'])} annotations to instance", "COMMON")
-        
-        # Update template's rlast to match (only if this is a normal spawn, not respawn)
-        if update_rlast:
-            subprocess.run(
-                ['task', 'rc.hooks=off', 'rc.confirmation=off', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
-                capture_output=True,
-                check=True
-            )
-            if DEBUG:
-                debug_log(f"Updated template rlast to {rindex}", "COMMON")
-        else:
-            if DEBUG:
-                debug_log(f"Skipped rlast update (respawn mode)", "COMMON")
+        # Update template's rlast to match
+        subprocess.run(
+            ['task', 'rc.hooks=off', 'rc.confirmation=off', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
+            capture_output=True,
+            check=True
+        )
         
         if DEBUG:
             debug_log(f"Instance {rindex} spawned successfully", "COMMON")
@@ -584,57 +493,9 @@ def delete_instance(instance_uuid, instance_id=None):
         return False
 
 
-def should_respawn(original, modified):
-    """Check if template modification requires respawn
-    
-    Respawn = delete old instance + create new instance (no rlast increment)
-    
-    Respawn-triggering fields:
-    - rlast (time machine)
-    - type (period ↔ chain)
-    - ranchor (due ↔ sched)
-    - r (recurrence interval)
-    - rwait or wait (wait time)
-    - rscheduled or scheduled (scheduled time)
-    - due or scheduled (anchor date value)
-    
-    Args:
-        original: Original template state
-        modified: Modified template state
-        
-    Returns:
-        Boolean: True if respawn needed
-    """
-    # List of fields that trigger respawn when changed
-    respawn_fields = [
-        'rlast',        # Time machine
-        'type',         # Period ↔ chain
-        'ranchor',      # Due ↔ sched
-        'r',            # Recurrence interval
-        'rwait',        # Relative wait
-        'wait',         # Absolute wait (converted to rwait)
-        'rscheduled',   # Relative scheduled
-        'scheduled',    # Absolute scheduled (converted to rscheduled) OR anchor date if ranchor=sched
-        'due',          # Anchor date if ranchor=due
-    ]
-    
-    # Check each field
-    for field in respawn_fields:
-        if field in modified:
-            old_value = original.get(field)
-            new_value = modified.get(field)
-            
-            if old_value != new_value:
-                if DEBUG:
-                    debug_log(f"Respawn triggered by {field} change: {old_value} -> {new_value}", "COMMON")
-                return True
-    
-    return False
-
-
 # Version info
-__version__ = '0.5.0'
-__date__ = '2026-02-04'
+__version__ = '0.4.0'
+__date__ = '2026-01-31'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")

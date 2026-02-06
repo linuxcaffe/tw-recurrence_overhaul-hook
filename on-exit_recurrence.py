@@ -423,8 +423,7 @@ class RecurrenceSpawner:
                     
                     # Use common spawn_instance if available, otherwise fallback to local
                     if COMMON_MODULE_AVAILABLE:
-                        # Normal spawn: increment rlast by updating it
-                        msg = spawn_instance(template, current_idx + 1, completion, update_rlast=True)
+                        msg = spawn_instance(template, current_idx + 1, completion)
                     else:
                         msg = self.create_instance(template, current_idx + 1, completion)
                     
@@ -453,8 +452,7 @@ class RecurrenceSpawner:
                 
                 # Use common spawn_instance if available, otherwise fallback to local
                 if COMMON_MODULE_AVAILABLE:
-                    # First instance spawn: set rlast to 1
-                    msg = spawn_instance(task, 1, completion_time=None, update_rlast=True)  # First instance is always index 1
+                    msg = spawn_instance(task, 1)  # First instance is always index 1
                 else:
                     msg = self.create_instance(task, 1)
                 

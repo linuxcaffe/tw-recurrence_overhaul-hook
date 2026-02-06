@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 0.5.1
+Version: 0.4.0
 Date: 2026-02-02
 
 Handles both adding new recurring tasks and modifying existing ones with
@@ -39,8 +39,7 @@ try:
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG,
-        query_instances, check_instance_count, spawn_instance, delete_instance,
-        should_respawn
+        query_instances, check_instance_count
     )
 except ImportError as e:
     # Fallback error handling
@@ -153,6 +152,73 @@ def update_task(uuid, modifications):
         if DEBUG:
             debug_log(f"Update task {uuid} failed: {e}", "ADD/MOD")
         return False
+
+def update_instance_for_rlast_change(template, instance, old_rlast, new_rlast):
+    """Update an existing instance when template rlast changes (time machine)
+    
+    This modifies the instance in place rather than deleting and respawning it.
+    Updates both the rindex and the due date to match the new sequence position.
+    
+    Args:
+        template: Template task dict (with new rlast)
+        instance: Instance task dict (with old rindex)
+        old_rlast: Previous rlast value
+        new_rlast: New rlast value
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    inst_uuid = instance['uuid']
+    inst_id = instance.get('id', '?')
+    
+    if DEBUG:
+        debug_log(f"Updating instance {inst_id} for rlast change: {old_rlast} -> {new_rlast}", "ADD/MOD")
+    
+    # Calculate new due date based on template type
+    type_str = template.get('type', 'period')
+    anchor_field = template.get('ranchor', 'due')
+    actual_field = get_anchor_field_name(anchor_field)
+    template_anchor = parse_date(template.get(actual_field))
+    
+    if not template_anchor:
+        if DEBUG:
+            debug_log(f"Cannot update instance - no template anchor date", "ADD/MOD")
+        return False
+    
+    r_delta = parse_duration(template.get('r'))
+    if not r_delta:
+        if DEBUG:
+            debug_log(f"Cannot update instance - cannot parse recurrence period", "ADD/MOD")
+        return False
+    
+    # Calculate new anchor date for this instance
+    if type_str == 'period':
+        # Periodic: template_anchor + (new_rlast × period)
+        new_anchor = template_anchor + (r_delta * new_rlast)
+    else:
+        # Chained: approximate using template_anchor + offset
+        # Note: Changing rlast on chained tasks is unusual since they're based on completion
+        new_anchor = template_anchor + (r_delta * new_rlast)
+    
+    # Build modification dictionary
+    modifications = {
+        'rindex': str(new_rlast),
+        actual_field: format_date(new_anchor)
+    }
+    
+    # Update relative dates if they exist in template
+    if 'rwait' in template:
+        wait_date = parse_relative_date(template['rwait'], new_anchor)
+        if wait_date:
+            modifications['wait'] = format_date(wait_date)
+    
+    if 'rscheduled' in template and anchor_field != 'sched':
+        sched_date = parse_relative_date(template['rscheduled'], new_anchor)
+        if sched_date:
+            modifications['scheduled'] = format_date(sched_date)
+    
+    # Execute modification with rc.hooks=off
+    return update_task(inst_uuid, modifications)
 
 # Read all input
 lines = sys.stdin.readlines()
@@ -271,18 +337,10 @@ class RecurrenceHandler:
         ref_field, offset = parse_relative_date(wait_str)
         
         if ref_field and offset:
-            # Already in relative format - store as rwait
+            # Already in relative format - preserve it
             task['rwait'] = wait_str
             del task['wait']
-            
-            if DEBUG:
-                debug_log(f"Stored relative wait as rwait: {task['rwait']}", "ADD/MOD")
-            
-            self.add_message(
-                f"Modified wait time.\n"
-                f"  This will apply to all future instances."
-            )
-            return True
+            return False  # No conversion needed
         else:
             # Absolute date - convert to relative offset in seconds
             wait_dt = parse_date(wait_str)
@@ -298,15 +356,15 @@ class RecurrenceHandler:
                     debug_log(f"Converted absolute wait to relative: {task['rwait']}", "ADD/MOD")
                 
                 self.add_message(
-                    f"Modified wait time.\n"
-                    f"  This will apply to all future instances."
+                    f"Converted absolute wait to relative: rwait={task['rwait']}\n"
+                    f"This will apply to all future instances."
                 )
                 return True
         
         return False
     
     def convert_scheduled_to_relative(self, task, anchor_field, anchor_date):
-        """Convert absolute scheduled to relative rscheduled
+        """Convert absolute scheduled to relative rscheduled (if anchor is not sched)
         
         Args:
             task: Task dictionary (modified in place)
@@ -316,30 +374,17 @@ class RecurrenceHandler:
         Returns:
             True if conversion was performed
         """
-        if 'scheduled' not in task:
-            return False
-        
-        # If anchor is sched, scheduled becomes the anchor itself, not relative
-        if anchor_field == 'sched':
-            # Don't convert - scheduled IS the anchor
+        if 'scheduled' not in task or anchor_field == 'sched':
             return False
         
         sched_str = task['scheduled']
         ref_field, offset = parse_relative_date(sched_str)
         
         if ref_field and offset:
-            # Already in relative format - store as rscheduled
+            # Already in relative format - preserve it
             task['rscheduled'] = sched_str
             del task['scheduled']
-            
-            if DEBUG:
-                debug_log(f"Stored relative scheduled as rscheduled: {task['rscheduled']}", "ADD/MOD")
-            
-            self.add_message(
-                f"Modified scheduled time.\n"
-                f"  This will apply to all future instances."
-            )
-            return True
+            return False
         else:
             # Absolute date - convert to relative offset
             sched_dt = parse_date(sched_str)
@@ -354,10 +399,6 @@ class RecurrenceHandler:
                 if DEBUG:
                     debug_log(f"Converted absolute scheduled to relative: {task['rscheduled']}", "ADD/MOD")
                 
-                self.add_message(
-                    f"Modified scheduled time.\n"
-                    f"  This will apply to all future instances."
-                )
                 return True
         
         return False
@@ -540,14 +581,78 @@ class RecurrenceHandler:
             if DEBUG:
                 debug_log(f"Anchor changed: {old_anchor} -> {new_anchor_field}", "ADD/MOD")
         
-        # Check for rlast change (time machine) - respawn already done above
+        # Check for rlast change (time machine)
         if 'rlast' in modified and modified['rlast'] != original.get('rlast'):
-            old_rlast = int(original.get('rlast', 1))
+            old_rlast = int(original.get('rlast', 0))
             new_rlast = int(modified['rlast'])
             delta = new_rlast - old_rlast
             direction = "forward" if delta > 0 else "backward"
             
             type_str = modified.get('type', 'period')
+            
+            # Use targeted checking - only check THIS template's instances
+            template_uuid = modified.get('uuid')
+            sync_msg = None
+            
+            if template_uuid:
+                status, data = check_instance_count(template_uuid)
+                
+                if status == 'missing':
+                    # No instance exists - will spawn on next task command via on-exit
+                    if DEBUG:
+                        debug_log(f"No instance found for template {template_uuid}", "ADD/MOD")
+                    
+                    sync_msg = (
+                        f"  No pending instance exists.\n"
+                        f"  On-exit hook will spawn instance #{new_rlast} when this template's instance completes."
+                    )
+                
+                elif status == 'ok':
+                    # CORRECT: Exactly one instance exists
+                    # MODIFY the instance (don't delete/respawn)
+                    instance = data
+                    
+                    inst_uuid = instance['uuid']
+                    inst_id = instance.get('id', '?')
+                    old_inst_rindex = int(instance.get('rindex', 0))
+                    
+                    if DEBUG:
+                        debug_log(f"Updating instance #{old_inst_rindex} to #{new_rlast} (time machine)", "ADD/MOD")
+                    
+                    # Update the instance in place
+                    if update_instance_for_rlast_change(modified, instance, old_rlast, new_rlast):
+                        sync_msg = (
+                            f"  Instance #{old_inst_rindex} (task {inst_id}) updated to #{new_rlast}\n"
+                            f"  Due date recalculated for new sequence position."
+                        )
+                    else:
+                        sync_msg = (
+                            f"  WARNING: Failed to update instance #{old_inst_rindex} (task {inst_id})\n"
+                            f"  Template rlast changed but instance may be out of sync.\n"
+                            f"  Manual fix: task {inst_id} modify rindex:{new_rlast}"
+                        )
+                
+                elif status == 'multiple':
+                    # ERROR: Multiple instances exist (violates one-to-one rule - data corruption)
+                    instances = data
+                    
+                    if DEBUG:
+                        debug_log(f"Multiple instances found for template {template_uuid}: {len(instances)}", "ADD/MOD")
+                    
+                    inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
+                                          for inst in instances])
+                    
+                    sync_msg = (
+                        f"  ERROR: Multiple instances exist (violates one-to-one rule - DATA CORRUPTION)\n"
+                        f"  Expected: Exactly 1 instance\n"
+                        f"  Found: {len(instances)} instances: {inst_list}\n"
+                        f"  This indicates a serious bug or external data corruption.\n"
+                        f"  Manual fix required:\n"
+                        f"    1. Decide which instance to keep (usually the one with rindex={new_rlast})\n"
+                        f"    2. Delete the others: task <id> delete\n"
+                        f"    3. Ensure remaining instance has rindex={new_rlast}\n"
+                        f"  Or delete all and let on-exit spawn fresh: task {' '.join([str(i.get('id')) for i in instances])} delete"
+                    )
             
             if type_str == 'period':
                 # Calculate next instance date for period types
@@ -559,29 +664,29 @@ class RecurrenceHandler:
                         next_date = anchor_date + (r_delta * (new_rlast + 1))
                         next_date_str = format_date(next_date)
                         
-                        changes.append(
-                            f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
-                            f"  Instance #{old_rlast} respawned as instance #{new_rlast} (dates recalculated)\n"
-                            f"  Next instance will be #{new_rlast + 1} due {next_date_str}"
-                        )
+                        msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
+                        msg += f"  Next instance will be #{new_rlast + 1} due {next_date_str}"
+                        if sync_msg:
+                            msg += f"\n{sync_msg}"
+                        changes.append(msg)
                     else:
-                        changes.append(
-                            f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
-                            f"  Instance #{old_rlast} respawned as instance #{new_rlast}\n"
-                            f"  Next instance will be #{new_rlast + 1}"
-                        )
+                        msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
+                        msg += f"  Next instance will be #{new_rlast + 1}"
+                        if sync_msg:
+                            msg += f"\n{sync_msg}"
+                        changes.append(msg)
                 else:
-                    changes.append(
-                        f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
-                        f"  Instance #{old_rlast} respawned as instance #{new_rlast}"
-                    )
+                    msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})"
+                    if sync_msg:
+                        msg += f"\n{sync_msg}"
+                    changes.append(msg)
             else:
                 # Chain type
-                changes.append(
-                    f"Template rlast modified: {old_rlast} â†’ {new_rlast}\n"
-                    f"  Instance #{old_rlast} respawned as instance #{new_rlast}\n"
-                    f"  Next instance will be #{new_rlast + 1} (spawns on completion)"
-                )
+                msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast}\n"
+                msg += f"  Next instance will be #{new_rlast + 1} (spawns on completion)."
+                if sync_msg:
+                    msg += f"\n{sync_msg}"
+                changes.append(msg)
             
             if DEBUG:
                 debug_log(f"rlast changed: {old_rlast} -> {new_rlast}", "ADD/MOD")
@@ -603,7 +708,6 @@ class RecurrenceHandler:
         anchor_field, anchor_date = self.get_anchor_date(modified)
         if anchor_field and anchor_date:
             self.convert_wait_to_relative(modified, anchor_field, anchor_date)
-            self.convert_scheduled_to_relative(modified, anchor_field, anchor_date)
         
         # Check for anchor date changes (the actual due/scheduled date value)
         if anchor_field:
@@ -675,80 +779,6 @@ class RecurrenceHandler:
                     f"Modified template attributes: {attr_list}\n"
                     f"  This will affect future instances. To apply to current instance:\n"
                     f"  Find current instance and apply the same modifications."
-                )
-        
-        # RESPAWN LOGIC - Now that all fields are processed and converted
-        # Check if any changes require deleting + recreating instance
-        template_uuid = modified.get('uuid')
-        respawn_triggered = should_respawn(original, modified)
-        
-        # Always check for childless template (missing instance)
-        status, data = check_instance_count(template_uuid) if template_uuid else ('unknown', None)
-        childless = (status == 'missing')
-        
-        # Respawn if: (1) respawn-triggering field changed, OR (2) template is childless
-        if (respawn_triggered or childless) and template_uuid:
-            if DEBUG:
-                if respawn_triggered:
-                    debug_log(f"Respawn triggered by field change", "ADD/MOD")
-                if childless:
-                    debug_log(f"Respawn triggered by childless template", "ADD/MOD")
-            
-            # Get current rlast for respawning
-            current_rlast = int(modified.get('rlast', 1))
-            
-            if status == 'ok':
-                # Have an instance - delete it first
-                instance = data
-                inst_uuid = instance['uuid']
-                inst_id = instance.get('id', '?')
-                old_rindex = int(instance.get('rindex', 0))
-                
-                if DEBUG:
-                    debug_log(f"Deleting instance #{old_rindex} for respawn", "ADD/MOD")
-                
-                if delete_instance(inst_uuid, inst_id):
-                    # Spawn new instance with current rlast (no increment!)
-                    # update_rlast=False because rlast should not change during respawn
-                    spawn_msg = spawn_instance(modified, current_rlast, completion_time=None, update_rlast=False)
-                    
-                    if spawn_msg:
-                        if childless:
-                            changes.append(f"WARNING: Childless template detected - respawned instance #{current_rlast}")
-                        if DEBUG:
-                            debug_log(f"Respawn successful: {spawn_msg}", "ADD/MOD")
-                        # Note: Individual field handlers already added their messages
-                    else:
-                        changes.append(f"ERROR: Failed to respawn instance #{current_rlast}")
-                        if DEBUG:
-                            debug_log(f"Respawn failed - spawn_instance returned None", "ADD/MOD")
-                else:
-                    changes.append(f"ERROR: Failed to delete instance #{old_rindex} for respawn")
-            
-            elif status == 'missing':
-                # No instance - just spawn one
-                # update_rlast=False because rlast is already set correctly
-                if DEBUG:
-                    debug_log(f"Spawning missing instance #{current_rlast}", "ADD/MOD")
-                
-                spawn_msg = spawn_instance(modified, current_rlast, completion_time=None, update_rlast=False)
-                
-                if spawn_msg:
-                    changes.append(f"WARNING: Childless template detected - spawned instance #{current_rlast}")
-                else:
-                    changes.append(f"ERROR: Failed to spawn instance #{current_rlast}")
-            
-            elif status == 'multiple':
-                # Multiple instances - error (don't respawn, let user fix)
-                instances = data
-                inst_list = ', '.join([f"task {inst.get('id', '?')} (rindex={inst.get('rindex', '?')})" 
-                                      for inst in instances])
-                
-                changes.append(
-                    f"ERROR: Multiple instances exist (data corruption)\n"
-                    f"  Expected: 1 instance\n"
-                    f"  Found: {len(instances)} instances: {inst_list}\n"
-                    f"  Cannot respawn - manual fix required"
                 )
         
         # Output comprehensive message
