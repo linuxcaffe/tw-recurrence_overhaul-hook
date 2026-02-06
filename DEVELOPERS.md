@@ -1,7 +1,7 @@
 # Taskwarrior Enhanced Recurrence - Developer Documentation
 
 **Version:** 0.4.0  
-**Status:** Core Working, Time Machine Needs Debug  
+**Status:** Core Working? Needs testing!
 **Last Updated:** 2026-02-06
 
 ---
@@ -34,10 +34,9 @@
 
 ### Core Principles
 
-1. **on-add** = Template creation and modification ONLY
-2. **on-exit** = Instance spawning ONLY
-3. **Users** = Deletion ONLY
-4. **Never**: on-add/on-modify should NEVER spawn or delete tasks
+1. **on-add** = Template creation and modification
+2. **on-exit** = Instance spawning
+3. **Users** = Deletion (ONLY, this app doesn't delete tasks)
 
 ### Data Flow
 
@@ -62,10 +61,9 @@ on-exit: Spawns instance #2
 **Purpose:** Template creation and modification handler
 
 **Key Functions:**
-- `RecurrenceHandler.create_template()` - Convert new task with `r` into template
+- `RecurrenceHandler.create_template()` - Convert new task with `r` and `ranchor` into template
 - `RecurrenceHandler.handle_template_modification()` - Track and explain template changes
 - `RecurrenceHandler.handle_instance_modification()` - Track and explain instance changes
-- `update_instance_for_rlast_change()` - Time machine: modify instance when rlast changes
 - `query_task()` - Query Taskwarrior for task by UUID
 - `query_instances()` - Query instances for a template
 - `update_task()` - Modify task via Taskwarrior command
@@ -74,18 +72,15 @@ on-exit: Spawns instance #2
 - Normalizes recurrence types (c→chain, p→period)
 - Converts absolute dates to relative (wait→rwait)
 - Detects anchor changes (due↔sched)
-- Tracks template modifications with user feedback
-- Implements "time machine" (rlast modification)
 - Validates template/instance attribute separation
 
-**What it does NOT do:**
+**What on-add does NOT do:**
 - ❌ Does NOT spawn instances
 - ❌ Does NOT delete instances
-- ❌ Does NOT call spawn_instance() or delete_instance()
 
 ### on-exit_recurrence.py (503 lines)
 
-**Purpose:** Instance spawning only
+**Purpose:** Instance spawning
 
 **Key Functions:**
 - `RecurrenceSpawner.process_tasks()` - Main loop for processing completed/deleted tasks
@@ -102,13 +97,13 @@ anchor_date = template_anchor + (recur_delta × (index - 1))
 anchor_date = completion_time + recur_delta
 ```
 
-**What it does:**
+**What on-exit does:**
 - Spawns instance #1 when template is created (rlast=0 or 1)
 - Spawns next instance when current one completes/deletes
 - Only spawns for the LATEST instance (rindex ≥ rlast)
 - Checks rend date before spawning
 
-**What it does NOT do:**
+**What on-exit does NOT do:**
 - ❌ Does NOT modify templates or instances
 - ❌ Only spawns, never modifies existing tasks
 
@@ -168,7 +163,7 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 }
 ```
 
-**Forbidden Fields:**
+**Templates should NOT have:**
 - ❌ `rtemplate` - Only instances have this
 - ❌ `rindex` - Only instances have this
 
@@ -190,7 +185,7 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 - `wait`, `scheduled` (calculated from rwait/rscheduled)
 - `until` (copied directly)
 
-**Forbidden Fields:**
+**Instances do NOT have:**
 - ❌ `r` - Only templates have this
 - ❌ `type` - Only templates have this
 - ❌ `rlast` - Only templates have this
@@ -205,7 +200,7 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 
 ### on-add Behavior
 
-#### New Task with `r` Field
+#### New Task with `r` and `ranchor` Fields
 ```bash
 task add "Gym" r:7d due:tomorrow ty:c
 ```
@@ -215,10 +210,11 @@ task add "Gym" r:7d due:tomorrow ty:c
 2. Normalize `type` (c→chain)
 3. Set `rlast:1`
 4. Detect anchor (`ranchor:due`)
-5. Convert `wait` to `rwait` if present
-6. Output: "Created recurrence template. First instance will be generated on exit."
+5. Convert `sched` to `rscheduled` if present
+6. Convert `wait` to `rwait` if present
+7. Output: "Created recurrence template. First instance will be generated on exit."
 
-#### Template Modification (Time Machine)
+#### Template Modification (Time Machine) NOTE; in development!
 ```bash
 task 1 mod rlast:5
 ```
@@ -236,7 +232,7 @@ task 1 mod rlast:5
 - ❌ Does NOT spawn new instance
 - ❌ Modifies existing instance in place
 
-#### Instance Modification
+#### Instance Modification - NOTE; in development!
 ```bash
 task 42 mod rindex:10
 ```
@@ -265,22 +261,11 @@ task 42 done
 ```
 
 **Actions:**
-1. Detect completed instance
+1. Detect completed or deleted instance
 2. Query template
 3. Check if rindex ≥ rlast (is this the latest?)
 4. If yes, spawn next instance (rindex + 1)
 5. Update template rlast
-
-#### Instance Deleted
-```bash
-task 42 delete
-```
-
-**For chain type:**
-- Spawn next instance (same as completion)
-
-**For period type:**
-- Do NOT spawn (deletion means "skip this one")
 
 ---
 
@@ -470,7 +455,7 @@ tail -50 ~/.task/recurrence_debug.log
 ### Code Modification Guidelines
 
 1. **Always ask before generating new file versions**
-2. **Check current files first** - Use `view` tool on /mnt/project/
+2. **Check current files first** - Use `view` tool in Priject files
 3. **Test syntax before installing** - Use `python3 -m py_compile`
 4. **Version all changes** - Update version numbers and dates
 5. **Document in CHANGES.txt** - Track what changed and why
