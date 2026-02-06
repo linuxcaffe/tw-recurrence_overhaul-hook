@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.4.0
-Date: 2026-02-02
+Version: 0.4.1
+Date: 2026-02-06
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:
 Every active template MUST have exactly one pending instance.
@@ -31,19 +31,11 @@ try:
         get_anchor_field_name, debug_log, DEBUG,
         spawn_instance
     )
-    COMMON_MODULE_AVAILABLE = True
 except ImportError as e:
-    # Fallback - use local functions if common module not available
-    DEBUG = os.environ.get('DEBUG_RECURRENCE', '0') == '1'
-    LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
-    COMMON_MODULE_AVAILABLE = False
-    
-    def debug_log(msg, prefix="EXIT"):
-        """Write debug message to log file if debug enabled"""
-        if DEBUG:
-            with open(LOG_FILE, 'a') as f:
-                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                f.write(f"[{timestamp}] {prefix}: {msg}\n")
+    # Fallback error handling
+    sys.stderr.write(f"ERROR: Cannot import recurrence_common_hook: {e}\n")
+    sys.stderr.write("Please ensure recurrence_common_hook.py is in ~/.task/hooks/\n")
+    sys.exit(1)
 
 if DEBUG:
     debug_log("="*60, "EXIT")
@@ -236,97 +228,6 @@ class RecurrenceSpawner:
         
         return False
     
-    def create_instance(self, template, index, completion_time=None):
-        """Create a new instance task"""
-        if DEBUG:
-            debug_log(f"Creating instance {index} from {template.get('uuid')}")
-        
-        recur_delta = self.parse_duration(template.get('r'))
-        if not recur_delta:
-            return None
-        
-        rtype = template.get('type', 'period')
-        anchor_field = template.get('ranchor', 'due')
-        
-        # Build command
-        cmd = ['task', 'rc.hooks=off', 'add', template['description']]
-        
-        # Get template anchor date
-        actual_field = self.get_anchor_field_name(anchor_field)
-        template_anchor = self.parse_date(template.get(actual_field))
-        if not template_anchor:
-            return None
-        
-        # Calculate anchor date
-        if index == 1:
-            # Instance 1 always uses template's anchor date
-            anchor_date = template_anchor
-        else:
-            if rtype == 'chain':
-                # Instance 2+: completion_time + period
-                base = completion_time or self.now
-                anchor_date = base + recur_delta
-            else:  # period
-                # Instance 2+: template + (index-1) * period
-                anchor_date = template_anchor + (recur_delta * (index - 1))
-        
-        # Check rend date
-        if self.check_rend(template, anchor_date):
-            return "Recurrence ended (rend date reached)"
-        
-        # Add anchor date
-        cmd.append(f'{anchor_field}:{self.format_date(anchor_date)}')
-        
-        # Copy until from template if present
-        if 'until' in template:
-            cmd.append(f'until:{template["until"]}')
-        
-        # Process wait
-        if 'rwait' in template:
-            wait_date = self.parse_relative_date(template['rwait'], anchor_date)
-            if wait_date:
-                cmd.append(f'wait:{self.format_date(wait_date)}')
-        
-        # Process sched
-        if 'rscheduled' in template and anchor_field != 'sched':
-            sched_date = self.parse_relative_date(template['rscheduled'], anchor_date)
-            if sched_date:
-                cmd.append(f'sched:{self.format_date(sched_date)}')
-        
-        # Copy attributes
-        if 'project' in template:
-            cmd.append(f'project:{template["project"]}')
-        if 'priority' in template:
-            cmd.append(f'priority:{template["priority"]}')
-        if 'tags' in template and template['tags']:
-            cmd.extend([f'+{tag}' for tag in template['tags']])
-        
-        # Metadata
-        cmd.extend([
-            f'rtemplate:{template["uuid"]}',
-            f'rindex:{int(index)}'
-        ])
-        
-        # Execute
-        try:
-            subprocess.run(cmd, capture_output=True, check=True)
-            
-            # Update template's rlast
-            subprocess.run(
-                ['task', 'rc.hooks=off', template['uuid'], 'modify', f'rlast:{int(index)}'],
-                capture_output=True,
-                check=True
-            )
-            
-            if DEBUG:
-                debug_log(f"Instance {index} created successfully")
-            
-            return f"Created instance {index} of '{template['description']}'"
-        except subprocess.CalledProcessError as e:
-            if DEBUG:
-                debug_log(f"Error creating instance: {e}")
-            return None
-    
     def process_tasks(self, tasks):
         """Process tasks and spawn instances"""
         feedback = []
@@ -412,7 +313,7 @@ class RecurrenceSpawner:
                     # Get completion/deletion time for chained type
                     completion = None
                     if task.get('status') == 'completed' and 'end' in task:
-                        completion = parse_date(task['end']) if COMMON_MODULE_AVAILABLE else self.parse_date(task['end'])
+                        completion = parse_date(task['end'])
                         if DEBUG:
                             debug_log(f"Completion time: {completion}", "EXIT")
                     elif task.get('status') == 'deleted':
@@ -421,11 +322,8 @@ class RecurrenceSpawner:
                         if DEBUG:
                             debug_log(f"Deletion time: {completion}", "EXIT")
                     
-                    # Use common spawn_instance if available, otherwise fallback to local
-                    if COMMON_MODULE_AVAILABLE:
-                        msg = spawn_instance(template, current_idx + 1, completion)
-                    else:
-                        msg = self.create_instance(template, current_idx + 1, completion)
+                    # Always use spawn_instance from common module
+                    msg = spawn_instance(template, current_idx + 1, completion)
                     
                     if msg:
                         feedback.append(msg)
@@ -450,11 +348,8 @@ class RecurrenceSpawner:
                 if DEBUG:
                     debug_log(f"Found new template: {task.get('description')}", "EXIT")
                 
-                # Use common spawn_instance if available, otherwise fallback to local
-                if COMMON_MODULE_AVAILABLE:
-                    msg = spawn_instance(task, 1)  # First instance is always index 1
-                else:
-                    msg = self.create_instance(task, 1)
+                # Always use spawn_instance from common module
+                msg = spawn_instance(task, 1)  # First instance is always index 1
                 
                 if msg:
                     feedback.append(msg)

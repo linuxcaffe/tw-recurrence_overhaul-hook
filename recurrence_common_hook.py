@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 0.4.0
-Date: 2026-01-31
+Version: 0.4.1
+Date: 2026-02-06
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
 This module contains date/duration parsing, type normalization, and debug logging.
@@ -187,9 +187,9 @@ def parse_relative_date(date_str, anchor_date=None):
     if not date_str:
         return (None, None) if anchor_date is None else None
     
-    # Match patterns like: due-2d, sched+1w, wait-3days
+    # Match patterns like: due-2d, sched+1w, wait-3days, sched+4hr
     match = re.match(
-        r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|d|days?|w|weeks?|mo|months?|y|years?)',
+        r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)',
         str(date_str).lower()
     )
     
@@ -202,6 +202,8 @@ def parse_relative_date(date_str, anchor_date=None):
     # Normalize unit to timedelta
     if unit.startswith('s'):
         delta = timedelta(seconds=num)
+    elif unit.startswith('h'):
+        delta = timedelta(hours=num)
     elif unit.startswith('d'):
         delta = timedelta(days=num)
     elif unit.startswith('w'):
@@ -400,14 +402,11 @@ def spawn_instance(template, rindex, completion_time=None):
             return "Recurrence ended (rend date reached)"
     
     # Build task add command
-    cmd = ['task', 'rc.hooks=off', 'rc.confirmation=off', 'add', template['description']]
+    # rc.verbose=new-id: Only output task ID line, suppress warnings and context messages
+    cmd = ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=new-id', 'add', template['description']]
     
     # Add anchor date
     cmd.append(f'{anchor_field}:{format_date(anchor_date)}')
-    
-    # Copy until from template if present
-    if 'until' in template:
-        cmd.append(f'until:{template["until"]}')
     
     # Process relative wait
     if 'rwait' in template:
@@ -420,6 +419,19 @@ def spawn_instance(template, rindex, completion_time=None):
         sched_date = parse_relative_date(template['rscheduled'], anchor_date)
         if sched_date:
             cmd.append(f'scheduled:{format_date(sched_date)}')
+    
+    # Process relative until
+    if 'runtil' in template:
+        if DEBUG:
+            debug_log(f"Template has runtil: {template['runtil']}", "COMMON")
+        until_date = parse_relative_date(template['runtil'], anchor_date)
+        if until_date:
+            cmd.append(f'until:{format_date(until_date)}')
+            if DEBUG:
+                debug_log(f"Added until: {format_date(until_date)}", "COMMON")
+        else:
+            if DEBUG:
+                debug_log(f"Failed to parse runtil: {template['runtil']}", "COMMON")
     
     # Copy attributes from template
     if 'project' in template:
@@ -439,17 +451,32 @@ def spawn_instance(template, rindex, completion_time=None):
     try:
         result = subprocess.run(cmd, capture_output=True, check=True, text=True)
         
+        # Extract task ID from output (Taskwarrior prints "Created task N.")
+        task_id = None
+        for line in result.stdout.split('\n'):
+            if 'Created task' in line:
+                import re
+                match = re.search(r'Created task (\d+)', line)
+                if match:
+                    task_id = match.group(1)
+                    break
+        
         # Update template's rlast to match
         subprocess.run(
-            ['task', 'rc.hooks=off', 'rc.confirmation=off', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
+            ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=nothing', template['uuid'], 'modify', f'rlast:{int(rindex)}'],
             capture_output=True,
             check=True
         )
         
         if DEBUG:
-            debug_log(f"Instance {rindex} spawned successfully", "COMMON")
+            debug_log(f"Instance {rindex} spawned successfully (task {task_id})", "COMMON")
         
-        return f"Created instance {rindex} of '{template['description']}'"
+        # Build message with task ID if available
+        task_desc = template.get('description', 'untitled')
+        if task_id:
+            return f"Created task {task_id} - '{task_desc}' (recurrence instance #{rindex})"
+        else:
+            return f"Created instance #{rindex} - '{task_desc}'"
     
     except subprocess.CalledProcessError as e:
         if DEBUG:
@@ -494,8 +521,8 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '0.4.0'
-__date__ = '2026-01-31'
+__version__ = '0.4.1'
+__date__ = '2026-02-06'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 0.4.0
-Date: 2026-02-02
+Version: 0.4.1
+Date: 2026-02-06
 
 Handles both adding new recurring tasks and modifying existing ones with
 sophisticated modification tracking and user feedback.
@@ -10,7 +10,7 @@ sophisticated modification tracking and user feedback.
 Features:
 - Template creation with type normalization
 - Smart modification detection and handling
-- Bidirectional rindex â†” rlast synchronization
+- Bidirectional rindex Ã¢â€ â€� rlast synchronization
 - Anchor change detection with automatic rwait/rscheduled updates
 - Time machine functionality (rlast modifications)
 - Comprehensive user messaging following awesome-taskwarrior standard
@@ -132,7 +132,7 @@ def update_task(uuid, modifications):
             mod_args.append(f'{field}:{value}')
         
         result = subprocess.run(
-            ['task', 'rc.hooks=off', 'rc.confirmation=off', uuid, 'mod'] + mod_args,
+            ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=nothing', uuid, 'mod'] + mod_args,
             capture_output=True,
             text=True,
             check=False
@@ -193,7 +193,7 @@ def update_instance_for_rlast_change(template, instance, old_rlast, new_rlast):
     
     # Calculate new anchor date for this instance
     if type_str == 'period':
-        # Periodic: template_anchor + (new_rlast × period)
+        # Periodic: template_anchor + (new_rlast Ã— period)
         new_anchor = template_anchor + (r_delta * new_rlast)
     else:
         # Chained: approximate using template_anchor + offset
@@ -233,7 +233,7 @@ class RecurrenceHandler:
     """Handles enhanced recurrence for Taskwarrior"""
     
     # Define which attributes belong to templates vs instances
-    TEMPLATE_ONLY_ATTRS = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled'}
+    TEMPLATE_ONLY_ATTRS = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled', 'runtil'}
     INSTANCE_ONLY_ATTRS = {'rtemplate', 'rindex'}
     
     def __init__(self):
@@ -307,7 +307,7 @@ class RecurrenceHandler:
             if removed:
                 return (
                     f"WARNING: Removed template-only attributes from instance: {', '.join(removed)}\n"
-                    f"  Instances should not have: r, type, ranchor, rlast, rend, rwait, rscheduled"
+                    f"  Instances should not have: r, type, ranchor, rlast, rend, rwait, rscheduled, runtil"
                 )
         return None
     
@@ -355,10 +355,7 @@ class RecurrenceHandler:
                 if DEBUG:
                     debug_log(f"Converted absolute wait to relative: {task['rwait']}", "ADD/MOD")
                 
-                self.add_message(
-                    f"Converted absolute wait to relative: rwait={task['rwait']}\n"
-                    f"This will apply to all future instances."
-                )
+                # No user message needed - this is expected behavior
                 return True
         
         return False
@@ -398,6 +395,48 @@ class RecurrenceHandler:
                 
                 if DEBUG:
                     debug_log(f"Converted absolute scheduled to relative: {task['rscheduled']}", "ADD/MOD")
+                
+                return True
+        
+        return False
+    
+    def convert_until_to_relative(self, task, anchor_field, anchor_date):
+        """Convert absolute until to relative runtil
+        
+        Args:
+            task: Task dictionary (modified in place)
+            anchor_field: 'due' or 'sched'
+            anchor_date: Datetime object for anchor
+            
+        Returns:
+            True if conversion was performed
+        """
+        if 'until' not in task:
+            return False
+        
+        until_str = task['until']
+        ref_field, offset = parse_relative_date(until_str)
+        
+        if ref_field and offset:
+            # Already in relative format - preserve it
+            task['runtil'] = until_str
+            del task['until']
+            if DEBUG:
+                debug_log(f"Converted relative until expression: {task['runtil']}", "ADD/MOD")
+            return True
+        else:
+            # Absolute date - convert to relative offset
+            until_dt = parse_date(until_str)
+            if until_dt and anchor_date:
+                delta_sec = int((until_dt - anchor_date).total_seconds())
+                if delta_sec != 0:
+                    task['runtil'] = f'{anchor_field}{delta_sec:+d}s'
+                else:
+                    task['runtil'] = f'{anchor_field}+0s'
+                del task['until']
+                
+                if DEBUG:
+                    debug_log(f"Converted absolute until to relative: {task['runtil']}", "ADD/MOD")
                 
                 return True
         
@@ -478,9 +517,10 @@ class RecurrenceHandler:
         
         task['ranchor'] = anchor_field
         
-        # Convert wait and scheduled to relative
+        # Convert wait, scheduled, and until to relative
         self.convert_wait_to_relative(task, anchor_field, anchor_date)
         self.convert_scheduled_to_relative(task, anchor_field, anchor_date)
+        self.convert_until_to_relative(task, anchor_field, anchor_date)
         
         if DEBUG:
             debug_log(f"  Template created: status={task['status']}, rlast={task['rlast']}", "ADD/MOD")
@@ -490,9 +530,8 @@ class RecurrenceHandler:
         if warning:
             self.add_message(warning)
         
-        self.add_message(
-            "Created recurrence template. First instance will be generated on exit."
-        )
+        # Note: Taskwarrior will output "Created task N (recurrence template)."
+        # We don't need to add our own message here
         
         return task
     
@@ -537,7 +576,7 @@ class RecurrenceHandler:
             }
             
             changes.append(
-                f"Modified template type: {old_type} â†’ {new_type}\n"
+                f"Modified template type: {old_type} Ã¢â€ â€™ {new_type}\n"
                 f"  This changes how future instances spawn ({spawn_behavior[new_type]}).\n"
                 f"  Current rlast={modified.get('rlast', '0')} preserved."
             )
@@ -551,14 +590,14 @@ class RecurrenceHandler:
             new_r = modified['r']
             
             changes.append(
-                f"Modified recurrence interval: {old_r} â†’ {new_r}\n"
+                f"Modified recurrence interval: {old_r} Ã¢â€ â€™ {new_r}\n"
                 f"  This changes the spacing between future instances."
             )
             
             if DEBUG:
                 debug_log(f"Recurrence interval changed: {old_r} -> {new_r}", "ADD/MOD")
         
-        # Check for anchor change (due â†” sched)
+        # Check for anchor change (due Ã¢â€ â€� sched)
         old_anchor = original.get('ranchor')
         new_anchor_field, new_anchor_date = self.get_anchor_date(modified)
         
@@ -574,7 +613,7 @@ class RecurrenceHandler:
             updated_str = ', '.join(updated_fields) if updated_fields else 'none'
             
             changes.append(
-                f"Modified template anchor: {old_anchor} â†’ {new_anchor_field}\n"
+                f"Modified template anchor: {old_anchor} Ã¢â€ â€™ {new_anchor_field}\n"
                 f"  Relative dates ({updated_str}) updated to use new anchor."
             )
             
@@ -664,25 +703,25 @@ class RecurrenceHandler:
                         next_date = anchor_date + (r_delta * (new_rlast + 1))
                         next_date_str = format_date(next_date)
                         
-                        msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
+                        msg = f"Template rlast modified: {old_rlast} Ã¢â€ â€™ {new_rlast} ({abs(delta)} instances {direction})\n"
                         msg += f"  Next instance will be #{new_rlast + 1} due {next_date_str}"
                         if sync_msg:
                             msg += f"\n{sync_msg}"
                         changes.append(msg)
                     else:
-                        msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})\n"
+                        msg = f"Template rlast modified: {old_rlast} Ã¢â€ â€™ {new_rlast} ({abs(delta)} instances {direction})\n"
                         msg += f"  Next instance will be #{new_rlast + 1}"
                         if sync_msg:
                             msg += f"\n{sync_msg}"
                         changes.append(msg)
                 else:
-                    msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast} ({abs(delta)} instances {direction})"
+                    msg = f"Template rlast modified: {old_rlast} Ã¢â€ â€™ {new_rlast} ({abs(delta)} instances {direction})"
                     if sync_msg:
                         msg += f"\n{sync_msg}"
                     changes.append(msg)
             else:
                 # Chain type
-                msg = f"Template rlast modified: {old_rlast} â†’ {new_rlast}\n"
+                msg = f"Template rlast modified: {old_rlast} Ã¢â€ â€™ {new_rlast}\n"
                 msg += f"  Next instance will be #{new_rlast + 1} (spawns on completion)."
                 if sync_msg:
                     msg += f"\n{sync_msg}"
@@ -697,14 +736,14 @@ class RecurrenceHandler:
             new_rend = modified['rend']
             
             changes.append(
-                f"Modified recurrence end: {old_rend} â†’ {new_rend}\n"
+                f"Modified recurrence end: {old_rend} Ã¢â€ â€™ {new_rend}\n"
                 f"  Template will stop repeating after this limit."
             )
             
             if DEBUG:
                 debug_log(f"rend changed: {old_rend} -> {new_rend}", "ADD/MOD")
         
-        # Check for wait modifications (absolute â†’ relative conversion)
+        # Check for wait modifications (absolute Ã¢â€ â€™ relative conversion)
         anchor_field, anchor_date = self.get_anchor_date(modified)
         if anchor_field and anchor_date:
             self.convert_wait_to_relative(modified, anchor_field, anchor_date)
@@ -722,12 +761,12 @@ class RecurrenceHandler:
                 
                 if type_str == 'period':
                     changes.append(
-                        f"Modified template {anchor_field} date: {format_date(old_anchor_date)} â†’ {format_date(anchor_date)}\n"
+                        f"Modified template {anchor_field} date: {format_date(old_anchor_date)} Ã¢â€ â€™ {format_date(anchor_date)}\n"
                         f"  This shifts all future instances by the same offset."
                     )
                 else:
                     changes.append(
-                        f"Modified template {anchor_field} date: {format_date(old_anchor_date)} â†’ {format_date(anchor_date)}\n"
+                        f"Modified template {anchor_field} date: {format_date(old_anchor_date)} Ã¢â€ â€™ {format_date(anchor_date)}\n"
                         f"  This affects next instance only (chain type)."
                     )
                 
@@ -795,7 +834,7 @@ class RecurrenceHandler:
         return modified
     
     def handle_instance_modification(self, original, modified):
-        """Handle modifications to an instance with rindex â†” rlast sync
+        """Handle modifications to an instance with rindex Ã¢â€ â€� rlast sync
         
         Args:
             original: Original task state
@@ -870,19 +909,19 @@ class RecurrenceHandler:
                         debug_log(f"Auto-synced template {template_id} rlast: {template_rlast} -> {new_rindex}", "ADD/MOD")
                     
                     changes.append(
-                        f"Modified instance rindex: {old_rindex} â†’ {new_rindex}\n"
+                        f"Modified instance rindex: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
                         f"  Template rlast auto-synced to {new_rindex}."
                     )
                 else:
                     changes.append(
-                        f"Modified instance rindex: {old_rindex} â†’ {new_rindex}\n"
+                        f"Modified instance rindex: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
                         f"  WARNING: Failed to auto-sync template rlast. Manual sync needed:\n"
                         f"  task {template_id} mod rlast:{new_rindex}"
                     )
             else:
                 # Could not query template
                 changes.append(
-                    f"Modified instance rindex: {old_rindex} â†’ {new_rindex}\n"
+                    f"Modified instance rindex: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
                     f"  Template rlast should be synced to {new_rindex}.\n"
                     f"  Update template with: task {rtemplate_uuid} mod rlast:{new_rindex}"
                 )

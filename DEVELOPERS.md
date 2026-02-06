@@ -1,8 +1,25 @@
 # Taskwarrior Enhanced Recurrence - Developer Documentation
 
-**Version:** 0.4.0  
-**Status:** Core Working? Needs testing!
+**Version:** 0.4.1  
+**Status:** Core Working ✓
 **Last Updated:** 2026-02-06
+
+## Version 0.4.1 Changes
+
+**Refactoring:**
+- Eliminated 106 lines of duplicate code from on-exit (-21%)
+- Removed local `create_instance()` method
+- Always use `spawn_instance()` from common module (single source of truth)
+
+**New Features:**
+- Added `runtil` field support (like `rwait`/`rscheduled`)
+- Hour support in relative dates: `sched+4hr`, `wait-2h`
+- Cleaner messaging: "Created task N - 'description' (recurrence instance #1)"
+
+**Improvements:**
+- Suppressed Taskwarrior's verbose messages from internal operations
+- Removed noisy wait conversion messages
+- `until` field now recalculates for each instance
 
 ---
 
@@ -26,10 +43,10 @@
 
 ```
 ~/.task/hooks/
-├── on-add_recurrence.py           (executable) - Creates templates, handles modifications
-├── on-exit_recurrence.py          (executable) - Spawns instances only
-├── recurrence_common_hook.py      (library)    - Shared utilities (NOT executable)
-└── on-modify_recurrence.py        (symlink)    - → on-add_recurrence.py
+â”œâ”€â”€ on-add_recurrence.py           (executable) - Creates templates, handles modifications
+â”œâ”€â”€ on-exit_recurrence.py          (executable) - Spawns instances only
+â”œâ”€â”€ recurrence_common_hook.py      (library)    - Shared utilities (NOT executable)
+â””â”€â”€ on-modify_recurrence.py        (symlink)    - â†’ on-add_recurrence.py
 ```
 
 ### Core Principles
@@ -42,13 +59,13 @@
 
 ```
 User: task add "Gym" r:7d due:tomorrow
-  ↓
+  â†“
 on-add: Creates template (status:recurring, rlast:1)
-  ↓
+  â†“
 on-exit: Spawns instance #1 (status:pending, rindex:1)
-  ↓
+  â†“
 User: task <id> done
-  ↓
+  â†“
 on-exit: Spawns instance #2
 ```
 
@@ -56,7 +73,7 @@ on-exit: Spawns instance #2
 
 ## File Structure
 
-### on-add_recurrence.py (1096 lines)
+### on-add_recurrence.py (1135 lines)
 
 **Purpose:** Template creation and modification handler
 
@@ -69,29 +86,32 @@ on-exit: Spawns instance #2
 - `update_task()` - Modify task via Taskwarrior command
 
 **What it does:**
-- Normalizes recurrence types (c→chain, p→period)
-- Converts absolute dates to relative (wait→rwait)
-- Detects anchor changes (due↔sched)
+- Normalizes recurrence types (câ†’chain, pâ†’period)
+- Converts absolute dates to relative (waitâ†’rwait)
+- Detects anchor changes (dueâ†”sched)
 - Validates template/instance attribute separation
 
 **What on-add does NOT do:**
-- ❌ Does NOT spawn instances
-- ❌ Does NOT delete instances
+- â�Œ Does NOT spawn instances
+- â�Œ Does NOT delete instances
 
-### on-exit_recurrence.py (503 lines)
-
+### on-exit_recurrence.py (397 lines)
 **Purpose:** Instance spawning
+
+**Note:** v0.4.1 removed 106 lines of duplicate code by eliminating local `create_instance()` 
+method and always using `spawn_instance()` from common module.
+
 
 **Key Functions:**
 - `RecurrenceSpawner.process_tasks()` - Main loop for processing completed/deleted tasks
-- `RecurrenceSpawner.create_instance()` - Spawn new instance with correct dates
+
 - `RecurrenceSpawner.get_template()` - Fetch template by UUID
 - `RecurrenceSpawner.check_rend()` - Check if recurrence has ended
 
 **Spawning Logic:**
 ```python
 # For periodic type:
-anchor_date = template_anchor + (recur_delta × (index - 1))
+anchor_date = template_anchor + (recur_delta Ã— (index - 1))
 
 # For chained type:
 anchor_date = completion_time + recur_delta
@@ -100,14 +120,14 @@ anchor_date = completion_time + recur_delta
 **What on-exit does:**
 - Spawns instance #1 when template is created (rlast=0 or 1)
 - Spawns next instance when current one completes/deletes
-- Only spawns for the LATEST instance (rindex ≥ rlast)
+- Only spawns for the LATEST instance (rindex â‰¥ rlast)
 - Checks rend date before spawning
 
 **What on-exit does NOT do:**
-- ❌ Does NOT modify templates or instances
-- ❌ Only spawns, never modifies existing tasks
+- â�Œ Does NOT modify templates or instances
+- â�Œ Only spawns, never modifies existing tasks
 
-### recurrence_common_hook.py (501 lines)
+### recurrence_common_hook.py (528 lines)
 
 **Purpose:** Shared utility library
 
@@ -116,13 +136,14 @@ anchor_date = completion_time + recur_delta
 - `parse_duration()` - Parse '7d', '1w', 'P1D' to timedelta
 - `parse_date()` - Parse ISO 8601 dates (20260206T120000Z)
 - `format_date()` - Format datetime to ISO 8601
-- `parse_relative_date()` - Parse 'due-2d', 'sched+1w'
+- `parse_relative_date()` - Parse 'due-2d', 'sched+1w', 'wait-4hr' (supports hours in v0.4.1)
 - `is_template()` - Check if task is template
 - `is_instance()` - Check if task is instance
-- `get_anchor_field_name()` - Map 'sched'→'scheduled', 'due'→'due'
+- `get_anchor_field_name()` - Map 'sched'â†’'scheduled', 'due'â†’'due'
 - `debug_log()` - Conditional logging to file
 - `check_instance_count()` - Targeted instance checking (NOT global)
 - `query_instances()` - Query instances for specific template
+- `spawn_instance()` - Create new instance with proper verbosity control
 
 **Constants:**
 ```python
@@ -155,6 +176,7 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 {
   "rwait": "due-172800s",      // Relative wait (seconds from anchor)
   "rscheduled": "due-86400s",  // Relative scheduled
+  "runtil": "sched+14400s",    // Relative until (seconds from anchor)
   "rend": "20261231T235959Z",  // Stop spawning after this date
   "rlimit": "3",               // Max pending instances (default: 1)
   "project": "work",
@@ -164,8 +186,8 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 ```
 
 **Templates should NOT have:**
-- ❌ `rtemplate` - Only instances have this
-- ❌ `rindex` - Only instances have this
+- â�Œ `rtemplate` - Only instances have this
+- â�Œ `rindex` - Only instances have this
 
 ### Instance (status:pending/completed/etc)
 
@@ -182,17 +204,16 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 
 **Inherited from Template:**
 - `project`, `priority`, `tags` (non-recurrence)
-- `wait`, `scheduled` (calculated from rwait/rscheduled)
-- `until` (copied directly)
+- `wait`, `scheduled`, `until` (calculated from rwait/rscheduled/runtil)
 
 **Instances do NOT have:**
-- ❌ `r` - Only templates have this
-- ❌ `type` - Only templates have this
-- ❌ `rlast` - Only templates have this
-- ❌ `ranchor` - Only templates have this
-- ❌ `rwait` - Only templates have this
-- ❌ `rscheduled` - Only templates have this
-- ❌ `rend` - Only templates have this
+- â�Œ `r` - Only templates have this
+- â�Œ `type` - Only templates have this
+- â�Œ `rlast` - Only templates have this
+- â�Œ `ranchor` - Only templates have this
+- â�Œ `rwait` - Only templates have this
+- â�Œ `rscheduled` - Only templates have this
+- â�Œ `rend` - Only templates have this
 
 ---
 
@@ -207,7 +228,7 @@ task add "Gym" r:7d due:tomorrow ty:c
 
 **Actions:**
 1. Set `status:recurring`
-2. Normalize `type` (c→chain)
+2. Normalize `type` (câ†’chain)
 3. Set `rlast:1`
 4. Detect anchor (`ranchor:due`)
 5. Convert `sched` to `rscheduled` if present
@@ -220,7 +241,7 @@ task 1 mod rlast:5
 ```
 
 **Actions:**
-1. Detect rlast change (0→5)
+1. Detect rlast change (0â†’5)
 2. Query for current instance
 3. **Call update_instance_for_rlast_change()** to modify instance
 4. Update instance's rindex to 5
@@ -228,9 +249,9 @@ task 1 mod rlast:5
 6. Output: "Instance #1 updated to #5"
 
 **What it does NOT do:**
-- ❌ Does NOT delete instance
-- ❌ Does NOT spawn new instance
-- ❌ Modifies existing instance in place
+- â�Œ Does NOT delete instance
+- â�Œ Does NOT spawn new instance
+- â�Œ Modifies existing instance in place
 
 #### Instance Modification - NOTE; in development!
 ```bash
@@ -263,7 +284,7 @@ task 42 done
 **Actions:**
 1. Detect completed or deleted instance
 2. Query template
-3. Check if rindex ≥ rlast (is this the latest?)
+3. Check if rindex â‰¥ rlast (is this the latest?)
 4. If yes, spawn next instance (rindex + 1)
 5. Update template rlast
 
@@ -278,11 +299,11 @@ task 42 done
 ```
 Template rlast:5
 Instance rindex:5 (pending)
-✓ CORRECT
+âœ“ CORRECT
 
 Template rlast:3
 Instance rindex:5 (pending)
-✗ DESYNC - FIX IT
+âœ— DESYNC - FIX IT
 ```
 
 ### One-to-One Rule
@@ -291,14 +312,14 @@ Instance rindex:5 (pending)
 
 ```
 Template UUID-123
-  ├─ Instance #5 (pending)  ✓ CORRECT
+  â”œâ”€ Instance #5 (pending)  âœ“ CORRECT
   
 Template UUID-456
-  ├─ Instance #3 (pending)
-  └─ Instance #4 (pending)  ✗ CORRUPTION - Multiple instances!
+  â”œâ”€ Instance #3 (pending)
+  â””â”€ Instance #4 (pending)  âœ— CORRUPTION - Multiple instances!
 
 Template UUID-789
-  (no instances)            ✗ MISSING - Need to spawn!
+  (no instances)            âœ— MISSING - Need to spawn!
 ```
 
 ### Attribute Separation
@@ -306,7 +327,7 @@ Template UUID-789
 **Templates and instances have separate attribute sets:**
 
 ```python
-TEMPLATE_ONLY = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled'}
+TEMPLATE_ONLY = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled', 'runtil'}
 INSTANCE_ONLY = {'rtemplate', 'rindex'}
 ```
 
@@ -316,8 +337,8 @@ If attributes cross over, hooks auto-remove them with warnings.
 
 **ONLY on-exit spawns instances**
 
-- on-add: Creates templates ✓, Modifies tasks ✓, Spawns instances ✗
-- on-exit: Spawns instances ✓, Modifies tasks ✗
+- on-add: Creates templates âœ“, Modifies tasks âœ“, Spawns instances âœ—
+- on-exit: Spawns instances âœ“, Modifies tasks âœ—
 
 ### Deletion Responsibility
 
@@ -402,29 +423,12 @@ export PYTHONPYCACHEPREFIX=/dev/null
 
 ## Known Issues
 
-### 1. Time Machine Not Working (as of 2026-02-06)
+### 1. Time Machine (rlast modifications) - In Development
 
-**Status:** INVESTIGATING
+**Status:** CODE IMPLEMENTED, NOT FULLY TESTED
 
-**Symptom:**
-```bash
-task 79 mod rlast:5
-# Instance rindex stays 1, doesn't update to 5
-```
-
-**Expected:**
-- Instance #1 should update to #5
-- Due date should recalculate
-
-**Actual:**
-- Instance stays at #1
-- Template rlast updates to 5 (correct)
-- Instance not modified
-
-**Next Steps:**
-- Check if `update_instance_for_rlast_change()` is being called
-- Check if `update_task()` succeeds
-- Check debug log for "Updating instance" messages
+The time machine feature (modifying template `rlast` to jump forward/backward in the sequence) 
+has been implemented but requires comprehensive testing. Core recurrence functionality works correctly.
 
 ---
 
