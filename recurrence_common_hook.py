@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 0.5.0
+Version: 2.6.0
 Date: 2026-02-07
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
