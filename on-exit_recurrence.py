@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.4.1
-Date: 2026-02-06
+Version: 0.5.0
+Date: 2026-02-07
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:
 Every active template MUST have exactly one pending instance.
@@ -13,6 +13,8 @@ Installation:
 """
 
 import sys
+sys.dont_write_bytecode = True
+
 import json
 import subprocess
 from datetime import datetime, timedelta
@@ -113,19 +115,24 @@ class RecurrenceSpawner:
         return dt.strftime('%Y%m%dT%H%M%SZ')
     
     def parse_relative_date(self, rel_str, anchor_date):
-        """Parse relative date like 'due-2d' or 'due-2days' given anchor date"""
+        """Parse relative date like 'due-2d' or 'due-30m' given anchor date"""
         if not rel_str or not anchor_date:
             return None
         
-        match = re.match(r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|d|days?|w|weeks?|mo|months?|y|years?)', 
+        match = re.match(r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|min|minutes?|m|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)', 
                         str(rel_str).lower())
         if match:
             ref_field, sign, num, unit = match.groups()
             num = int(num)
             
             # Normalize unit to category
-            if unit.startswith('s'):
+            # Order matters: 'min'/'minutes' before 'mo'/'months', 'm' is minutes
+            if unit.startswith('min') or unit == 'm':
+                delta = timedelta(minutes=num)
+            elif unit.startswith('s'):
                 delta = timedelta(seconds=num)
+            elif unit.startswith('h'):
+                delta = timedelta(hours=num)
             elif unit.startswith('d'):
                 delta = timedelta(days=num)
             elif unit.startswith('w'):
@@ -231,6 +238,54 @@ class RecurrenceSpawner:
     def process_tasks(self, tasks):
         """Process tasks and spawn instances"""
         feedback = []
+        
+        # Process propagation spool from on-modify (template -> instance sync).
+        # on-modify can't subprocess 'task modify' because Taskwarrior holds a
+        # file lock during hook execution. on-exit runs after the lock is released.
+        spool_path = os.path.expanduser('~/.task/recurrence_propagate.json')
+        if os.path.exists(spool_path):
+            try:
+                with open(spool_path, 'r') as f:
+                    spool = json.load(f)
+                os.remove(spool_path)
+                
+                instance_uuid = spool['instance_uuid']
+                updates = spool['updates']
+                template_id = spool.get('template_id', '?')
+                instance_rindex = spool.get('instance_rindex', '?')
+                changes = spool.get('changes', [])
+                
+                mod_args = [f'{field}:{value}' for field, value in updates.items()]
+                
+                if DEBUG:
+                    debug_log(f"Processing propagation spool: instance {instance_uuid}, updates: {updates}", "EXIT")
+                
+                result = subprocess.run(
+                    ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=nothing',
+                     instance_uuid, 'modify'] + mod_args,
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                
+                if result.returncode == 0:
+                    if DEBUG:
+                        debug_log(f"Propagation successful", "EXIT")
+                    field_list = ', '.join(changes) if changes else 'recurrence fields'
+                    feedback.append(f"Instance #{instance_rindex} synced ({field_list}).")
+                else:
+                    if DEBUG:
+                        debug_log(f"Propagation failed: {result.stderr}", "EXIT")
+                    feedback.append(f"WARNING: Failed to sync instance #{instance_rindex}. Manual sync may be needed.")
+                    
+            except (json.JSONDecodeError, KeyError, OSError) as e:
+                if DEBUG:
+                    debug_log(f"Error processing propagation spool: {e}", "EXIT")
+                # Clean up bad spool file
+                try:
+                    os.remove(spool_path)
+                except OSError:
+                    pass
         
         for task in tasks:
             if DEBUG:
@@ -346,13 +401,25 @@ class RecurrenceSpawner:
                   str(task.get('rlast', '')).strip() in ['0', '1', '']):
                 
                 if DEBUG:
-                    debug_log(f"Found new template: {task.get('description')}", "EXIT")
+                    debug_log(f"Found template with rlast in [0,1,'']: {task.get('description')}", "EXIT")
                 
-                # Always use spawn_instance from common module
-                msg = spawn_instance(task, 1)  # First instance is always index 1
+                # Check if instance already exists (prevent duplicate spawning on template mods)
+                from recurrence_common_hook import query_instances
+                template_uuid = task.get('uuid')
+                existing_instances = query_instances(template_uuid) if template_uuid else []
                 
-                if msg:
-                    feedback.append(msg)
+                if existing_instances:
+                    if DEBUG:
+                        debug_log(f"Instance already exists (count={len(existing_instances)}), not spawning", "EXIT")
+                else:
+                    if DEBUG:
+                        debug_log(f"No instance exists, spawning first instance", "EXIT")
+                    
+                    # Always use spawn_instance from common module
+                    msg = spawn_instance(task, 1)  # First instance is always index 1
+                    
+                    if msg:
+                        feedback.append(msg)
         
         return feedback
 

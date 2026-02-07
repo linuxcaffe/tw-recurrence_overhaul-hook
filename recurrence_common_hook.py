@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 0.4.1
-Date: 2026-02-06
+Version: 0.5.0
+Date: 2026-02-07
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
 This module contains date/duration parsing, type normalization, and debug logging.
@@ -10,6 +10,9 @@ This module contains date/duration parsing, type normalization, and debug loggin
 Installation:
     Place in ~/.task/hooks/ alongside the recurrence hook scripts
 """
+
+import sys
+sys.dont_write_bytecode = True
 
 import os
 import re
@@ -187,9 +190,9 @@ def parse_relative_date(date_str, anchor_date=None):
     if not date_str:
         return (None, None) if anchor_date is None else None
     
-    # Match patterns like: due-2d, sched+1w, wait-3days, sched+4hr
+    # Match patterns like: due-2d, sched+1w, wait-30m, wait-3days, sched+4hr
     match = re.match(
-        r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)',
+        r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|min|minutes?|m|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)',
         str(date_str).lower()
     )
     
@@ -200,7 +203,10 @@ def parse_relative_date(date_str, anchor_date=None):
     num = int(num)
     
     # Normalize unit to timedelta
-    if unit.startswith('s'):
+    # Order matters: 'min'/'minutes' before 'mo'/'months', 'm' is minutes
+    if unit.startswith('min') or unit == 'm':
+        delta = timedelta(minutes=num)
+    elif unit.startswith('s'):
         delta = timedelta(seconds=num)
     elif unit.startswith('h'):
         delta = timedelta(hours=num)
@@ -280,20 +286,21 @@ def query_instances(template_uuid):
     import json
     
     try:
-        # Query for both pending AND waiting status
-        # Waiting tasks are still "active" instances, just not ready yet
+        # Query without status filter first, then filter manually
+        # This avoids potential parentheses parsing issues
         result = subprocess.run(
-            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 
-             '(status:pending or status:waiting)', 'export'],
+            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 'export'],
             capture_output=True,
             text=True,
             check=False
         )
         
         if result.returncode == 0 and result.stdout.strip():
-            instances = json.loads(result.stdout)
+            all_instances = json.loads(result.stdout)
+            # Filter to pending/waiting only
+            instances = [i for i in all_instances if i.get('status') in ['pending', 'waiting']]
             if DEBUG:
-                debug_log(f"Queried instances for {template_uuid}: {len(instances)} found", "COMMON")
+                debug_log(f"Queried instances for {template_uuid}: {len(instances)} found (from {len(all_instances)} total)", "COMMON")
             return instances
         
         if DEBUG:
@@ -521,8 +528,8 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '0.4.1'
-__date__ = '2026-02-06'
+__version__ = '0.5.0'
+__date__ = '2026-02-07'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")
