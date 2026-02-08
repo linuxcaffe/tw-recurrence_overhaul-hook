@@ -1,39 +1,58 @@
 # Taskwarrior Enhanced Recurrence - Developer Documentation
 
-**Version:** 0.4.1  
-**Status:** Core Working ✓
-**Last Updated:** 2026-02-06
+**Version:** 0.5.0  
+**Status:** Core Working ✔ | Template↔Instance Propagation Working ✔  
+**Last Updated:** 2026-02-07
 
-## Version 0.4.1 Changes
+## Version 0.5.0 Changes
 
-**Refactoring:**
-- Eliminated 106 lines of duplicate code from on-exit (-21%)
-- Removed local `create_instance()` method
-- Always use `spawn_instance()` from common module (single source of truth)
+**Major: Template↔Instance Propagation via Spool File**
 
-**New Features:**
-- Added `runtil` field support (like `rwait`/`rscheduled`)
-- Hour support in relative dates: `sched+4hr`, `wait-2h`
-- Cleaner messaging: "Created task N - 'description' (recurrence instance #1)"
+The defining challenge of this project: when the user modifies a recurrence attribute on a
+template (e.g., `task <tmpl> mod rlast:3`), the corresponding instance must be updated in
+the same command. One user action → two tasks modified.
 
-**Improvements:**
-- Suppressed Taskwarrior's verbose messages from internal operations
-- Removed noisy wait conversion messages
-- `until` field now recalculates for each instance
+After extensive testing of multiple approaches (see [Lessons Learned](#lessons-learned)),
+we discovered that Taskwarrior 2.6.2 holds a **file lock on `pending.data` during on-modify
+hook execution**. Any subprocess `task modify` called from within on-modify reports success
+(exit code 0) but the write is silently lost. The solution is the **spool file pattern**:
+
+- `on-modify` calculates instance updates → writes `~/.task/recurrence_propagate.json`
+- `on-exit` (runs after lock release) → reads spool → executes modification → deletes spool
+
+This works bidirectionally:
+- Template `rlast` change → propagates `rindex` + recalculated dates to instance
+- Instance `rindex` change → propagates `rlast` back to template
+- Template `r` (period) change → recalculates instance `due` date
+- Template `rwait`/`rscheduled`/`runtil` change → recalculates instance `wait`/`scheduled`/`until`
+
+**Bug Fixes:**
+- Added minute support to `parse_relative_date`: `m`, `min`, `minutes` (was only `mo` for months)
+- Added hour support to on-exit's local `parse_relative_date` (was missing `h`/`hours`)
+
+**Anti-`__pycache__` Hardening:**
+- All three files now set `sys.dont_write_bytecode = True` at the very top, before any imports
+- No more stale bytecode, ever
+
+**Re-entrancy Safety Net:**
+- `RECURRENCE_PROPAGATING` environment variable guard in `main()` — if a subprocess somehow
+  triggers on-modify with hooks enabled, it passes through without cascading
 
 ---
 
 ## Table of Contents
 
 1. [Architecture Overview](#architecture-overview)
-2. [File Structure](#file-structure)
-3. [Data Model](#data-model)
-4. [Hook Behavior](#hook-behavior)
-5. [Critical Rules](#critical-rules)
-6. [Installation](#installation)
-7. [Debugging](#debugging)
-8. [Known Issues](#known-issues)
-9. [Development Workflow](#development-workflow)
+2. [The Spool File Pattern](#the-spool-file-pattern)
+3. [File Structure](#file-structure)
+4. [Data Model](#data-model)
+5. [Hook Behavior](#hook-behavior)
+6. [Critical Rules](#critical-rules)
+7. [Installation](#installation)
+8. [Debugging](#debugging)
+9. [Known Issues](#known-issues)
+10. [Lessons Learned](#lessons-learned)
+11. [Development Workflow](#development-workflow)
 
 ---
 
@@ -43,107 +62,207 @@
 
 ```
 ~/.task/hooks/
-â”œâ”€â”€ on-add_recurrence.py           (executable) - Creates templates, handles modifications
-â”œâ”€â”€ on-exit_recurrence.py          (executable) - Spawns instances only
-â”œâ”€â”€ recurrence_common_hook.py      (library)    - Shared utilities (NOT executable)
-â””â”€â”€ on-modify_recurrence.py        (symlink)    - â†’ on-add_recurrence.py
+├── on-add_recurrence.py           (executable) - Creates templates, handles modifications
+├── on-exit_recurrence.py          (executable) - Spawns instances + processes spool
+├── recurrence_common_hook.py      (library)    - Shared utilities (NOT executable)
+└── on-modify_recurrence.py        (symlink)    → on-add_recurrence.py
+```
+
+### Transient File
+
+```
+~/.task/recurrence_propagate.json  (spool)      - Exists for milliseconds during propagation
 ```
 
 ### Core Principles
 
-1. **on-add** = Template creation and modification
-2. **on-exit** = Instance spawning
-3. **Users** = Deletion (ONLY, this app doesn't delete tasks)
+1. **on-add/on-modify** = Template creation, modification detection, spool writing
+2. **on-exit** = Instance spawning + spool processing (the ONLY place that modifies other tasks)
+3. **Users** = Deletion (ONLY — hooks never delete tasks)
+4. **No subprocess `task modify` from within on-modify** — file lock prevents it
 
 ### Data Flow
 
 ```
 User: task add "Gym" r:7d due:tomorrow
-  â†“
+  │
 on-add: Creates template (status:recurring, rlast:1)
-  â†“
+  │
 on-exit: Spawns instance #1 (status:pending, rindex:1)
-  â†“
+  │
 User: task <id> done
-  â†“
-on-exit: Spawns instance #2
+  │
+on-modify: Detects instance completion
+  │
+on-exit: Spawns instance #2 (rindex:2), updates template rlast:2
 ```
+
+### Propagation Flow (Template → Instance)
+
+```
+User: task <template> modify r:14d
+  │
+on-modify: Detects recurrence field change on template
+  │         Calculates new instance dates
+  │         Writes ~/.task/recurrence_propagate.json
+  │         (CANNOT subprocess here — file lock!)
+  │
+on-exit: Reads spool file
+  │       Executes: task rc.hooks=off <instance> modify due:<new> ...
+  │       Deletes spool file
+  │       Outputs: "Instance #N synced (r)."
+```
+
+### Propagation Flow (Instance → Template)
+
+```
+User: task <instance> modify rindex:5
+  │
+on-modify: Detects rindex change (TIME MACHINE)
+  │         Writes spool: {updates: {rlast: "5"}, target: template_uuid}
+  │
+on-exit: Reads spool
+  │       Executes: task rc.hooks=off <template> modify rlast:5
+  │       Deletes spool file
+```
+
+---
+
+## The Spool File Pattern
+
+### Why It Exists
+
+Taskwarrior 2.6.2 holds a file lock on `pending.data` for the entire duration of hook
+execution. This means:
+
+- `on-add` hooks: lock held while hook runs
+- `on-modify` hooks: lock held while hook runs
+- `on-exit` hooks: lock **released** before hook runs
+
+Any `subprocess.run(['task', ..., 'modify', ...])` called from within on-add or on-modify
+will appear to succeed (exit code 0) but the changes will not persist to disk.
+
+### Spool File Format
+
+```json
+{
+  "instance_uuid": "bfbf7c0c-69fc-4422-a839-dd71de38a94a",
+  "instance_rindex": "3",
+  "updates": {
+    "rindex": "5",
+    "due": "20260208T010414Z",
+    "wait": "20260208T004414Z"
+  },
+  "template_id": "72",
+  "changes": ["rlast"]
+}
+```
+
+### Lifecycle
+
+1. **on-modify** writes the file (atomic JSON dump)
+2. **on-exit** checks for the file at the start of `process_tasks()`
+3. **on-exit** reads it, executes the modification with `rc.hooks=off`, deletes it
+4. File exists for typically < 100ms
+
+### Error Handling
+
+- If the spool file is malformed → on-exit logs the error, deletes the file
+- If the modification fails → on-exit reports a warning to the user
+- If on-exit doesn't run (crash) → stale spool file will be processed on next task command
 
 ---
 
 ## File Structure
 
-### on-add_recurrence.py (1135 lines)
+### on-add_recurrence.py (~1080 lines)
 
-**Purpose:** Template creation and modification handler
+**Purpose:** Template creation and modification handler, spool file writer
 
 **Key Functions:**
-- `RecurrenceHandler.create_template()` - Convert new task with `r` and `ranchor` into template
-- `RecurrenceHandler.handle_template_modification()` - Track and explain template changes
-- `RecurrenceHandler.handle_instance_modification()` - Track and explain instance changes
-- `query_task()` - Query Taskwarrior for task by UUID
-- `query_instances()` - Query instances for a template
-- `update_task()` - Modify task via Taskwarrior command
+- `RecurrenceHandler.create_template()` — Convert new task with `r` into template
+- `RecurrenceHandler.handle_template_modification()` — Detect recurrence field changes,
+  calculate instance updates, write spool file
+- `RecurrenceHandler.handle_instance_modification()` — Detect rindex changes (TIME MACHINE),
+  write spool file for template sync
+- `RecurrenceHandler.handle_instance_completion()` — Track completion/deletion
+- `RecurrenceHandler.calculate_instance_updates()` — Core logic for determining what fields
+  on an instance need to change when template recurrence attributes change
+- `query_task()` — Query Taskwarrior for task by UUID
+- `query_instances()` — Query instances for a template
+- `update_task()` — Modify task via Taskwarrior command (used for non-propagation updates)
 
-**What it does:**
-- Normalizes recurrence types (câ†’chain, pâ†’period)
-- Converts absolute dates to relative (waitâ†’rwait)
-- Detects anchor changes (dueâ†”sched)
+**What on-add/on-modify does:**
+- Normalizes recurrence types (c→chain, p→period)
+- Converts absolute dates to relative (wait→rwait, scheduled→rscheduled, until→runtil)
+- Detects anchor changes (due↔sched)
 - Validates template/instance attribute separation
+- Writes propagation spool for on-exit
 
-**What on-add does NOT do:**
-- â�Œ Does NOT spawn instances
-- â�Œ Does NOT delete instances
+**What on-add/on-modify does NOT do:**
+- ✗ Does NOT spawn instances
+- ✗ Does NOT delete instances
+- ✗ Does NOT subprocess `task modify` for propagation (file lock prevents it)
 
-### on-exit_recurrence.py (397 lines)
-**Purpose:** Instance spawning
+### on-exit_recurrence.py (~460 lines)
 
-**Note:** v0.4.1 removed 106 lines of duplicate code by eliminating local `create_instance()` 
-method and always using `spawn_instance()` from common module.
-
+**Purpose:** Instance spawning + spool file processing
 
 **Key Functions:**
-- `RecurrenceSpawner.process_tasks()` - Main loop for processing completed/deleted tasks
-
-- `RecurrenceSpawner.get_template()` - Fetch template by UUID
-- `RecurrenceSpawner.check_rend()` - Check if recurrence has ended
+- `RecurrenceSpawner.process_tasks()` — Main loop: process spool first, then handle
+  completed/deleted instances
+- `RecurrenceSpawner.get_template()` — Fetch template by UUID (dual-method with fallback)
+- `RecurrenceSpawner.check_rend()` — Check if recurrence has ended
 
 **Spawning Logic:**
 ```python
 # For periodic type:
-anchor_date = template_anchor + (recur_delta Ã— (index - 1))
+anchor_date = template_anchor + (recur_delta × (index - 1))
 
 # For chained type:
 anchor_date = completion_time + recur_delta
 ```
 
 **What on-exit does:**
-- Spawns instance #1 when template is created (rlast=0 or 1)
+- Processes propagation spool file (template↔instance sync)
+- Spawns instance #1 when template is created (rlast in [0, 1, ''])
 - Spawns next instance when current one completes/deletes
-- Only spawns for the LATEST instance (rindex â‰¥ rlast)
+- Only spawns for the LATEST instance (rindex ≥ rlast)
 - Checks rend date before spawning
 
 **What on-exit does NOT do:**
-- â�Œ Does NOT modify templates or instances
-- â�Œ Only spawns, never modifies existing tasks
+- ✗ Does NOT modify templates (except via spool file instructions)
+- ✗ Does NOT create templates
 
-### recurrence_common_hook.py (528 lines)
+### recurrence_common_hook.py (~535 lines)
 
 **Purpose:** Shared utility library
 
 **Key Functions:**
-- `normalize_type()` - Convert type abbreviations to full names
-- `parse_duration()` - Parse '7d', '1w', 'P1D' to timedelta
-- `parse_date()` - Parse ISO 8601 dates (20260206T120000Z)
-- `format_date()` - Format datetime to ISO 8601
-- `parse_relative_date()` - Parse 'due-2d', 'sched+1w', 'wait-4hr' (supports hours in v0.4.1)
-- `is_template()` - Check if task is template
-- `is_instance()` - Check if task is instance
-- `get_anchor_field_name()` - Map 'sched'â†’'scheduled', 'due'â†’'due'
-- `debug_log()` - Conditional logging to file
-- `check_instance_count()` - Targeted instance checking (NOT global)
-- `query_instances()` - Query instances for specific template
-- `spawn_instance()` - Create new instance with proper verbosity control
+- `normalize_type()` — Convert type abbreviations to full names
+- `parse_duration()` — Parse '7d', '1w', '30m', 'P1D' to timedelta
+- `parse_date()` — Parse ISO 8601 dates (20260206T120000Z)
+- `format_date()` — Format datetime to ISO 8601
+- `parse_relative_date()` — Parse 'due-2d', 'sched+1w', 'wait-30m', 'due-4h'
+- `is_template()` — Check if task is template
+- `is_instance()` — Check if task is instance
+- `get_anchor_field_name()` — Map 'sched'→'scheduled', 'due'→'due'
+- `debug_log()` — Conditional logging to file
+- `check_instance_count()` — Targeted instance checking (NOT global)
+- `query_instances()` — Query instances for specific template
+- `spawn_instance()` — Create new instance with proper verbosity control
+- `delete_instance()` — Delete an instance task
+
+**Supported Duration Units (in parse_relative_date):**
+```
+s, seconds    — seconds
+m, min, minutes — minutes
+h, hours      — hours
+d, days       — days
+w, weeks      — weeks
+mo, months    — months (30 days)
+y, years      — years (365 days)
+```
 
 **Constants:**
 ```python
@@ -165,7 +284,7 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
   "status": "recurring",
   "r": "P7D",              // Recurrence period (ISO 8601 or simple: 7d, 1w, 1mo)
   "type": "chain|period",  // How instances spawn
-  "rlast": "1",            // Last spawned instance index
+  "rlast": "1",            // Last spawned instance index (string type UDA)
   "ranchor": "due|sched",  // Which field is the anchor
   "due": "20260210T000000Z" // OR scheduled (one required)
 }
@@ -174,11 +293,10 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 **Optional Fields:**
 ```json
 {
-  "rwait": "due-172800s",      // Relative wait (seconds from anchor)
+  "rwait": "due-172800s",      // Relative wait (offset from anchor)
   "rscheduled": "due-86400s",  // Relative scheduled
-  "runtil": "sched+14400s",    // Relative until (seconds from anchor)
+  "runtil": "sched+14400s",    // Relative until (offset from anchor)
   "rend": "20261231T235959Z",  // Stop spawning after this date
-  "rlimit": "3",               // Max pending instances (default: 1)
   "project": "work",
   "priority": "H",
   "tags": ["important"]
@@ -186,8 +304,8 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 ```
 
 **Templates should NOT have:**
-- â�Œ `rtemplate` - Only instances have this
-- â�Œ `rindex` - Only instances have this
+- ✗ `rtemplate` — Only instances have this
+- ✗ `rindex` — Only instances have this
 
 ### Instance (status:pending/completed/etc)
 
@@ -196,9 +314,8 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 {
   "status": "pending",
   "rtemplate": "UUID",     // Parent template UUID
-  "rindex": "1",           // Instance sequence number
-  "due": "20260210T000000Z", // OR scheduled
-  "tags": ["RECURRING"]    // Auto-added by system
+  "rindex": "1",           // Instance sequence number (string type UDA)
+  "due": "20260210T000000Z" // OR scheduled
 }
 ```
 
@@ -207,13 +324,13 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 - `wait`, `scheduled`, `until` (calculated from rwait/rscheduled/runtil)
 
 **Instances do NOT have:**
-- â�Œ `r` - Only templates have this
-- â�Œ `type` - Only templates have this
-- â�Œ `rlast` - Only templates have this
-- â�Œ `ranchor` - Only templates have this
-- â�Œ `rwait` - Only templates have this
-- â�Œ `rscheduled` - Only templates have this
-- â�Œ `rend` - Only templates have this
+- ✗ `r`, `type`, `rlast`, `ranchor`, `rwait`, `rscheduled`, `runtil`, `rend`
+
+### UDA Types
+
+Both `rlast` and `rindex` are **string** type UDAs. This avoids numeric coercion
+issues in Taskwarrior 2.6.2. The hook code handles `int()` conversion where needed
+for arithmetic.
 
 ---
 
@@ -221,70 +338,74 @@ LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 
 ### on-add Behavior
 
-#### New Task with `r` and `ranchor` Fields
+#### New Task with `r` Field
 ```bash
 task add "Gym" r:7d due:tomorrow ty:c
 ```
 
 **Actions:**
 1. Set `status:recurring`
-2. Normalize `type` (câ†’chain)
+2. Normalize `type` (c→chain)
 3. Set `rlast:1`
 4. Detect anchor (`ranchor:due`)
-5. Convert `sched` to `rscheduled` if present
-6. Convert `wait` to `rwait` if present
-7. Output: "Created recurrence template. First instance will be generated on exit."
+5. Convert `wait` to `rwait` if present
+6. Convert `scheduled` to `rscheduled` if present (when anchor is due)
+7. Convert `until` to `runtil` if present
 
-#### Template Modification (Time Machine) NOTE; in development!
+### on-modify Behavior
+
+#### Template Recurrence Attribute Change
 ```bash
-task 1 mod rlast:5
+task <template> mod rlast:3     # Time machine
+task <template> mod r:14d       # Change period
+task <template> mod rwait:due-30m   # Add/change relative wait
 ```
 
 **Actions:**
-1. Detect rlast change (0â†’5)
+1. Detect recurrence field changes (r, type, ranchor, rlast, rend, rwait, rscheduled, runtil)
 2. Query for current instance
-3. **Call update_instance_for_rlast_change()** to modify instance
-4. Update instance's rindex to 5
-5. Recalculate instance's due date
-6. Output: "Instance #1 updated to #5"
+3. Calculate instance updates via `calculate_instance_updates()`
+4. Write `~/.task/recurrence_propagate.json` for on-exit
+5. Output: "Template N modified: rlast. Instance #1 will be synced."
 
-**What it does NOT do:**
-- â�Œ Does NOT delete instance
-- â�Œ Does NOT spawn new instance
-- â�Œ Modifies existing instance in place
-
-#### Instance Modification - NOTE; in development!
+#### Instance rindex Change (TIME MACHINE from instance side)
 ```bash
-task 42 mod rindex:10
+task <instance> mod rindex:5
 ```
 
 **Actions:**
 1. Detect rindex change
 2. Query template
-3. Update template's rlast to 10
-4. Output: "Template rlast auto-synced to 10"
+3. Write spool file with `{rlast: "5"}` targeting template
+4. Output: "Instance N rindex changed: 1 → 5. Template rlast will be synced."
+
+#### Template Non-Recurrence Field Change
+```bash
+task <template> mod project:home
+```
+
+**Actions:**
+1. Detect non-recurrence field change
+2. Inform user with suggested command to apply to instance
+3. Output: "Non-recurrence fields changed: project. To apply to current instance: task N mod project:home"
 
 ### on-exit Behavior
 
+#### Spool File Processing (FIRST, before anything else)
+1. Check for `~/.task/recurrence_propagate.json`
+2. If present: read, execute `task rc.hooks=off <uuid> modify ...`, delete file
+3. Report result to user
+
 #### New Template Created
-```bash
-# After: task add "Gym" r:7d due:tomorrow
-```
-
-**Actions:**
 1. Detect template with rlast in ['0', '1', '']
-2. Spawn instance #1
-3. Update template rlast to 1
+2. Check no instance already exists (prevent duplicate spawning)
+3. Spawn instance #1
+4. Update template rlast to 1
 
-#### Instance Completed
-```bash
-task 42 done
-```
-
-**Actions:**
+#### Instance Completed/Deleted
 1. Detect completed or deleted instance
 2. Query template
-3. Check if rindex â‰¥ rlast (is this the latest?)
+3. Check if rindex ≥ rlast (is this the latest?)
 4. If yes, spawn next instance (rindex + 1)
 5. Update template rlast
 
@@ -299,32 +420,18 @@ task 42 done
 ```
 Template rlast:5
 Instance rindex:5 (pending)
-âœ“ CORRECT
+✓ CORRECT
 
 Template rlast:3
 Instance rindex:5 (pending)
-âœ— DESYNC - FIX IT
+✗ DESYNC - FIX IT
 ```
 
 ### One-to-One Rule
 
 **Every active template MUST have exactly ONE pending instance**
 
-```
-Template UUID-123
-  â”œâ”€ Instance #5 (pending)  âœ“ CORRECT
-  
-Template UUID-456
-  â”œâ”€ Instance #3 (pending)
-  â””â”€ Instance #4 (pending)  âœ— CORRUPTION - Multiple instances!
-
-Template UUID-789
-  (no instances)            âœ— MISSING - Need to spawn!
-```
-
 ### Attribute Separation
-
-**Templates and instances have separate attribute sets:**
 
 ```python
 TEMPLATE_ONLY = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled', 'runtil'}
@@ -333,19 +440,21 @@ INSTANCE_ONLY = {'rtemplate', 'rindex'}
 
 If attributes cross over, hooks auto-remove them with warnings.
 
+### No Subprocess from on-modify
+
+**NEVER call `subprocess.run(['task', ..., 'modify', ...])` from within on-add or on-modify hooks.**
+
+Taskwarrior holds a file lock on `pending.data` during these hooks. The subprocess will
+report success but changes will not persist. Use the spool file pattern instead.
+
 ### Spawning Responsibility
 
-**ONLY on-exit spawns instances**
-
-- on-add: Creates templates âœ“, Modifies tasks âœ“, Spawns instances âœ—
-- on-exit: Spawns instances âœ“, Modifies tasks âœ—
+- on-add/on-modify: Creates templates ✓, Detects changes ✓, Writes spool ✓, Spawns ✗
+- on-exit: Processes spool ✓, Spawns instances ✓, Modifies via spool ✓
 
 ### Deletion Responsibility
 
-**ONLY users delete tasks**
-
-- Hooks NEVER delete tasks
-- Exception: None (even time machine doesn't delete)
+**ONLY users delete tasks** — hooks NEVER delete tasks.
 
 ---
 
@@ -368,17 +477,12 @@ chmod -x ~/.task/hooks/recurrence_common_hook.py  # Library, not executable!
 cd ~/.task/hooks
 ln -sf on-add_recurrence.py on-modify_recurrence.py
 
-# 4. Verify
-ls -la ~/.task/hooks/on-*.py
-# Should see:
-# -rwxr-xr-x on-add_recurrence.py
-# -rwxr-xr-x on-exit_recurrence.py
-# lrwxrwxrwx on-modify_recurrence.py -> on-add_recurrence.py
+# 4. Nuke any pycache
+find ~/.task/hooks -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null
+find ~/.task/hooks -name '*.pyc' -delete 2>/dev/null
 
-# 5. Verify library NOT executable
-ls -la ~/.task/hooks/recurrence_common_hook.py
-# Should see:
-# -rw-r--r-- recurrence_common_hook.py
+# 5. Verify
+ls -la ~/.task/hooks/on-*.py ~/.task/hooks/recurrence_common_hook.py
 ```
 
 ---
@@ -388,47 +492,111 @@ ls -la ~/.task/hooks/recurrence_common_hook.py
 ### Enable Debug Logging
 
 ```bash
-export DEBUG_RECURRENCE=1
+DEBUG_RECURRENCE=1 task add "Test" r:1d due:tomorrow
+cat ~/.task/recurrence_debug.log
 ```
 
-This creates `~/.task/recurrence_debug.log` with detailed execution traces.
+Or export for a whole session:
+```bash
+export DEBUG_RECURRENCE=1
+```
 
 ### Debug Log Format
 
 ```
-[2026-02-06 12:34:56] PREFIX: message
+[2026-02-07 14:10:34] PREFIX: message
 ```
 
 **Prefixes:**
-- `ADD/MOD` - on-add/on-modify hook
-- `EXIT` - on-exit hook
-- `COMMON` - recurrence_common_hook library
+- `ADD/MOD` — on-add/on-modify hook
+- `EXIT` — on-exit hook
+- `COMMON` — recurrence_common_hook library
 
-### Python Bytecode Cache Issues
+### Python Bytecode Cache
 
-**Symptom:** Changes to .py files don't take effect
+All three files set `sys.dont_write_bytecode = True` at the top, so `__pycache__` should
+never be created. If you still encounter stale behavior:
 
-**Fix:**
 ```bash
-# Obliterate all caches
 find ~/.task -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
 find ~/.task -type f -name "*.pyc" -delete 2>/dev/null
+```
 
-# Disable permanently
-export PYTHONDONTWRITEBYTECODE=1
-export PYTHONPYCACHEPREFIX=/dev/null
+### Verifying Propagation
+
+```bash
+# Check if spool file was written (should be gone by the time you look):
+ls -la ~/.task/recurrence_propagate.json
+
+# If it persists, on-exit didn't process it. Check:
+cat ~/.task/recurrence_propagate.json
+task diagnostics | grep -A10 Hooks
 ```
 
 ---
 
 ## Known Issues
 
-### 1. Time Machine (rlast modifications) - In Development
+### 1. Instance dates not recalculated on TIME MACHINE (instance→template direction)
 
-**Status:** CODE IMPLEMENTED, NOT FULLY TESTED
+When changing `rindex` on an instance, the template's `rlast` is synced but the instance's
+`due` date is not recalculated. The user needs to then modify the template's `rlast` to
+trigger a full recalculation. This is because the spool file currently only carries `rlast`
+for the template update, not recalculated dates for the instance.
 
-The time machine feature (modifying template `rlast` to jump forward/backward in the sequence) 
-has been implemented but requires comprehensive testing. Core recurrence functionality works correctly.
+### 2. On-exit has duplicate utility methods
+
+`RecurrenceSpawner` in on-exit still has local copies of `parse_duration()`,
+`parse_date()`, `format_date()`, and `parse_relative_date()` that duplicate the common
+module. These should eventually be removed in favor of the common module imports.
+
+---
+
+## Lessons Learned
+
+### The File Lock Discovery
+
+The single most important discovery in this project: **Taskwarrior 2.6.2 holds a file lock
+on `pending.data` during on-add and on-modify hook execution.** This is undocumented and
+manifests as silent data loss — subprocess calls to `task modify` return exit code 0 but
+changes are not persisted.
+
+**Approaches tried and failed:**
+
+1. **Direct subprocess from on-modify** (hooks enabled) — Changes lost due to file lock.
+   The subprocess `task modify` succeeded but wrote to a locked file.
+
+2. **Direct subprocess from on-modify** (rc.hooks=off) — Same result. `rc.hooks=off`
+   prevents hook re-entrancy but doesn't release the parent's file lock.
+
+3. **Environment variable re-entrancy guard** (RECURRENCE_PROPAGATING) — The guard worked
+   perfectly for preventing cascading hook calls, but the underlying file lock problem
+   remained. The re-entrant on-modify correctly passed through, on-exit even confirmed
+   the new field values — but nothing persisted.
+
+**What works:** The spool file pattern. `on-modify` writes instructions to a JSON file.
+`on-exit` runs after Taskwarrior releases the lock, reads the instructions, executes the
+modification, and deletes the file.
+
+### `__pycache__` Pain
+
+Python's bytecode cache (`__pycache__/`) caused persistent debugging confusion. Edits to
+hook scripts would not take effect because Python loaded cached `.pyc` files. The fix:
+`sys.dont_write_bytecode = True` as the very first statement after `import sys` in every
+file. This must come before any other imports, including the common module.
+
+### Minutes vs Months in Regex
+
+The relative date parser regex originally had `mo` for months but no `m` for minutes.
+This meant `rwait:due-30m` silently failed to parse (returned None), causing
+`calculate_instance_updates` to report "No instance updates calculated." The fix was adding
+`m|min|minutes?` to the regex, with careful ordering so `min` matches before `mo`.
+
+### UDA Type: String over Numeric
+
+`rlast` and `rindex` are defined as `type=string` UDAs. Numeric UDAs in Taskwarrior 2.6.2
+can cause coercion issues. String type ensures what you put in is exactly what you get back.
+The hook code handles `int()` conversion internally where arithmetic is needed.
 
 ---
 
@@ -437,34 +605,46 @@ has been implemented but requires comprehensive testing. Core recurrence functio
 ### Testing Changes
 
 ```bash
-# 1. Clean environment
-rm -rf ~/.task/hooks/__pycache__
-rm -f ~/.task/hooks/.goutputstream-*
+# 1. Nuke caches
+find ~/.task/hooks -name '__pycache__' -exec rm -rf {} + 2>/dev/null
 
 # 2. Copy new files
-cp /path/to/on-add_recurrence.py ~/.task/hooks/
-chmod +x ~/.task/hooks/on-add_recurrence.py
+cp on-add_recurrence.py ~/.task/hooks/
+cp on-exit_recurrence.py ~/.task/hooks/
+cp recurrence_common_hook.py ~/.task/hooks/
 
 # 3. Enable debug
 export DEBUG_RECURRENCE=1
 
-# 4. Test
-task add "Test" r:1d due:tomorrow ty:p +test
+# 4. Create test task
+task add "Test" r:1h due:now+2h ty:p +test pro:tw.rec
 
-# 5. Check results
-task recurring
-tail -50 ~/.task/recurrence_debug.log
+# 5. Test propagation (note template and instance IDs)
+task <template> mod rlast:3
+task <instance> export | python3 -m json.tool | grep -E 'rindex|due'
+
+# 6. Test rwait propagation
+task <template> mod rwait:due-30m
+task <instance> export | python3 -m json.tool | grep wait
+
+# 7. Test reverse sync
+task <instance> mod rindex:1
+task <template> export | python3 -m json.tool | grep rlast
+
+# 8. Check debug log
+tail -30 ~/.task/recurrence_debug.log
 ```
 
 ### Code Modification Guidelines
 
-1. **Always ask before generating new file versions**
-2. **Check current files first** - Use `view` tool in Priject files
-3. **Test syntax before installing** - Use `python3 -m py_compile`
-4. **Version all changes** - Update version numbers and dates
-5. **Document in CHANGES.txt** - Track what changed and why
-6. **Test incrementally** - One change at a time
+1. **Always set `sys.dont_write_bytecode = True`** at the top of every file
+2. **Never subprocess `task modify` from on-add/on-modify** — use spool file
+3. **Check current files first** — Use `view` tool on Project files
+4. **Test syntax before installing** — `python3 -m py_compile <file>`
+5. **Version all changes** — Update version numbers and dates
+6. **Test incrementally** — One change at a time
+7. **Use `DEBUG_RECURRENCE=1`** to trace execution flow
 
 ---
 
-**Remember:** Smart coding over quick fixes. Aim for reliable product!
+**Remember:** Taskwarrior hooks can't modify other tasks during on-modify. Use the spool. Trust the spool.
