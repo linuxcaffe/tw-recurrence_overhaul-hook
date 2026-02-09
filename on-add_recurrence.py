@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 2.6.2
+Version: 2.6.3
 Date: 2026-02-08
 
 Handles both adding new recurring tasks and modifying existing ones with
@@ -10,7 +10,7 @@ sophisticated modification tracking and user feedback.
 Features:
 - Template creation with type normalization
 - Smart modification detection and handling
-- Bidirectional rindex Ã¢â€ â€� rlast synchronization
+- Bidirectional rindex ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬ï¿½ rlast synchronization
 - Anchor change detection with automatic rwait/rscheduled updates
 - Time machine functionality (rlast/rindex modifications)
 - User-friendly aliases (wait->rwait, scheduled->rscheduled, until->runtil)
@@ -47,50 +47,21 @@ try:
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG,
-        query_instances, check_instance_count
+        query_instances, check_instance_count, query_task,
+        # Validation functions
+        strip_legacy_recurrence, validate_recurrence_integers,
+        validate_template_requirements, validate_date_logic,
+        validate_instance_integrity, validate_no_instance_fields_on_template,
+        validate_no_r_on_instance, validate_no_rtemplate_change,
+        validate_no_absolute_dates_on_template,
+        # Attribute categories
+        TEMPLATE_ONLY, INSTANCE_ONLY, LEGACY_RECURRENCE
     )
 except ImportError as e:
     # Fallback error handling
     sys.stderr.write(f"ERROR: Cannot import recurrence_common_hook: {e}\n")
     sys.stderr.write("Please ensure recurrence_common_hook.py is in ~/.task/hooks/\n")
     sys.exit(1)
-
-
-def query_task(uuid):
-    """Query Taskwarrior for a task by UUID
-    
-    Args:
-        uuid: Task UUID to query
-        
-    Returns:
-        Task dictionary or None if not found/error
-    """
-    try:
-        result = subprocess.run(
-            ['task', 'rc.hooks=off', uuid, 'export'],
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        
-        if result.returncode == 0 and result.stdout.strip():
-            tasks = json.loads(result.stdout)
-            if tasks:
-                if DEBUG:
-                    debug_log(f"Queried task {uuid}: found", "ADD/MOD")
-                return tasks[0]
-        
-        if DEBUG:
-            debug_log(f"Queried task {uuid}: not found", "ADD/MOD")
-        return None
-        
-    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
-        if DEBUG:
-            debug_log(f"Query task {uuid} failed: {e}", "ADD/MOD")
-        return None
-
-
-
 
 
 # Read all input
@@ -105,19 +76,34 @@ if DEBUG:
 class RecurrenceHandler:
     """Handles enhanced recurrence for Taskwarrior"""
     
-    # Define which attributes belong to templates vs instances
-    TEMPLATE_ONLY_ATTRS = {'r', 'type', 'ranchor', 'rlast', 'rend', 'rwait', 'rscheduled', 'runtil'}
-    INSTANCE_ONLY_ATTRS = {'rtemplate', 'rindex'}
+    # Use imported constants from common module
+    TEMPLATE_ONLY_ATTRS = TEMPLATE_ONLY
+    INSTANCE_ONLY_ATTRS = INSTANCE_ONLY
     
     def __init__(self):
         self.messages = []  # Collect messages to output at end
+        self.errors = []    # Collect blocking errors
     
     def add_message(self, message):
         """Add a message to be output to user"""
         self.messages.append(message)
     
+    def add_error(self, error):
+        """Add a blocking error"""
+        self.errors.append(error)
+    
+    def has_errors(self):
+        """Check if any blocking errors exist"""
+        return len(self.errors) > 0
+    
     def output_messages(self):
         """Output all collected messages to stderr"""
+        # Output errors first
+        if self.errors:
+            for msg in self.errors:
+                sys.stderr.write(f"{msg}\n")
+        
+        # Then warnings/info
         if self.messages:
             for msg in self.messages:
                 sys.stderr.write(f"{msg}\n")
@@ -363,6 +349,39 @@ class RecurrenceHandler:
         if 'r' not in task:
             return task
         
+        # VALIDATION PHASE
+        # ================
+        
+        # Strip legacy recurrence fields
+        legacy_warnings = strip_legacy_recurrence(task)
+        for warning in legacy_warnings:
+            self.add_message(warning)
+        
+        # Validate no instance-only fields
+        instance_field_errors = validate_no_instance_fields_on_template(task)
+        for error in instance_field_errors:
+            self.add_error(error)
+        
+        # Validate template requirements (r, anchor, period format)
+        template_errors = validate_template_requirements(task)
+        for error in template_errors:
+            self.add_error(error)
+        
+        # If critical errors, stop here
+        if self.has_errors():
+            return task
+        
+        # Validate integer fields (rlast if present)
+        int_errors = validate_recurrence_integers(task)
+        for error in int_errors:
+            self.add_error(error)
+        
+        if self.has_errors():
+            return task
+        
+        # TEMPLATE CREATION
+        # =================
+        
         # Normalize and set type (with abbreviation support)
         task['type'] = normalize_type(task.get('type'))
         
@@ -382,7 +401,7 @@ class RecurrenceHandler:
                 debug_log(f"  Task due: {task.get('due')}", "ADD/MOD")
                 debug_log(f"  Task scheduled: {task.get('scheduled')}", "ADD/MOD")
             
-            self.add_message(
+            self.add_error(
                 "ERROR: Recurring task must have either 'due' or 'scheduled' date\n"
                 f"       Provided: due={task.get('due')}, scheduled={task.get('scheduled')}"
             )
@@ -394,6 +413,14 @@ class RecurrenceHandler:
         self.convert_wait_to_relative(task, anchor_field, anchor_date)
         self.convert_scheduled_to_relative(task, anchor_field, anchor_date)
         self.convert_until_to_relative(task, anchor_field, anchor_date)
+        
+        # Validate date logic (wait before anchor, until after anchor)
+        date_errors = validate_date_logic(task, is_template=True)
+        for error in date_errors:
+            self.add_error(error)
+        
+        if self.has_errors():
+            return task
         
         if DEBUG:
             debug_log(f"  Template created: status={task['status']}, rlast={task['rlast']}", "ADD/MOD")
@@ -411,8 +438,10 @@ class RecurrenceHandler:
     def expand_template_aliases(self, original, modified):
         """Expand user-friendly aliases to internal field names on templates.
         
-        Users can type: wait:due-30m, sched:due-2d, until:due+7d, last:3, ty:c
-        Hook translates to: rwait:due-30m, rscheduled:due-2d, runtil:due+7d, rlast:3, type:chain
+        Users can type: wait:due-30m, sched:due-2d, until:due+7d, last:3, index:5, anchor:due
+        Hook translates to: rwait:due-30m, rscheduled:due-2d, runtil:due+7d, rlast:3, rindex:5, ranchor:due
+        
+        Also converts absolute dates to relative offsets from anchor.
         
         Args:
             original: Original task state (to detect changes)
@@ -423,40 +452,141 @@ class RecurrenceHandler:
         """
         expanded = []
         
-        # wait → rwait (only if value looks like a relative expression, not an absolute date)
+        # Get anchor info for date conversions
+        anchor_field = modified.get('ranchor', 'due')
+        anchor_date = None
+        if anchor_field == 'sched':
+            anchor_date = parse_date(modified.get('scheduled'))
+        else:
+            anchor_date = parse_date(modified.get('due'))
+        
+        # last -> rlast
+        if 'last' in modified and modified.get('last') != original.get('last'):
+            modified['rlast'] = modified['last']
+            del modified['last']
+            expanded.append(f'last->rlast ({modified["rlast"]})')
+            if DEBUG:
+                debug_log(f"Alias expanded: last -> rlast: {modified['rlast']}", "ADD/MOD")
+        
+        # index -> rindex (for TIME MACHINE operations)
+        if 'index' in modified and modified.get('index') != original.get('index'):
+            modified['rindex'] = modified['index']
+            del modified['index']
+            expanded.append(f'index->rindex ({modified["rindex"]})')
+            if DEBUG:
+                debug_log(f"Alias expanded: index -> rindex: {modified['rindex']}", "ADD/MOD")
+        
+        # anchor -> ranchor
+        if 'anchor' in modified and modified.get('anchor') != original.get('anchor'):
+            modified['ranchor'] = modified['anchor']
+            del modified['anchor']
+            expanded.append(f'anchor->ranchor ({modified["ranchor"]})')
+            if DEBUG:
+                debug_log(f"Alias expanded: anchor -> ranchor: {modified['ranchor']}", "ADD/MOD")
+        
+        # wait -> rwait (handle both relative and absolute)
         if 'wait' in modified and modified.get('wait') != original.get('wait'):
             wait_val = str(modified['wait'])
             ref_field, offset = parse_relative_date(wait_val)
+            
             if ref_field and offset:
+                # Already relative - just rename
+                if 'rwait' in modified:
+                    self.add_error(f"ERROR: Template has both 'wait' and 'rwait' - use only rwait")
+                    return expanded
                 modified['rwait'] = wait_val
                 del modified['wait']
-                expanded.append(f'wait→rwait ({wait_val})')
+                expanded.append(f'wait->rwait ({wait_val})')
                 if DEBUG:
-                    debug_log(f"Alias expanded: wait → rwait: {wait_val}", "ADD/MOD")
+                    debug_log(f"Alias expanded: wait -> rwait: {wait_val}", "ADD/MOD")
+            else:
+                # Absolute date - convert to relative
+                if 'rwait' in modified:
+                    # rwait exists, just cleanup absolute wait
+                    del modified['wait']
+                    expanded.append(f'wait (absolute) removed - rwait exists')
+                    if DEBUG:
+                        debug_log(f"Removed absolute wait (rwait exists): {wait_val}", "ADD/MOD")
+                elif anchor_date:
+                    # Convert to relative offset
+                    wait_date = parse_date(wait_val)
+                    if wait_date:
+                        delta_sec = int((wait_date - anchor_date).total_seconds())
+                        modified['rwait'] = f'{anchor_field}{delta_sec:+d}s'
+                        del modified['wait']
+                        expanded.append(f'wait (absolute) -> rwait ({modified["rwait"]})')
+                        if DEBUG:
+                            debug_log(f"Converted absolute wait to rwait: {wait_val} -> {modified['rwait']}", "ADD/MOD")
         
-        # scheduled/sched → rscheduled
+        # scheduled/sched -> rscheduled (handle both relative and absolute)
         for alias in ['scheduled', 'sched']:
             if alias in modified and modified.get(alias) != original.get(alias):
                 sched_val = str(modified[alias])
                 ref_field, offset = parse_relative_date(sched_val)
+                
                 if ref_field and offset:
+                    # Already relative - just rename
+                    if 'rscheduled' in modified:
+                        self.add_error(f"ERROR: Template has both '{alias}' and 'rscheduled' - use only rscheduled")
+                        return expanded
                     modified['rscheduled'] = sched_val
                     del modified[alias]
-                    expanded.append(f'{alias}→rscheduled ({sched_val})')
+                    expanded.append(f'{alias}->rscheduled ({sched_val})')
                     if DEBUG:
-                        debug_log(f"Alias expanded: {alias} → rscheduled: {sched_val}", "ADD/MOD")
-                break  # Only process one
+                        debug_log(f"Alias expanded: {alias} -> rscheduled: {sched_val}", "ADD/MOD")
+                else:
+                    # Absolute date - convert to relative
+                    if 'rscheduled' in modified:
+                        # rscheduled exists, just cleanup absolute
+                        del modified[alias]
+                        expanded.append(f'{alias} (absolute) removed - rscheduled exists')
+                        if DEBUG:
+                            debug_log(f"Removed absolute {alias} (rscheduled exists): {sched_val}", "ADD/MOD")
+                    elif anchor_date and anchor_field != 'sched':
+                        # Convert to relative offset (only if anchor is not sched itself)
+                        sched_date = parse_date(sched_val)
+                        if sched_date:
+                            delta_sec = int((sched_date - anchor_date).total_seconds())
+                            modified['rscheduled'] = f'{anchor_field}{delta_sec:+d}s'
+                            del modified[alias]
+                            expanded.append(f'{alias} (absolute) -> rscheduled ({modified["rscheduled"]})')
+                            if DEBUG:
+                                debug_log(f"Converted absolute {alias} to rscheduled: {sched_val} -> {modified['rscheduled']}", "ADD/MOD")
+                break  # Only process one alias
         
-        # until → runtil
+        # until -> runtil (handle both relative and absolute)
         if 'until' in modified and modified.get('until') != original.get('until'):
             until_val = str(modified['until'])
             ref_field, offset = parse_relative_date(until_val)
+            
             if ref_field and offset:
+                # Already relative - just rename
+                if 'runtil' in modified:
+                    self.add_error(f"ERROR: Template has both 'until' and 'runtil' - use only runtil")
+                    return expanded
                 modified['runtil'] = until_val
                 del modified['until']
-                expanded.append(f'until→runtil ({until_val})')
+                expanded.append(f'until->runtil ({until_val})')
                 if DEBUG:
-                    debug_log(f"Alias expanded: until → runtil: {until_val}", "ADD/MOD")
+                    debug_log(f"Alias expanded: until -> runtil: {until_val}", "ADD/MOD")
+            else:
+                # Absolute date - convert to relative
+                if 'runtil' in modified:
+                    # runtil exists, just cleanup absolute until
+                    del modified['until']
+                    expanded.append(f'until (absolute) removed - runtil exists')
+                    if DEBUG:
+                        debug_log(f"Removed absolute until (runtil exists): {until_val}", "ADD/MOD")
+                elif anchor_date:
+                    # Convert to relative offset
+                    until_date = parse_date(until_val)
+                    if until_date:
+                        delta_sec = int((until_date - anchor_date).total_seconds())
+                        modified['runtil'] = f'{anchor_field}{delta_sec:+d}s'
+                        del modified['until']
+                        expanded.append(f'until (absolute) -> runtil ({modified["runtil"]})')
+                        if DEBUG:
+                            debug_log(f"Converted absolute until to runtil: {until_val} -> {modified['runtil']}", "ADD/MOD")
         
         return expanded
     
@@ -464,8 +594,8 @@ class RecurrenceHandler:
         """Handle modifications to a template with auto-sync to instance
         
         Template modifications fall into two categories:
-        1. Recurrence fields → Auto-sync parallel changes to current instance
-        2. Non-recurrence fields → Inform user with suggested command
+        1. Recurrence fields â†’ Auto-sync parallel changes to current instance
+        2. Non-recurrence fields â†’ Inform user with suggested command
         
         Args:
             original: Original task state
@@ -477,9 +607,17 @@ class RecurrenceHandler:
         if DEBUG:
             debug_log(f"Handling template modification: {modified.get('description')}", "ADD/MOD")
         
-        # Expand user-friendly aliases (wait→rwait, last→rlast, ty→type, etc.)
+        # Expand user-friendly aliases (waitâ†’rwait, lastâ†’rlast, tyâ†’type, etc.)
         expansions = self.expand_template_aliases(original, modified)
         
+        
+        # Validate no absolute dates remain on template after alias expansion
+        absolute_errors = validate_no_absolute_dates_on_template(modified)
+        for error in absolute_errors:
+            self.add_error(error)
+        
+        if self.has_errors():
+            return modified
         task_id = modified.get('id', '?')
         description = modified.get('description', 'untitled')
         template_uuid = modified.get('uuid')
@@ -727,9 +865,9 @@ class RecurrenceHandler:
         """Handle modifications to an instance with auto-sync to template
         
         Instance modifications:
-        - rindex change → Auto-sync template rlast + recalculate dates (TIME MACHINE)
-        - rtemplate change → REJECT (not allowed)
-        - Non-recurrence fields → Inform with suggested command to apply to template
+        - rindex change â†’ Auto-sync template rlast + recalculate dates (TIME MACHINE)
+        - rtemplate change â†’ REJECT (not allowed)
+        - Non-recurrence fields â†’ Inform with suggested command to apply to template
         
         Args:
             original: Original task state
@@ -825,21 +963,21 @@ class RecurrenceHandler:
                             debug_log(f"Wrote template sync spool: rlast -> {new_rindex}", "ADD/MOD")
                         
                         self.add_message(
-                            f"Instance {task_id} rindex changed: {old_rindex} → {new_rindex}\n"
+                            f"Instance {task_id} rindex changed: {old_rindex} â†’ {new_rindex}\n"
                             f"Dates recalculated. Template {template_id} rlast will be synced."
                         )
                     except OSError as e:
                         if DEBUG:
                             debug_log(f"Failed to write template sync spool: {e}", "ADD/MOD")
                         self.add_message(
-                            f"Instance {task_id} rindex changed: {old_rindex} → {new_rindex}\n"
+                            f"Instance {task_id} rindex changed: {old_rindex} â†’ {new_rindex}\n"
                             f"Dates recalculated. WARNING: Template sync failed. Manual fix: task {template_id} mod rlast:{new_rindex}"
                         )
                 else:
                     if DEBUG:
                         debug_log(f"Template rlast already matches {new_rindex}, skipping sync", "ADD/MOD")
                     self.add_message(
-                        f"Instance {task_id} rindex changed: {old_rindex} → {new_rindex}\n"
+                        f"Instance {task_id} rindex changed: {old_rindex} â†’ {new_rindex}\n"
                         f"Dates recalculated. Template {template_id} already in sync."
                     )
             else:
@@ -991,9 +1129,19 @@ def main():
             sys.stderr.write(f"Error parsing JSON: {e}\n")
             sys.exit(1)
         
+        # Strip legacy fields first (before any other processing)
+        legacy_warnings = strip_legacy_recurrence(task)
+        for warning in legacy_warnings:
+            handler.add_message(warning)
+        
         # Check if this should be a template (but not if being deleted)
         if 'r' in task and task.get('status') != 'deleted':
             task = handler.create_template(task)
+            
+            # If errors occurred, output original task unchanged
+            if handler.has_errors():
+                handler.output_messages()
+                sys.exit(1)
         
         print(json.dumps(task))
         handler.output_messages()
@@ -1012,6 +1160,23 @@ def main():
             sys.stderr.write(f"Error parsing JSON: {e}\n")
             sys.exit(1)
         
+        # Strip legacy fields first (before any other processing)
+        legacy_warnings = strip_legacy_recurrence(modified)
+        for warning in legacy_warnings:
+            handler.add_message(warning)
+        
+        # Check for prohibited modifications
+        error = validate_no_rtemplate_change(original, modified)
+        if error:
+            handler.add_error(error)
+            modified['rtemplate'] = original.get('rtemplate')  # Restore original
+        
+        error = validate_no_r_on_instance(original, modified)
+        if error:
+            handler.add_error(error)
+            if 'r' in modified:
+                del modified['r']  # Remove invalid r field
+        
         # Adding recurrence to existing task? (but not if being deleted)
         if 'r' in modified and 'r' not in original and modified.get('status') != 'deleted':
             modified = handler.create_template(modified)
@@ -1027,6 +1192,12 @@ def main():
                 modified = handler.handle_instance_completion(original, modified)
             else:
                 modified = handler.handle_instance_modification(original, modified)
+        
+        # If errors occurred, output original task unchanged
+        if handler.has_errors():
+            print(json.dumps(original))
+            handler.output_messages()
+            sys.exit(1)
         
         print(json.dumps(modified))
         handler.output_messages()

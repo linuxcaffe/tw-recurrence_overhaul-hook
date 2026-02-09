@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 2.6.2
+Version: 2.6.3
 Date: 2026-02-08
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -26,6 +26,39 @@ DAYS_PER_YEAR = 365
 DEBUG = os.environ.get('DEBUG_RECURRENCE', '0') == '1'
 LOG_FILE = os.path.expanduser("~/.task/recurrence_debug.log")
 
+# ============================================================================
+# Attribute Categories for Recurrence System
+# ============================================================================
+
+# System fields that are unique per task - never copy to instances
+NEVER_COPY = {
+    'uuid', 'id', 'entry', 'modified', 'status', 'end', 'urgency'
+}
+
+# Legacy Taskwarrior recurrence fields - incompatible with our system
+LEGACY_RECURRENCE = {
+    'recur',   # We use 'r'
+    'mask',    # We don't use mask system
+    'imask',   # We don't use mask system
+    'parent',  # We use 'rtemplate'
+    'rtype'    # Their recurrence type (not ours)
+}
+
+# Our template-only recurrence fields
+TEMPLATE_ONLY = {
+    'r', 'type', 'rlast', 'ranchor', 'rend',
+    'rwait', 'rscheduled', 'runtil'
+}
+
+# Instance-only fields
+INSTANCE_ONLY = {'rtemplate', 'rindex'}
+
+# Fields that are calculated/transformed for instances (not copied directly)
+RELATIVE_DATE_FIELDS = {'rwait', 'rscheduled', 'runtil'}
+
+# All fields that should not be copied from template to instance
+DO_NOT_COPY = NEVER_COPY | LEGACY_RECURRENCE | TEMPLATE_ONLY | INSTANCE_ONLY
+
 
 def debug_log(msg, prefix="COMMON"):
     """Write debug message to log file if debug enabled
@@ -38,6 +71,321 @@ def debug_log(msg, prefix="COMMON"):
         with open(LOG_FILE, 'a') as f:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             f.write(f"[{timestamp}] {prefix}: {msg}\n")
+
+
+# ============================================================================
+# Validation Functions
+# ============================================================================
+
+def strip_legacy_recurrence(task):
+    """Remove legacy Taskwarrior recurrence fields with warnings
+    
+    Args:
+        task: Task dictionary (modified in place)
+        
+    Returns:
+        List of warning messages for removed fields
+    """
+    warnings = []
+    for field in LEGACY_RECURRENCE:
+        if field in task:
+            del task[field]
+            warnings.append(
+                f"WARNING: Removed legacy recurrence field '{field}'\n"
+                f"  Enhanced recurrence uses different fields (r, type, rtemplate, etc.)"
+            )
+            if DEBUG:
+                debug_log(f"Stripped legacy field: {field}", "VALIDATION")
+    return warnings
+
+
+def validate_recurrence_integers(task):
+    """Validate rlast/rindex are positive integers
+    
+    Args:
+        task: Task dictionary
+        
+    Returns:
+        List of error messages (empty if valid)
+    """
+    errors = []
+    
+    for field in ['rlast', 'rindex']:
+        if field in task:
+            try:
+                value = int(task[field])
+                if value < 1:
+                    errors.append(f"ERROR: {field} must be >= 1 (got {value})")
+            except (ValueError, TypeError):
+                errors.append(f"ERROR: {field} must be an integer (got '{task[field]}')")
+    
+    return errors
+
+
+def validate_template_requirements(task):
+    """Validate template has required fields
+    
+    Args:
+        task: Task dictionary
+        
+    Returns:
+        List of error messages (empty if valid)
+    """
+    errors = []
+    
+    # Must have 'r' field
+    if 'r' not in task:
+        errors.append("ERROR: Recurring task must have 'r' field (recurrence period)")
+        return errors  # Can't validate further without 'r'
+    
+    # Must have anchor date (due or scheduled)
+    if 'due' not in task and 'scheduled' not in task:
+        errors.append(
+            "ERROR: Recurring task must have 'due' or 'scheduled' date\n"
+            f"  Provided: due={task.get('due', 'missing')}, scheduled={task.get('scheduled', 'missing')}"
+        )
+    
+    # Validate period format
+    if not parse_duration(task['r']):
+        errors.append(
+            f"ERROR: Invalid recurrence period '{task['r']}'\n"
+            f"  Valid formats: 1d, 7d, 1w, 1mo, 1y, P1D, P1W, P1M, P1Y"
+        )
+    
+    # Check rend not in past (if present)
+    if 'rend' in task:
+        rend_date = parse_date(task['rend'])
+        if rend_date and rend_date < datetime.utcnow():
+            errors.append(
+                f"ERROR: rend date is in the past: {task['rend']}\n"
+                f"  This would prevent any instances from spawning"
+            )
+    
+    return errors
+
+
+def validate_date_logic(task, is_template=False):
+    """Validate logical date relationships
+    
+    Checks:
+    - wait before anchor (due/scheduled)
+    - until after anchor
+    - scheduled/due relationship (if both present)
+    
+    Args:
+        task: Task dictionary
+        is_template: True if validating template (uses rwait/runtil), False for instance
+        
+    Returns:
+        List of error messages (empty if valid)
+    """
+    errors = []
+    
+    # Determine anchor field
+    anchor_field = None
+    anchor_date = None
+    
+    if 'due' in task:
+        anchor_field = 'due'
+        anchor_date = parse_date(task['due'])
+    elif 'scheduled' in task:
+        anchor_field = 'scheduled'
+        anchor_date = parse_date(task['scheduled'])
+    
+    if not anchor_date:
+        return []  # Can't validate without anchor
+    
+    # Check wait vs anchor
+    wait_field = 'rwait' if is_template else 'wait'
+    if wait_field in task:
+        wait_date = None
+        
+        if is_template:
+            # rwait is relative, need to calculate absolute
+            wait_date = parse_relative_date(task[wait_field], anchor_date)
+        else:
+            # wait is absolute
+            wait_date = parse_date(task[wait_field])
+        
+        if wait_date and wait_date > anchor_date:
+            errors.append(
+                f"ERROR: {wait_field} date must be before {anchor_field}\n"
+                f"  {wait_field}={task[wait_field]}, {anchor_field}={task[anchor_field]}"
+            )
+    
+    # Check until vs anchor
+    until_field = 'runtil' if is_template else 'until'
+    if until_field in task:
+        until_date = None
+        
+        if is_template:
+            # runtil is relative
+            until_date = parse_relative_date(task[until_field], anchor_date)
+        else:
+            # until is absolute
+            until_date = parse_date(task[until_field])
+        
+        if until_date and until_date < anchor_date:
+            errors.append(
+                f"ERROR: {until_field} date must be after {anchor_field}\n"
+                f"  {until_field}={task[until_field]}, {anchor_field}={task[anchor_field]}"
+            )
+    
+    # Check scheduled after due (INFO message, not error)
+    if 'scheduled' in task and 'due' in task:
+        sched_date = parse_date(task['scheduled'])
+        due_date = parse_date(task['due'])
+        
+        if sched_date and due_date and sched_date > due_date:
+            # This is allowed but worth noting
+            if DEBUG:
+                debug_log(f"INFO: scheduled after due (allowed): sched={task['scheduled']}, due={task['due']}", "VALIDATION")
+    
+    return errors
+
+
+def validate_instance_integrity(task):
+    """Validate instance has proper template link
+    
+    Args:
+        task: Task dictionary (instance)
+        
+    Returns:
+        List of warning messages (empty if valid)
+    """
+    warnings = []
+    
+    if 'rtemplate' not in task:
+        return []  # Not an instance
+    
+    # Check if template exists
+    template_uuid = task['rtemplate']
+    template = query_task(template_uuid)
+    
+    if not template:
+        warnings.append(
+            f"WARNING: Instance references non-existent template {template_uuid}\n"
+            f"  Template may have been deleted. To fix:\n"
+            f"  - Delete orphaned instance: task {task.get('uuid', 'UUID')} delete\n"
+            f"  - Or remove link: task {task.get('uuid', 'UUID')} modify rtemplate:"
+        )
+    elif template.get('status') not in ['recurring']:
+        warnings.append(
+            f"WARNING: Instance references template with status={template.get('status')}\n"
+            f"  Template should have status:recurring"
+        )
+    
+    return warnings
+
+
+def validate_no_instance_fields_on_template(task):
+    """Check template doesn't have instance-only fields
+    
+    Args:
+        task: Task dictionary
+        
+    Returns:
+        List of error messages (empty if valid)
+    """
+    errors = []
+    
+    for field in INSTANCE_ONLY:
+        if field in task:
+            errors.append(
+                f"ERROR: Cannot create template with '{field}' field\n"
+                f"  Templates should not have instance-only attributes"
+            )
+    
+    return errors
+
+
+def validate_no_r_on_instance(original, modified):
+    """Check if trying to add 'r' to existing instance
+    
+    Args:
+        original: Original task state
+        modified: Modified task state
+        
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if 'rtemplate' in original and 'r' in modified and 'r' not in original:
+        return (
+            "ERROR: Cannot add 'r' field to instance\n"
+            "  This instance is already linked to a template\n"
+            f"  Template: {original.get('rtemplate')}"
+        )
+    return None
+
+
+def validate_no_rtemplate_change(original, modified):
+    """Check if trying to change rtemplate
+    
+    Args:
+        original: Original task state
+        modified: Modified task state
+        
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if 'rtemplate' in modified and 'rtemplate' in original:
+        if modified['rtemplate'] != original['rtemplate']:
+            return (
+                "ERROR: Cannot modify rtemplate field\n"
+                "  This would break the template-instance relationship\n"
+                f"  Original: {original['rtemplate']}\n"
+                f"  Attempted: {modified['rtemplate']}"
+            )
+    return None
+
+
+def validate_no_absolute_dates_on_template(task):
+    """Check template doesn't have absolute wait/scheduled/until (should be rwait/rscheduled/runtil)
+    
+    Args:
+        task: Task dictionary (template)
+        
+    Returns:
+        List of error messages (empty if valid)
+    """
+    errors = []
+    
+    # Check if this is actually a template
+    if task.get('status') != 'recurring' and 'r' not in task:
+        return []
+    
+    # Check for absolute wait
+    if 'wait' in task:
+        # Check if it's relative (due-2d) or absolute (20260315T120000Z)
+        ref_field, offset = parse_relative_date(task['wait'])
+        if not (ref_field and offset):
+            # It's absolute
+            errors.append(
+                f"ERROR: Template has absolute 'wait' field (should be 'rwait')\n"
+                f"  Use: rwait:due-2d (relative) instead of wait:2026-03-15 (absolute)"
+            )
+    
+    # Check for absolute scheduled (but only if it's not the anchor)
+    if 'scheduled' in task:
+        anchor = task.get('ranchor', 'due')
+        if anchor != 'sched':
+            ref_field, offset = parse_relative_date(task['scheduled'])
+            if not (ref_field and offset):
+                errors.append(
+                    f"ERROR: Template has absolute 'scheduled' field (should be 'rscheduled')\n"
+                    f"  Use: rscheduled:due-2d (relative) instead of scheduled:2026-03-15 (absolute)"
+                )
+    
+    # Check for absolute until
+    if 'until' in task:
+        ref_field, offset = parse_relative_date(task['until'])
+        if not (ref_field and offset):
+            errors.append(
+                f"ERROR: Template has absolute 'until' field (should be 'runtil')\n"
+                f"  Use: runtil:due+7d (relative) instead of until:2026-03-15 (absolute)"
+            )
+    
+    return errors
 
 
 def normalize_type(type_str):
@@ -313,6 +661,43 @@ def query_instances(template_uuid):
         return []
 
 
+def query_task(uuid):
+    """Query Taskwarrior for a task by UUID
+    
+    Args:
+        uuid: Task UUID to query
+        
+    Returns:
+        Task dictionary or None if not found/error
+    """
+    import subprocess
+    import json
+    
+    try:
+        result = subprocess.run(
+            ['task', 'rc.hooks=off', uuid, 'export'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            tasks = json.loads(result.stdout)
+            if tasks:
+                if DEBUG:
+                    debug_log(f"Queried task {uuid}: found", "COMMON")
+                return tasks[0]
+        
+        if DEBUG:
+            debug_log(f"Queried task {uuid}: not found", "COMMON")
+        return None
+        
+    except (subprocess.SubprocessError, json.JSONDecodeError) as e:
+        if DEBUG:
+            debug_log(f"Query task {uuid} failed: {e}", "COMMON")
+        return None
+
+
 def check_instance_count(template_uuid):
     """Check instance count for a specific template (targeted checking)
     
@@ -364,6 +749,18 @@ def spawn_instance(template, rindex, completion_time=None):
     
     if DEBUG:
         debug_log(f"Spawning instance {rindex} from template {template.get('uuid')}", "COMMON")
+    
+    # Validate rindex
+    try:
+        rindex = int(rindex)
+        if rindex < 1:
+            if DEBUG:
+                debug_log(f"Invalid rindex: {rindex} (must be >= 1)", "COMMON")
+            return None
+    except (ValueError, TypeError):
+        if DEBUG:
+            debug_log(f"Invalid rindex type: {rindex}", "COMMON")
+        return None
     
     # Parse recurrence interval
     recur_delta = parse_duration(template.get('r'))
@@ -440,13 +837,58 @@ def spawn_instance(template, rindex, completion_time=None):
             if DEBUG:
                 debug_log(f"Failed to parse runtil: {template['runtil']}", "COMMON")
     
-    # Copy attributes from template
-    if 'project' in template:
-        cmd.append(f'project:{template["project"]}')
-    if 'priority' in template:
-        cmd.append(f'priority:{template["priority"]}')
-    if 'tags' in template and template['tags']:
-        cmd.extend([f'+{tag}' for tag in template['tags']])
+    # Copy ALL other attributes from template (attribute-agnostic)
+    # Skip fields in DO_NOT_COPY and fields already handled above
+    already_handled = {anchor_field, 'description', 'uuid', 'status'}
+    
+    for field, value in template.items():
+        # Skip if already handled or in do-not-copy list
+        if field in already_handled or field in DO_NOT_COPY:
+            continue
+        
+        # Handle different field types
+        if field == 'tags' and isinstance(value, list):
+            # Tags are added with + prefix
+            cmd.extend([f'+{tag}' for tag in value])
+            if DEBUG:
+                debug_log(f"Copied tags: {value}", "COMMON")
+        
+        elif field == 'annotations' and isinstance(value, list):
+            # Annotations need special handling (multiple annotations)
+            for annotation in value:
+                if isinstance(annotation, dict) and 'description' in annotation:
+                    # Format: task add ... annotate:"text"
+                    # Note: This adds at spawn time, so all annotations get same timestamp
+                    # This is acceptable behavior for recurrence
+                    cmd.append(f'annotate:{annotation["description"]}')
+            if DEBUG:
+                debug_log(f"Copied {len(value)} annotation(s)", "COMMON")
+        
+        elif field == 'depends' and value:
+            # Dependencies: comma-separated UUIDs
+            if isinstance(value, list):
+                cmd.append(f'depends:{",".join(value)}')
+            else:
+                cmd.append(f'depends:{value}')
+            if DEBUG:
+                debug_log(f"Copied depends: {value}", "COMMON")
+        
+        elif isinstance(value, str):
+            # Simple string fields (project, priority, UDAs, etc.)
+            cmd.append(f'{field}:{value}')
+            if DEBUG:
+                debug_log(f"Copied {field}: {value}", "COMMON")
+        
+        elif isinstance(value, (int, float)):
+            # Numeric UDAs
+            cmd.append(f'{field}:{value}')
+            if DEBUG:
+                debug_log(f"Copied {field}: {value}", "COMMON")
+        
+        else:
+            # Skip complex types we don't know how to handle
+            if DEBUG:
+                debug_log(f"Skipped field {field} (type: {type(value).__name__})", "COMMON")
     
     # Add recurrence metadata
     cmd.extend([

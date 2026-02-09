@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 2.5.2
+Version: 2.5.3
 Date: 2026-02-08
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:
