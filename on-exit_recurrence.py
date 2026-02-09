@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 0.5.0
-Date: 2026-02-07
+Version: 0.5.1
+Date: 2026-02-08
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:
 Every active template MUST have exactly one pending instance.
@@ -17,8 +17,7 @@ sys.dont_write_bytecode = True
 
 import json
 import subprocess
-from datetime import datetime, timedelta
-import re
+from datetime import datetime
 import os
 
 # Add hooks directory to Python path for importing common module
@@ -31,7 +30,7 @@ try:
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG,
-        spawn_instance
+        spawn_instance, query_instances
     )
 except ImportError as e:
     # Fallback error handling
@@ -49,107 +48,6 @@ class RecurrenceSpawner:
     
     def __init__(self):
         self.now = datetime.utcnow()
-    
-    def get_anchor_field_name(self, anchor_field):
-        """Map our short anchor name to taskwarrior's actual field name"""
-        field_map = {'sched': 'scheduled', 'due': 'due'}
-        return field_map.get(anchor_field, anchor_field)
-    
-    def parse_duration(self, duration_str):
-        """Parse duration string to timedelta"""
-        if not duration_str:
-            return None
-        
-        # Simple formats
-        match = re.match(r'(\d+)(s|d|w|mo|y)', str(duration_str).lower())
-        if match:
-            num, unit = match.groups()
-            num = int(num)
-            if unit == 's':
-                return timedelta(seconds=num)
-            elif unit == 'd':
-                return timedelta(days=num)
-            elif unit == 'w':
-                return timedelta(weeks=num)
-            elif unit == 'mo':
-                return timedelta(days=num * 30)
-            elif unit == 'y':
-                return timedelta(days=num * 365)
-        
-        # ISO 8601
-        pattern = r'P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?'
-        match = re.match(pattern, str(duration_str))
-        if match:
-            years, months, weeks, days, hours, mins, secs = match.groups()
-            delta = timedelta()
-            if secs:
-                delta += timedelta(seconds=int(secs))
-            if mins:
-                delta += timedelta(minutes=int(mins))
-            if hours:
-                delta += timedelta(hours=int(hours))
-            if days:
-                delta += timedelta(days=int(days))
-            if weeks:
-                delta += timedelta(weeks=int(weeks))
-            if months:
-                delta += timedelta(days=int(months) * 30)
-            if years:
-                delta += timedelta(days=int(years) * 365)
-            return delta
-        
-        return None
-    
-    def parse_date(self, date_str):
-        """Parse ISO 8601 date"""
-        if not date_str:
-            return None
-        try:
-            clean = str(date_str).replace('Z', '').replace('+00:00', '')
-            return datetime.strptime(clean[:15], '%Y%m%dT%H%M%S')
-        except (ValueError, AttributeError):
-            return None
-    
-    def format_date(self, dt):
-        """Format datetime as ISO 8601"""
-        return dt.strftime('%Y%m%dT%H%M%SZ')
-    
-    def parse_relative_date(self, rel_str, anchor_date):
-        """Parse relative date like 'due-2d' or 'due-30m' given anchor date"""
-        if not rel_str or not anchor_date:
-            return None
-        
-        match = re.match(r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|min|minutes?|m|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)', 
-                        str(rel_str).lower())
-        if match:
-            ref_field, sign, num, unit = match.groups()
-            num = int(num)
-            
-            # Normalize unit to category
-            # Order matters: 'min'/'minutes' before 'mo'/'months', 'm' is minutes
-            if unit.startswith('min') or unit == 'm':
-                delta = timedelta(minutes=num)
-            elif unit.startswith('s'):
-                delta = timedelta(seconds=num)
-            elif unit.startswith('h'):
-                delta = timedelta(hours=num)
-            elif unit.startswith('d'):
-                delta = timedelta(days=num)
-            elif unit.startswith('w'):
-                delta = timedelta(weeks=num)
-            elif unit.startswith('mo'):
-                delta = timedelta(days=num * 30)
-            elif unit.startswith('y'):
-                delta = timedelta(days=num * 365)
-            else:
-                return None
-            
-            if sign == '-':
-                delta = -delta
-            
-            return anchor_date + delta
-        
-        return None
     
     def get_template(self, uuid):
         """Fetch template task by UUID"""
@@ -223,12 +121,12 @@ class RecurrenceSpawner:
         
         rend_str = template['rend']
         anchor_field = template.get('ranchor', 'due')
-        actual_field = self.get_anchor_field_name(anchor_field)
-        anchor_date = self.parse_date(template.get(actual_field))
-        rend_date = self.parse_relative_date(rend_str, anchor_date)
+        actual_field = get_anchor_field_name(anchor_field)
+        anchor_date = parse_date(template.get(actual_field))
+        rend_date = parse_relative_date(rend_str, anchor_date)
         
         if not rend_date:
-            rend_date = self.parse_date(rend_str)
+            rend_date = parse_date(rend_str)
         
         if rend_date and new_date > rend_date:
             return True
@@ -404,7 +302,6 @@ class RecurrenceSpawner:
                     debug_log(f"Found template with rlast in [0,1,'']: {task.get('description')}", "EXIT")
                 
                 # Check if instance already exists (prevent duplicate spawning on template mods)
-                from recurrence_common_hook import query_instances
                 template_uuid = task.get('uuid')
                 existing_instances = query_instances(template_uuid) if template_uuid else []
                 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 0.5.0
-Date: 2026-02-07
+Version: 0.5.1
+Date: 2026-02-08
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
 This module contains date/duration parsing, type normalization, and debug logging.
@@ -528,8 +528,8 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '0.5.0'
-__date__ = '2026-02-07'
+__version__ = '0.5.1'
+__date__ = '2026-02-08'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")
