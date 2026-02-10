@@ -1,7 +1,7 @@
 # ============================================================================
 # Taskwarrior Enhanced Recurrence Configuration
-# Version: 0.4.1
-# Last Updated: 2026-01-12
+# Version: 2.6.3
+# Last Updated: 2026-02-09
 # ============================================================================
 # New in 0.4.1:
 #   - Bug fixes for UUID filter syntax
@@ -23,7 +23,7 @@ recurrence=no
 
 # Enhanced Recurrence UDAs
 # ------------------------
-# type: chained or periodic (supports abbreviations: c/ch/chain/chained, p/pe/per/periodic)
+# type: chain or period (supports abbreviations: c/ch/chain, p/pe/per/period)
 uda.type.type=string
 uda.type.label=Recurrence Type
 

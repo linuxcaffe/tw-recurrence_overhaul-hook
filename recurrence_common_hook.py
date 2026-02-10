@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 2.6.3
+Version: 2.6.4
 Date: 2026-02-08
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -41,7 +41,7 @@ LEGACY_RECURRENCE = {
     'mask',    # We don't use mask system
     'imask',   # We don't use mask system
     'parent',  # We use 'rtemplate'
-    'rtype'    # Their recurrence type (not ours)
+    'rtype'    # Legacy field - WARNING: Appears mysteriously, needs investigation
 }
 
 # Our template-only recurrence fields
@@ -89,13 +89,18 @@ def strip_legacy_recurrence(task):
     warnings = []
     for field in LEGACY_RECURRENCE:
         if field in task:
+            if DEBUG:
+                debug_log(f"STRIPPING LEGACY FIELD: '{field}' found in task", "VALIDATION")
+                debug_log(f"  Task UUID: {task.get('uuid', 'N/A')}", "VALIDATION")
+                debug_log(f"  Task ID: {task.get('id', 'N/A')}", "VALIDATION")
+                debug_log(f"  Task desc: {task.get('description', 'N/A')[:50]}", "VALIDATION")
+                debug_log(f"  Field value: '{task[field]}'", "VALIDATION")
+                debug_log(f"  Task status: {task.get('status', 'N/A')}", "VALIDATION")
             del task[field]
             warnings.append(
                 f"WARNING: Removed legacy recurrence field '{field}'\n"
                 f"  Enhanced recurrence uses different fields (r, type, rtemplate, etc.)"
             )
-            if DEBUG:
-                debug_log(f"Stripped legacy field: {field}", "VALIDATION")
     return warnings
 
 
@@ -792,6 +797,13 @@ def spawn_instance(template, rindex, completion_time=None):
         else:
             # Period: template + (rindex - 1) * period
             anchor_date = template_anchor + (recur_delta * (rindex - 1))
+            
+            # Validate: For PERIODIC only, rindex > 1 means instance anchor MUST be after template anchor
+            # (Chain can be earlier if completed early)
+            if anchor_date <= template_anchor:
+                if DEBUG:
+                    debug_log(f"ERROR: Periodic rindex={rindex} but calculated anchor ({anchor_date}) not after template anchor ({template_anchor})", "COMMON")
+                return None
     
     # Check if recurrence has ended (rend)
     if 'rend' in template:
@@ -810,7 +822,7 @@ def spawn_instance(template, rindex, completion_time=None):
     cmd = ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=new-id', 'add', template['description']]
     
     # Add anchor date
-    cmd.append(f'{anchor_field}:{format_date(anchor_date)}')
+    cmd.append(f'{actual_field}:{format_date(anchor_date)}')
     
     # Process relative wait
     if 'rwait' in template:
@@ -839,7 +851,7 @@ def spawn_instance(template, rindex, completion_time=None):
     
     # Copy ALL other attributes from template (attribute-agnostic)
     # Skip fields in DO_NOT_COPY and fields already handled above
-    already_handled = {anchor_field, 'description', 'uuid', 'status'}
+    already_handled = {actual_field, 'description', 'uuid', 'status'}
     
     for field, value in template.items():
         # Skip if already handled or in do-not-copy list
@@ -854,15 +866,11 @@ def spawn_instance(template, rindex, completion_time=None):
                 debug_log(f"Copied tags: {value}", "COMMON")
         
         elif field == 'annotations' and isinstance(value, list):
-            # Annotations need special handling (multiple annotations)
-            for annotation in value:
-                if isinstance(annotation, dict) and 'description' in annotation:
-                    # Format: task add ... annotate:"text"
-                    # Note: This adds at spawn time, so all annotations get same timestamp
-                    # This is acceptable behavior for recurrence
-                    cmd.append(f'annotate:{annotation["description"]}')
+            # Annotations cannot be added via 'task add' - they need separate 'task annotate' commands
+            # Store them for post-creation handling
             if DEBUG:
-                debug_log(f"Copied {len(value)} annotation(s)", "COMMON")
+                debug_log(f"Skipping {len(value)} annotation(s) - will add after task creation", "COMMON")
+            # Note: We'll need to handle this separately after task is created
         
         elif field == 'depends' and value:
             # Dependencies: comma-separated UUIDs
@@ -909,6 +917,23 @@ def spawn_instance(template, rindex, completion_time=None):
                 if match:
                     task_id = match.group(1)
                     break
+        
+        # Add annotations if template has them (must be done after task creation)
+        if task_id and 'annotations' in template and isinstance(template['annotations'], list):
+            for annotation in template['annotations']:
+                if isinstance(annotation, dict) and 'description' in annotation:
+                    try:
+                        subprocess.run(
+                            ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=nothing',
+                             task_id, 'annotate', annotation['description']],
+                            capture_output=True,
+                            check=True
+                        )
+                        if DEBUG:
+                            debug_log(f"Added annotation to instance: {annotation['description']}", "COMMON")
+                    except subprocess.CalledProcessError as e:
+                        if DEBUG:
+                            debug_log(f"Failed to add annotation: {e}", "COMMON")
         
         # Update template's rlast to match
         subprocess.run(

@@ -452,6 +452,28 @@ class RecurrenceHandler:
         """
         expanded = []
         
+        # PROACTIVE CLEANUP: If template has BOTH absolute and relative (legacy edge case),
+        # prioritize relative and remove absolute regardless of whether it changed
+        if 'rwait' in modified and 'wait' in modified:
+            del modified['wait']
+            expanded.append(f'wait (absolute) removed - rwait exists (cleanup)')
+            if DEBUG:
+                debug_log(f"Proactive cleanup: removed wait (rwait exists)", "ADD/MOD")
+        
+        if 'rscheduled' in modified and 'scheduled' in modified:
+            anchor = modified.get('ranchor', 'due')
+            if anchor != 'sched':  # Only cleanup if scheduled is not the anchor
+                del modified['scheduled']
+                expanded.append(f'scheduled (absolute) removed - rscheduled exists (cleanup)')
+                if DEBUG:
+                    debug_log(f"Proactive cleanup: removed scheduled (rscheduled exists)", "ADD/MOD")
+        
+        if 'runtil' in modified and 'until' in modified:
+            del modified['until']
+            expanded.append(f'until (absolute) removed - runtil exists (cleanup)')
+            if DEBUG:
+                debug_log(f"Proactive cleanup: removed until (runtil exists)", "ADD/MOD")
+        
         # Get anchor info for date conversions
         anchor_field = modified.get('ranchor', 'due')
         anchor_date = None
