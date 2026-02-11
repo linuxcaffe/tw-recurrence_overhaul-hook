@@ -77,30 +77,44 @@ def debug_log(msg, prefix="COMMON"):
 # Validation Functions
 # ============================================================================
 
-def strip_legacy_recurrence(task):
-    """Remove legacy Taskwarrior recurrence fields with warnings
+def strip_legacy_recurrence(task, original=None):
+    """Remove legacy Taskwarrior recurrence fields
+    
+    Taskwarrior v2.6.2 synthesizes legacy fields (notably 'rtype') into the
+    JSON it passes to on-modify hooks for status:recurring tasks, even though
+    these fields aren't in the stored data. We silently strip those.
+    
+    Only warns the user when a legacy field appears to be user-added:
+    - on-add (no original): always warn
+    - on-modify: warn only if field is NEW in modified (not present in original)
     
     Args:
         task: Task dictionary (modified in place)
+        original: Original task state from on-modify (None for on-add)
         
     Returns:
-        List of warning messages for removed fields
+        List of warning messages for user-added legacy fields only
     """
     warnings = []
     for field in LEGACY_RECURRENCE:
         if field in task:
+            # Determine source: TW-injected (in both original and modified)
+            # vs user-added (new in modified only)
+            tw_injected = original is not None and field in original
+            
             if DEBUG:
-                debug_log(f"STRIPPING LEGACY FIELD: '{field}' found in task", "VALIDATION")
-                debug_log(f"  Task UUID: {task.get('uuid', 'N/A')}", "VALIDATION")
-                debug_log(f"  Task ID: {task.get('id', 'N/A')}", "VALIDATION")
-                debug_log(f"  Task desc: {task.get('description', 'N/A')[:50]}", "VALIDATION")
-                debug_log(f"  Field value: '{task[field]}'", "VALIDATION")
-                debug_log(f"  Task status: {task.get('status', 'N/A')}", "VALIDATION")
+                source = "TW-injected (silent)" if tw_injected else "user/new"
+                debug_log(f"Stripping legacy '{field}' ({source}): '{task[field]}' "
+                         f"from {task.get('description', 'N/A')[:40]}", "VALIDATION")
+            
             del task[field]
-            warnings.append(
-                f"WARNING: Removed legacy recurrence field '{field}'\n"
-                f"  Enhanced recurrence uses different fields (r, type, rtemplate, etc.)"
-            )
+            
+            # Only warn user about fields they added, not TW-synthesized ones
+            if not tw_injected:
+                warnings.append(
+                    f"WARNING: Removed legacy recurrence field '{field}'\n"
+                    f"  Enhanced recurrence uses different fields (r, type, rtemplate, etc.)"
+                )
     return warnings
 
 
@@ -995,8 +1009,8 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '0.5.1'
-__date__ = '2026-02-08'
+__version__ = '0.5.2'
+__date__ = '2026-02-11'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")

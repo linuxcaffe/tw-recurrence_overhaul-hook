@@ -10,7 +10,7 @@ sophisticated modification tracking and user feedback.
 Features:
 - Template creation with type normalization
 - Smart modification detection and handling
-- Bidirectional rindex ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬ï¿½ rlast synchronization
+- Bidirectional rindex ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¯Â¿Â½ rlast synchronization
 - Anchor change detection with automatic rwait/rscheduled updates
 - Time machine functionality (rlast/rindex modifications)
 - User-friendly aliases (wait->rwait, scheduled->rscheduled, until->runtil)
@@ -616,8 +616,8 @@ class RecurrenceHandler:
         """Handle modifications to a template with auto-sync to instance
         
         Template modifications fall into two categories:
-        1. Recurrence fields â†’ Auto-sync parallel changes to current instance
-        2. Non-recurrence fields â†’ Inform user with suggested command
+        1. Recurrence fields Ã¢â€ â€™ Auto-sync parallel changes to current instance
+        2. Non-recurrence fields Ã¢â€ â€™ Inform user with suggested command
         
         Args:
             original: Original task state
@@ -629,7 +629,7 @@ class RecurrenceHandler:
         if DEBUG:
             debug_log(f"Handling template modification: {modified.get('description')}", "ADD/MOD")
         
-        # Expand user-friendly aliases (waitâ†’rwait, lastâ†’rlast, tyâ†’type, etc.)
+        # Expand user-friendly aliases (waitÃ¢â€ â€™rwait, lastÃ¢â€ â€™rlast, tyÃ¢â€ â€™type, etc.)
         expansions = self.expand_template_aliases(original, modified)
         
         
@@ -887,9 +887,9 @@ class RecurrenceHandler:
         """Handle modifications to an instance with auto-sync to template
         
         Instance modifications:
-        - rindex change â†’ Auto-sync template rlast + recalculate dates (TIME MACHINE)
-        - rtemplate change â†’ REJECT (not allowed)
-        - Non-recurrence fields â†’ Inform with suggested command to apply to template
+        - rindex change Ã¢â€ â€™ Auto-sync template rlast + recalculate dates (TIME MACHINE)
+        - rtemplate change Ã¢â€ â€™ REJECT (not allowed)
+        - Non-recurrence fields Ã¢â€ â€™ Inform with suggested command to apply to template
         
         Args:
             original: Original task state
@@ -985,21 +985,21 @@ class RecurrenceHandler:
                             debug_log(f"Wrote template sync spool: rlast -> {new_rindex}", "ADD/MOD")
                         
                         self.add_message(
-                            f"Instance {task_id} rindex changed: {old_rindex} â†’ {new_rindex}\n"
+                            f"Instance {task_id} rindex changed: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
                             f"Dates recalculated. Template {template_id} rlast will be synced."
                         )
                     except OSError as e:
                         if DEBUG:
                             debug_log(f"Failed to write template sync spool: {e}", "ADD/MOD")
                         self.add_message(
-                            f"Instance {task_id} rindex changed: {old_rindex} â†’ {new_rindex}\n"
+                            f"Instance {task_id} rindex changed: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
                             f"Dates recalculated. WARNING: Template sync failed. Manual fix: task {template_id} mod rlast:{new_rindex}"
                         )
                 else:
                     if DEBUG:
                         debug_log(f"Template rlast already matches {new_rindex}, skipping sync", "ADD/MOD")
                     self.add_message(
-                        f"Instance {task_id} rindex changed: {old_rindex} â†’ {new_rindex}\n"
+                        f"Instance {task_id} rindex changed: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
                         f"Dates recalculated. Template {template_id} already in sync."
                     )
             else:
@@ -1183,7 +1183,9 @@ def main():
             sys.exit(1)
         
         # Strip legacy fields first (before any other processing)
-        legacy_warnings = strip_legacy_recurrence(modified)
+        # Pass original so TW-synthesized fields (like rtype) are silently stripped
+        # Only warns user about fields they explicitly added
+        legacy_warnings = strip_legacy_recurrence(modified, original=original)
         for warning in legacy_warnings:
             handler.add_message(warning)
         
