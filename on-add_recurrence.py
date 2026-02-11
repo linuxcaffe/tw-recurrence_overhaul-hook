@@ -768,7 +768,8 @@ class RecurrenceHandler:
             
             self.add_message(
                 f"Non-recurrence fields changed: {', '.join(non_recur_changes)}\n"
-                f"To apply to current instance: task {instance_id} mod {' '.join(mod_parts)}"
+                f"To apply to current instance:\n"
+                f"task {instance_id} mod {' '.join(mod_parts)}"
             )
         
         # Validate and cleanup
@@ -985,27 +986,29 @@ class RecurrenceHandler:
                             debug_log(f"Wrote template sync spool: rlast -> {new_rindex}", "ADD/MOD")
                         
                         self.add_message(
-                            f"Instance {task_id} rindex changed: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
+                            f"Instance {task_id} rindex changed: {old_rindex} -> {new_rindex}\n"
                             f"Dates recalculated. Template {template_id} rlast will be synced."
                         )
                     except OSError as e:
                         if DEBUG:
                             debug_log(f"Failed to write template sync spool: {e}", "ADD/MOD")
                         self.add_message(
-                            f"Instance {task_id} rindex changed: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
-                            f"Dates recalculated. WARNING: Template sync failed. Manual fix: task {template_id} mod rlast:{new_rindex}"
+                            f"Instance {task_id} rindex changed: {old_rindex} -> {new_rindex}\n"
+                            f"Dates recalculated. WARNING: Template sync failed.\n"
+                            f"task {template_id} mod rlast:{new_rindex}"
                         )
                 else:
                     if DEBUG:
                         debug_log(f"Template rlast already matches {new_rindex}, skipping sync", "ADD/MOD")
                     self.add_message(
-                        f"Instance {task_id} rindex changed: {old_rindex} Ã¢â€ â€™ {new_rindex}\n"
+                        f"Instance {task_id} rindex changed: {old_rindex} -> {new_rindex}\n"
                         f"Dates recalculated. Template {template_id} already in sync."
                     )
             else:
                 self.add_message(
                     f"Instance {task_id} rindex changed but template not found.\n"
-                    f"Manual sync required: task {rtemplate_uuid} mod rlast:{new_rindex}"
+                    f"Manual sync required:\n"
+                    f"task {rtemplate_uuid} mod rlast:{new_rindex}"
                 )
         
         # Check for non-recurrence field changes (inform only)
@@ -1026,7 +1029,8 @@ class RecurrenceHandler:
             
             self.add_message(
                 f"Non-recurrence fields changed: {', '.join(non_recur_changes)}\n"
-                f"To apply to template (future instances): task {template_id} mod {' '.join(mod_parts)}"
+                f"To apply to template (future instances):\n"
+                f"task {template_id} mod {' '.join(mod_parts)}"
             )
         
         # Validate and cleanup
