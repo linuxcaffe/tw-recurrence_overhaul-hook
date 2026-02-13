@@ -1,7 +1,7 @@
 - Project: https://github.com/linuxcaffe/tw-recurrence_overhaul-hook
 - Issues:  https://github.com/linuxcaffe/tw-recurrence_overhaul-hook/issues
 
-# tw-recurrence-overhaul
+# recurrence-overhaul
 
 An enhanced recurrence system for Taskwarrior, implemented as hooks.
 
