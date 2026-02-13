@@ -68,13 +68,21 @@ Based on the
 
 ## Installation
 
-### Via awesome-taskwarrior
+### Option 1) Download and run the install file
+```bash
+chmod +x recurrence-overhaul.install  # then run it
+recurrence-overhaul.install
+```
+copies hooks, library file, rc config and README
+to directories under ~/.task, sets chmod and simlink
+
+### Option 2) Via awesome-taskwarrior
 
 ```bash
 tw -I recurrence-overhaul
 ```
 
-### Manual
+### Option 3) Manual
 
 ```bash
 cd ~/.task/hooks
@@ -89,19 +97,20 @@ chmod +x on-add_recurrence.py on-exit_recurrence.py
 ln -s on-add_recurrence.py on-modify_recurrence.py
 
 # Install configuration
-cp recurrence.rc ~/.task/
+cp recurrence.rc ~/.task/config/
 ```
 
 Add to `~/.taskrc`:
 
 ```ini
-include ~/.task/recurrence.rc
+include ~/.task/config/recurrence.rc
 ```
 
 Verify:
 
 ```bash
 task show | grep uda.type
+task diag # see hooks section
 ```
 
 ---
@@ -142,7 +151,7 @@ task add "Beach cleanup" r:1w due:2025-06-01 rend:2025-08-31 +volunteer
 **Using scheduled as anchor:**
 
 ```bash
-task add "Daily standup" ty:c r:1d anchor:sched sched:tomorrow+9hrs wait:sched-90min
+task add "Daily standup" ty:c r:1d sched:tomorrow+9hrs wait:sched-90min
 ```
 
 ### Completing and deleting
@@ -192,7 +201,7 @@ task 42 modify index:5        # Time machine — recalculates dates
 ```
 
 Changing `index` on an instance auto-syncs `last` on the template and
-recalculates all dates.
+recalculates all dates. This has basically no effect on chain type.
 
 ---
 
