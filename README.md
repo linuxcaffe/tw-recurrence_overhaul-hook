@@ -57,7 +57,7 @@ Based on the
 
 - **Anchor**
   The date field that recurrence calculations are based on — either `due`
-  (default) or `scheduled`. Set with `anchor:sched` on the template.
+   or `scheduled`.
 
 - **Relative dates**
   Wait, scheduled, and until dates expressed as offsets from the anchor:
