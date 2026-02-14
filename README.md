@@ -76,7 +76,7 @@ recurrence-overhaul.install
 copies hooks, library file, rc config and README
 to directories under ~/.task, sets chmod and simlink
 
-### Option 2) Via awesome-taskwarrior
+### Option 2) Via [awesome-taskwarrior](http://https://github.com/linuxcaffe/awesome-taskwarrior)
 
 ```bash
 tw -I recurrence-overhaul
