@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 2.6.3
+Version: 2.7.0
 Date: 2026-02-08
 
 Handles both adding new recurring tasks and modifying existing ones with
@@ -10,7 +10,7 @@ sophisticated modification tracking and user feedback.
 Features:
 - Template creation with type normalization
 - Smart modification detection and handling
-- Bidirectional rindex ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¯Â¿Â½ rlast synchronization
+- Bidirectional rindex ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¯Ã‚Â¿Ã‚Â½ rlast synchronization
 - Anchor change detection with automatic rwait/rscheduled updates
 - Time machine functionality (rlast/rindex modifications)
 - User-friendly aliases (wait->rwait, scheduled->rscheduled, until->runtil)
@@ -438,10 +438,14 @@ class RecurrenceHandler:
     def expand_template_aliases(self, original, modified):
         """Expand user-friendly aliases to internal field names on templates.
         
-        Users can type: wait:due-30m, sched:due-2d, until:due+7d, last:3, index:5, anchor:due
-        Hook translates to: rwait:due-30m, rscheduled:due-2d, runtil:due+7d, rlast:3, rindex:5, ranchor:due
+        Users can type: wait:due-30m, sched:due-2d, until:due+7d
+        Hook translates to: rwait:due-30m, rscheduled:due-2d, runtil:due+7d
         
         Also converts absolute dates to relative offsets from anchor.
+        
+        NOTE: last→rlast, index→rindex, anchor→ranchor aliases were removed
+        because Taskwarrior parses/rejects unknown fields before hooks see them.
+        Use rlast, rindex, ranchor directly.
         
         Args:
             original: Original task state (to detect changes)
@@ -482,29 +486,9 @@ class RecurrenceHandler:
         else:
             anchor_date = parse_date(modified.get('due'))
         
-        # last -> rlast
-        if 'last' in modified and modified.get('last') != original.get('last'):
-            modified['rlast'] = modified['last']
-            del modified['last']
-            expanded.append(f'last->rlast ({modified["rlast"]})')
-            if DEBUG:
-                debug_log(f"Alias expanded: last -> rlast: {modified['rlast']}", "ADD/MOD")
-        
-        # index -> rindex (for TIME MACHINE operations)
-        if 'index' in modified and modified.get('index') != original.get('index'):
-            modified['rindex'] = modified['index']
-            del modified['index']
-            expanded.append(f'index->rindex ({modified["rindex"]})')
-            if DEBUG:
-                debug_log(f"Alias expanded: index -> rindex: {modified['rindex']}", "ADD/MOD")
-        
-        # anchor -> ranchor
-        if 'anchor' in modified and modified.get('anchor') != original.get('anchor'):
-            modified['ranchor'] = modified['anchor']
-            del modified['anchor']
-            expanded.append(f'anchor->ranchor ({modified["ranchor"]})')
-            if DEBUG:
-                debug_log(f"Alias expanded: anchor -> ranchor: {modified['ranchor']}", "ADD/MOD")
+        # NOTE: last→rlast, index→rindex, anchor→ranchor aliases were removed.
+        # These can't work because Taskwarrior parses/rejects unknown fields
+        # before passing JSON to hooks. Use rlast, rindex, ranchor directly.
         
         # wait -> rwait (handle both relative and absolute)
         if 'wait' in modified and modified.get('wait') != original.get('wait'):
@@ -616,8 +600,8 @@ class RecurrenceHandler:
         """Handle modifications to a template with auto-sync to instance
         
         Template modifications fall into two categories:
-        1. Recurrence fields Ã¢â€ â€™ Auto-sync parallel changes to current instance
-        2. Non-recurrence fields Ã¢â€ â€™ Inform user with suggested command
+        1. Recurrence fields ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Auto-sync parallel changes to current instance
+        2. Non-recurrence fields ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Inform user with suggested command
         
         Args:
             original: Original task state
@@ -629,7 +613,7 @@ class RecurrenceHandler:
         if DEBUG:
             debug_log(f"Handling template modification: {modified.get('description')}", "ADD/MOD")
         
-        # Expand user-friendly aliases (waitÃ¢â€ â€™rwait, lastÃ¢â€ â€™rlast, tyÃ¢â€ â€™type, etc.)
+        # Expand user-friendly aliases (waitÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢rwait, lastÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢rlast, tyÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢type, etc.)
         expansions = self.expand_template_aliases(original, modified)
         
         
@@ -888,9 +872,9 @@ class RecurrenceHandler:
         """Handle modifications to an instance with auto-sync to template
         
         Instance modifications:
-        - rindex change Ã¢â€ â€™ Auto-sync template rlast + recalculate dates (TIME MACHINE)
-        - rtemplate change Ã¢â€ â€™ REJECT (not allowed)
-        - Non-recurrence fields Ã¢â€ â€™ Inform with suggested command to apply to template
+        - rindex change ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Auto-sync template rlast + recalculate dates (TIME MACHINE)
+        - rtemplate change ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ REJECT (not allowed)
+        - Non-recurrence fields ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Inform with suggested command to apply to template
         
         Args:
             original: Original task state

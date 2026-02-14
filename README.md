@@ -1,7 +1,7 @@
 - Project: https://github.com/linuxcaffe/tw-recurrence_overhaul-hook
 - Issues:  https://github.com/linuxcaffe/tw-recurrence_overhaul-hook/issues
 
-# recurrence-overhaul
+# tw-recurrence-overhaul
 
 An enhanced recurrence system for Taskwarrior, implemented as hooks.
 
@@ -14,7 +14,7 @@ An enhanced recurrence system for Taskwarrior, implemented as hooks.
 - Relative dates — `wait:due-7d`, `sched:due-2h` just work
 - Attribute-agnostic — all template fields (UDAs, annotations, tags, project, priority) copy to instances automatically
 - Comprehensive validation — catches errors before they become data problems
-- Stealthy aliases — type `last:5` instead of `rlast:5`, `ty:c` instead of `type:chain`
+- Stealthy aliases — type `ty:c` instead of `type:chain`, `wait:due-7d` instead of `rwait:due-7d`
 - Three bundled reports — `templates`, `recurring`, `instances`
 - Taskwarrior 2.6.2 only — replaces built-in recurrence entirely
 
@@ -57,7 +57,7 @@ Based on the
 
 - **Anchor**
   The date field that recurrence calculations are based on — either `due`
-   or `scheduled`.
+  (default) or `scheduled`. Set with `ranchor:sched` on the template.
 
 - **Relative dates**
   Wait, scheduled, and until dates expressed as offsets from the anchor:
@@ -68,21 +68,13 @@ Based on the
 
 ## Installation
 
-### Option 1) Download and run the install file
-```bash
-chmod +x recurrence-overhaul.install  # then run it
-recurrence-overhaul.install
-```
-copies hooks, library file, rc config and README
-to directories under ~/.task, sets chmod and simlink
-
-### Option 2) Via awesome-taskwarrior
+### Via awesome-taskwarrior
 
 ```bash
 tw -I recurrence-overhaul
 ```
 
-### Option 3) Manual
+### Manual
 
 ```bash
 cd ~/.task/hooks
@@ -97,20 +89,19 @@ chmod +x on-add_recurrence.py on-exit_recurrence.py
 ln -s on-add_recurrence.py on-modify_recurrence.py
 
 # Install configuration
-cp recurrence.rc ~/.task/config/
+cp recurrence.rc ~/.task/
 ```
 
 Add to `~/.taskrc`:
 
 ```ini
-include ~/.task/config/recurrence.rc
+include ~/.task/recurrence.rc
 ```
 
 Verify:
 
 ```bash
 task show | grep uda.type
-task diag # see hooks section
 ```
 
 ---
@@ -151,7 +142,7 @@ task add "Beach cleanup" r:1w due:2025-06-01 rend:2025-08-31 +volunteer
 **Using scheduled as anchor:**
 
 ```bash
-task add "Daily standup" ty:c r:1d sched:tomorrow+9hrs wait:sched-90min
+task add "Daily standup" ty:c r:1d ranchor:sched sched:tomorrow+9hrs wait:sched-90min
 ```
 
 ### Completing and deleting
@@ -183,8 +174,8 @@ Changes to recurrence fields auto-sync to the current instance:
 ```bash
 task 5 modify r:14d           # Change period
 task 5 modify ty:c            # Switch to chained
-task 5 modify anchor:sched    # Change anchor to scheduled
-task 5 modify last:10         # Time machine — jump to instance #10
+task 5 modify ranchor:sched   # Change anchor to scheduled
+task 5 modify rlast:10        # Time machine — jump to instance #10
 ```
 
 Changes to non-recurrence fields show a suggested command:
@@ -197,11 +188,11 @@ task 5 modify priority:H      # Template updated
 ### Modifying instances
 
 ```bash
-task 42 modify index:5        # Time machine — recalculates dates
+task 42 modify rindex:5       # Time machine — recalculates dates
 ```
 
-Changing `index` on an instance auto-syncs `last` on the template and
-recalculates all dates. This has basically no effect on chain type.
+Changing `rindex` on an instance auto-syncs `rlast` on the template and
+recalculates all dates.
 
 ---
 
@@ -214,16 +205,13 @@ You never need to type the `r`-prefixed field names directly.
 |----------|-------------|-------|
 | `ty:c` | `type:chain` | Also: `ty:ch`, `ty:chai`, `ty:chain` |
 | `ty:p` | `type:period` | Also: `ty:pe`, `ty:per`. Default if omitted |
-| `last:5` | `rlast:5` | Template modification only |
-| `index:3` | `rindex:3` | Instance modification (time machine) |
-| `anchor:sched` | `ranchor:sched` | Template modification only |
 | `wait:due-2d` | `rwait:due-2d` | Relative dates stay relative |
 | `wait:2026-03-15` | `rwait:due+Xs` | Absolute dates auto-convert to relative |
 | `sched:due-1h` | `rscheduled:due-1h` | Same conversion rules |
 | `until:due+7d` | `runtil:due+7d` | Same conversion rules |
 
-Absolute dates on templates are automatically converted to relative offsets
-from the anchor. This ensures instances always get correctly calculated dates.
+The `r`-prefixed fields (`rlast`, `rindex`, `ranchor`) must be used directly —
+Taskwarrior rejects unknown field names before hooks can translate them.
 
 ---
 
