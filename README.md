@@ -1,7 +1,7 @@
 - Project: https://github.com/linuxcaffe/tw-recurrence_overhaul-hook
 - Issues:  https://github.com/linuxcaffe/tw-recurrence_overhaul-hook/issues
 
-# tw-recurrence-overhaul
+# recurrence-overhaul
 
 An enhanced recurrence system for Taskwarrior, implemented as hooks.
 
@@ -14,7 +14,7 @@ An enhanced recurrence system for Taskwarrior, implemented as hooks.
 - Relative dates — `wait:due-7d`, `sched:due-2h` just work
 - Attribute-agnostic — all template fields (UDAs, annotations, tags, project, priority) copy to instances automatically
 - Comprehensive validation — catches errors before they become data problems
-- Stealthy aliases — type `ty:c` instead of `type:chain`, `wait:due-7d` instead of `rwait:due-7d`
+- Handy aliases — type `ty:c` instead of `type:chain`
 - Three bundled reports — `templates`, `recurring`, `instances`
 - Taskwarrior 2.6.2 only — replaces built-in recurrence entirely
 
@@ -57,7 +57,7 @@ Based on the
 
 - **Anchor**
   The date field that recurrence calculations are based on — either `due`
-  (default) or `scheduled`. Set with `ranchor:sched` on the template.
+   or `scheduled`.
 
 - **Relative dates**
   Wait, scheduled, and until dates expressed as offsets from the anchor:
@@ -68,13 +68,21 @@ Based on the
 
 ## Installation
 
-### Via awesome-taskwarrior
+### Option 1) Download and run the install file
+```bash
+chmod +x recurrence-overhaul.install  # then run it
+recurrence-overhaul.install
+```
+copies hooks, library file, rc config and README
+to directories under ~/.task, sets chmod and simlink
+
+### Option 2) Via awesome-taskwarrior
 
 ```bash
 tw -I recurrence-overhaul
 ```
 
-### Manual
+### Option 3) Manual
 
 ```bash
 cd ~/.task/hooks
@@ -89,19 +97,20 @@ chmod +x on-add_recurrence.py on-exit_recurrence.py
 ln -s on-add_recurrence.py on-modify_recurrence.py
 
 # Install configuration
-cp recurrence.rc ~/.task/
+cp recurrence.rc ~/.task/config/
 ```
 
 Add to `~/.taskrc`:
 
 ```ini
-include ~/.task/recurrence.rc
+include ~/.task/config/recurrence.rc
 ```
 
 Verify:
 
 ```bash
 task show | grep uda.type
+task diag # see hooks section
 ```
 
 ---
@@ -142,7 +151,7 @@ task add "Beach cleanup" r:1w due:2025-06-01 rend:2025-08-31 +volunteer
 **Using scheduled as anchor:**
 
 ```bash
-task add "Daily standup" ty:c r:1d ranchor:sched sched:tomorrow+9hrs wait:sched-90min
+task add "Daily standup" ty:c r:1d sched:tomorrow+9hrs wait:sched-90min
 ```
 
 ### Completing and deleting
@@ -192,7 +201,7 @@ task 42 modify rindex:5       # Time machine — recalculates dates
 ```
 
 Changing `rindex` on an instance auto-syncs `rlast` on the template and
-recalculates all dates.
+recalculates all dates. This has basically no effect on chain type.
 
 ---
 
@@ -210,8 +219,8 @@ You never need to type the `r`-prefixed field names directly.
 | `sched:due-1h` | `rscheduled:due-1h` | Same conversion rules |
 | `until:due+7d` | `runtil:due+7d` | Same conversion rules |
 
-The `r`-prefixed fields (`rlast`, `rindex`, `ranchor`) must be used directly —
-Taskwarrior rejects unknown field names before hooks can translate them.
+Absolute dates on templates are automatically converted to relative offsets
+from the anchor. This ensures instances always get correctly calculated dates.
 
 ---
 
