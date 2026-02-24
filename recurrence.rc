@@ -90,11 +90,6 @@ report.instances.labels=ID,R,I,L,Type,Pri,Description,Project,Tags,Due,Sched,Wai
 report.instances.sort=due+,rindex+
 report.instances.context=0
 
-#update other reports
-report.list.columns=id,rtemplate.indicator,start.age,entry.age,depends.indicator,priority,project,tags,recur.indicator,scheduled.countdown,due,until.remaining,description.count,urgency
-report.list.labels=ID,R,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg                                                                                  
-
-
 # Debug Mode
 # ----------
 # Uncomment to enable debug logging to ~/.task/hooks/recurrence/test/logs/recurrence_debug.log
