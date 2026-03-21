@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+import os as _os_timing, time as _time_module
+if _os_timing.environ.get('TW_TIMING'):
+    import atexit as _atexit
+    _t0 = _time_module.perf_counter()
+
+    def _report_timing(_f=__file__):
+        elapsed = (_time_module.perf_counter() - _t0) * 1000
+        import os.path as _osp
+        print(f"[timing] {_osp.basename(_f)}: {elapsed:.1f}ms", file=__import__('sys').stderr)
+
+    _atexit.register(_report_timing)
+
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
 Version: 2.7.4
@@ -82,19 +94,6 @@ else:
         pass
 
 # ============================================================================
-# Timing support - set TW_TIMING=1 to enable; zero overhead otherwise
-# ============================================================================
-if os.environ.get('TW_TIMING'):
-    import time as _time_module
-    import atexit as _atexit
-    _t0 = _time_module.perf_counter()
-
-    def _report_timing():
-        elapsed = (_time_module.perf_counter() - _t0) * 1000
-        print(f"[timing] {os.path.basename(__file__)}: {elapsed:.1f}ms", file=sys.stderr)
-
-    _atexit.register(_report_timing)
-
 # ============================================================================
 # Original Code
 # ============================================================================
@@ -161,6 +160,26 @@ class RecurrenceHandler:
     def add_message(self, message):
         """Add a message to be output to user"""
         self.messages.append(message)
+
+    def write_spool(self, spool):
+        """Write propagation spool for on-exit to execute.
+
+        Returns True on success, False on failure.
+        We can't subprocess 'task modify' directly from on-modify because
+        Taskwarrior holds a lock on pending.data during hook execution.
+        on-exit runs after the lock is released.
+        """
+        spool_path = os.path.expanduser('~/.task/recurrence_propagate.json')
+        try:
+            with open(spool_path, 'w') as f:
+                json.dump(spool, f)
+            if DEBUG:
+                debug_log(f"Wrote spool: {spool}", "ADD/MOD")
+            return True
+        except OSError as e:
+            if DEBUG:
+                debug_log(f"Failed to write spool: {e}", "ADD/MOD")
+            return False
     
     def add_error(self, error):
         """Add a blocking error"""
@@ -752,12 +771,7 @@ class RecurrenceHandler:
                         break
                 
                 if needs_update:
-                    # Write propagation instructions for on-exit to execute.
-                    # We can't subprocess 'task modify' here because Taskwarrior
-                    # holds a lock on pending.data during on-modify hook execution.
-                    # on-exit runs AFTER the lock is released.
                     instance_uuid = instance['uuid']
-                    
                     spool = {
                         'instance_uuid': instance_uuid,
                         'instance_rindex': instance.get('rindex', '?'),
@@ -765,24 +779,15 @@ class RecurrenceHandler:
                         'template_id': task_id,
                         'changes': list(recurrence_changes.keys())
                     }
-                    
-                    spool_path = os.path.expanduser('~/.task/recurrence_propagate.json')
-                    try:
-                        with open(spool_path, 'w') as f:
-                            json.dump(spool, f)
-                        if DEBUG:
-                            debug_log(f"Wrote propagation spool: {spool}", "ADD/MOD")
-                        
-                        field_list = ', '.join(recurrence_changes.keys())
+                    field_list = ', '.join(recurrence_changes.keys())
+                    if self.write_spool(spool):
                         self.add_message(
                             f"Template {task_id} modified: {field_list}\n"
                             f"Instance #{instance.get('rindex', '?')} will be synced."
                         )
-                    except OSError as e:
-                        if DEBUG:
-                            debug_log(f"Failed to write propagation spool: {e}", "ADD/MOD")
+                    else:
                         self.add_message(
-                            f"Template {task_id} modified: {', '.join(recurrence_changes.keys())}\n"
+                            f"Template {task_id} modified: {field_list}\n"
                             f"WARNING: Failed to queue instance sync. Manual sync may be needed."
                         )
                 else:
@@ -1035,21 +1040,12 @@ class RecurrenceHandler:
                         'template_id': template_id,
                         'changes': ['rlast (from instance rindex sync)']
                     }
-                    
-                    spool_path = os.path.expanduser('~/.task/recurrence_propagate.json')
-                    try:
-                        with open(spool_path, 'w') as f:
-                            json.dump(spool, f)
-                        if DEBUG:
-                            debug_log(f"Wrote template sync spool: rlast -> {new_rindex}", "ADD/MOD")
-                        
+                    if self.write_spool(spool):
                         self.add_message(
                             f"Instance {task_id} rindex changed: {old_rindex} -> {new_rindex}\n"
                             f"Dates recalculated. Template {template_id} rlast will be synced."
                         )
-                    except OSError as e:
-                        if DEBUG:
-                            debug_log(f"Failed to write template sync spool: {e}", "ADD/MOD")
+                    else:
                         self.add_message(
                             f"Instance {task_id} rindex changed: {old_rindex} -> {new_rindex}\n"
                             f"Dates recalculated. WARNING: Template sync failed.\n"

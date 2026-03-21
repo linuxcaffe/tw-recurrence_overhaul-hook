@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+import os as _os_timing, time as _time_module
+if _os_timing.environ.get('TW_TIMING'):
+    import atexit as _atexit
+    _t0 = _time_module.perf_counter()
+
+    def _report_timing(_f=__file__):
+        elapsed = (_time_module.perf_counter() - _t0) * 1000
+        import os.path as _osp
+        print(f"[timing] {_osp.basename(_f)}: {elapsed:.1f}ms", file=__import__('sys').stderr)
+
+    _atexit.register(_report_timing)
+
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
 Version: 2.7.4
@@ -47,19 +59,6 @@ def get_log_dir():
     return log_dir
 
 # ============================================================================
-# Timing support - set TW_TIMING=1 to enable; zero overhead otherwise
-# ============================================================================
-if os.environ.get('TW_TIMING'):
-    import time as _time_module
-    import atexit as _atexit
-    _t0 = _time_module.perf_counter()
-
-    def _report_timing():
-        elapsed = (_time_module.perf_counter() - _t0) * 1000
-        print(f"[timing] {os.path.basename(__file__)}: {elapsed:.1f}ms", file=sys.stderr)
-
-    _atexit.register(_report_timing)
-
 # ============================================================================
 # Original Code with Debug Enhancements
 # ============================================================================
@@ -1061,8 +1060,8 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '0.5.2'
-__date__ = '2026-02-11'
+__version__ = '2.7.4'
+__date__ = '2026-03-08'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")
@@ -1073,7 +1072,7 @@ if DEBUG:
 
 _original_debug_log = debug_log
 
-if None or tw_debug_level >= 2:
+if tw_debug_level >= 2:
     DEBUG_LOG_DIR = get_log_dir()
     DEBUG_SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
     try:
@@ -1081,23 +1080,21 @@ if None or tw_debug_level >= 2:
     except:
         script_name = Path(sys.argv[0]).stem if sys.argv else "script"
     DEBUG_LOG_FILE = DEBUG_LOG_DIR / f"{script_name}_debug_{DEBUG_SESSION_ID}.log"
-    
-    def debug_log(msg):
+
+    def debug_log(msg, prefix="COMMON"):
         """Enhanced debug with file logging"""
-        if None or tw_debug_level >= 2:
-            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-            log_line = f"{timestamp} [DEBUG] {msg}\n"
-            with open(DEBUG_LOG_FILE, "a") as f:
-                f.write(log_line)
-            _original_debug_log(msg)
-    
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        log_line = f"{timestamp} [DEBUG] {msg}\n"
+        with open(DEBUG_LOG_FILE, "a") as f:
+            f.write(log_line)
+        _original_debug_log(msg, prefix)
+
     with open(DEBUG_LOG_FILE, "w") as f:
         f.write("=" * 70 + "\n")
         f.write(f"Debug Session - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Script: {script_name}\n")
-        f.write(f"None: {None}\n")
         f.write(f"TW_DEBUG Level: {tw_debug_level}\n")
         f.write(f"Session ID: {DEBUG_SESSION_ID}\n")
         f.write("=" * 70 + "\n\n")
-    
+
     debug_log("Debug logging initialized")

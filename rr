@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+import os as _os_timing, time as _time_module
+if _os_timing.environ.get('TW_TIMING'):
+    import atexit as _atexit
+    _t0 = _time_module.perf_counter()
+
+    def _report_timing(_f=__file__):
+        elapsed = (_time_module.perf_counter() - _t0) * 1000
+        import os.path as _osp
+        print(f"[timing] {_osp.basename(_f)}: {elapsed:.1f}ms", file=__import__('sys').stderr)
+
+    _atexit.register(_report_timing)
+
 """
 Taskwarrior Recurrence Manager (rr.py)
 Companion tool for managing enhanced recurrence
@@ -9,12 +21,9 @@ Last Updated: 2026-01-10
 Usage:
     rr templates              # Show all templates with details
     rr template <uuid>        # Show specific template + its instances
-    rr instances <uuid>       # Show all instances of a template
     rr stats                  # Recurrence statistics
     rr check                  # Validate recurrence data integrity
-    rr repair                 # Fix orphaned instances and corrupted data
     rr stop <uuid>            # Stop a recurrence (delete template + instances)
-    rr trace <uuid>           # Show full recurrence history
 """
 
 # ============================================================================
@@ -29,6 +38,17 @@ import subprocess
 import json
 import argparse
 from collections import defaultdict
+
+# Import shared logic from recurrence common library
+_hooks_dir = os.path.expanduser('~/.task/hooks')
+if _hooks_dir not in sys.path:
+    sys.path.insert(0, _hooks_dir)
+
+try:
+    from recurrence_common_hook import spawn_instance, query_instances
+except ImportError:
+    spawn_instance = None
+    query_instances = None
 
 # Debug configuration (default 0, triggered by tw --debug=2)
 DEBUG_MODE = 0
@@ -79,19 +99,6 @@ else:
         pass
 
 # ============================================================================
-# Timing support - set TW_TIMING=1 to enable; zero overhead otherwise
-# ============================================================================
-if os.environ.get('TW_TIMING'):
-    import time as _time_module
-    import atexit as _atexit
-    _t0 = _time_module.perf_counter()
-
-    def _report_timing():
-        elapsed = (_time_module.perf_counter() - _t0) * 1000
-        print(f"[timing] {os.path.basename(__file__)}: {elapsed:.1f}ms", file=sys.stderr)
-
-    _atexit.register(_report_timing)
-
 # ============================================================================
 # Original Code
 # ============================================================================
@@ -219,11 +226,11 @@ class RecurrenceManager:
             desc = i.get('description', 'N/A')
             
             status_icon = {
-                'pending': 'â—‹',
-                'waiting': 'â—�',
-                'completed': 'â—�',
-                'deleted': 'âœ—'
-            }.get(status, '?')
+                'pending': '[ ]',
+                'waiting': '[w]',
+                'completed': '[x]',
+                'deleted': '[-]'
+            }.get(status, '[?]')
             
             print(f"{status_icon} #{idx:<4} {status:<10} task {i.get('id', 'N/A'):<4} {desc}")
             
@@ -287,40 +294,47 @@ class RecurrenceManager:
         
         for t in templates:
             uuid = t['uuid']
-            
+            desc = t.get('description', '(no description)')
+
             # Check for required fields
             if 'r' not in t:
-                issues.append(f"Template {uuid[:8]} missing 'r' field")
+                issues.append(f"Template {uuid[:8]} '{desc}' missing 'r' field")
             if 'type' not in t:
-                issues.append(f"Template {uuid[:8]} missing 'type' field")
+                issues.append(f"Template {uuid[:8]} '{desc}' missing 'type' field")
             if 'rlast' not in t:
-                issues.append(f"Template {uuid[:8]} missing 'rlast' field")
-            
+                issues.append(f"Template {uuid[:8]} '{desc}' missing 'rlast' field")
+
             # Check instances
             instances = self.get_instances(uuid)
             instance_indices = [float(i.get('rindex', 0)) for i in instances if 'rindex' in i]
-            
+
             if instances:
-                # Check for gaps in sequence
-                if instance_indices:
-                    max_idx = max(instance_indices)
-                    rlast = float(t.get('rlast', 0))
-                    
-                    if max_idx > rlast:
-                        issues.append(f"Template {uuid[:8]} rlast={rlast} but instance #{max_idx} exists")
-                    
-                    # Check for missing indices
-                    expected = set(range(1, int(max_idx) + 1))
-                    actual = set(int(i) for i in instance_indices)
-                    missing = expected - actual
-                    
-                    if missing:
-                        issues.append(f"Template {uuid[:8]} missing instance indices: {sorted(missing)}")
-                
-                # Check for orphaned instances
+                # Check pending instance is in sync with template rlast
+                pending = [i for i in instances if i.get('status') in ['pending', 'waiting']]
+                rlast = int(float(t.get('rlast', 0)))
+                for i in pending:
+                    rindex = int(float(i.get('rindex', 0)))
+                    if rindex != rlast:
+                        issues.append(
+                            f"Template {uuid[:8]} '{desc}' out of sync: "
+                            f"rlast={rlast} but pending instance is rindex={rindex}"
+                        )
+
+                # Check for orphaned instances (wrong rtemplate pointer)
                 for i in instances:
                     if i.get('rtemplate') != uuid:
-                        issues.append(f"Instance {i.get('uuid', 'N/A')[:8]} has wrong rtemplate")
+                        issues.append(f"Instance {i.get('uuid', 'N/A')[:8]} '{i.get('description', '')}' has wrong rtemplate")
+
+            # Check for childless template: no pending/waiting instance
+            if query_instances is not None:
+                pending = query_instances(uuid)
+                if not pending:
+                    task_id = t.get('id', '?')
+                    issues.append(
+                        f"Template '{t.get('description', uuid[:8])}' (task {task_id}) "
+                        f"has no pending instance\n"
+                        f"    -> fix: rr spawn {task_id}"
+                    )
         
         # Check for orphaned instances (instance with no template)
         all_instances = json.loads(self.run_task_command('rtemplate.any:', 'export') or '[]')
@@ -329,7 +343,7 @@ class RecurrenceManager:
             if template_uuid:
                 template = self.get_template(template_uuid)
                 if not template or template.get('status') != 'recurring':
-                    issues.append(f"Instance {i.get('uuid', 'N/A')[:8]} is orphaned (template deleted)")
+                    issues.append(f"Instance {i.get('uuid', 'N/A')[:8]} '{i.get('description', '')}' is orphaned (template deleted)")
         
         # Check for undeletable tasks (deleted/completed with 'r' field)
         deleted_tasks = json.loads(self.run_task_command('status:deleted', 'r.any:', 'export') or '[]')
@@ -342,7 +356,7 @@ class RecurrenceManager:
                     'status': task['status'],
                     'description': task.get('description', 'N/A')
                 })
-                issues.append(f"Template {task['uuid'][:8]} is {task['status']} but still has 'r' field (undeletable)")
+                issues.append(f"Template {task['uuid'][:8]} '{task.get('description', '')}' is {task['status']} but still has 'r' field (undeletable)")
         
         if not issues:
             print("No issues found! Recurrence data is healthy.\n")
@@ -378,39 +392,148 @@ class RecurrenceManager:
                     print(f"\nFixed {fixed} task(s). They can now be purged with: task purge\n")
                 else:
                     print("Cancelled. Tasks remain undeletable.\n")
-    def cmd_stop(self, uuid):
-        """Stop a recurrence by deleting template and all instances"""
-        template = self.get_template(uuid)
-        if not template:
-            print(f"Template {uuid} not found.")
+    def cmd_status(self):
+        """Quick diagnostic: template/instance counts and any childless templates"""
+        if query_instances is None:
+            print("[!] recurrence_common_hook.py not found -- install recurrence-overhaul first.")
             return
-        
-        instances = self.get_instances(uuid)
-        pending_instances = [i for i in instances if i.get('status') in ['pending', 'waiting']]
-        
-        print(f"\nTemplate: {template.get('description')}")
-        print(f"This will delete:")
-        print(f"  - 1 template")
-        print(f"  - {len(pending_instances)} pending instance(s)")
-        print(f"Completed instances will remain in history.\n")
-        
-        response = input("Are you sure? (yes/no): ")
-        if response.lower() != 'yes':
-            print("Cancelled.")
+
+        templates = self.get_templates()
+        if not templates:
+            print("No recurring templates found.")
             return
-        
-        # Delete pending instances
-        for i in pending_instances:
-            subprocess.run(['task', 'rc.confirmation=off', i['uuid'], 'delete'],
-                         capture_output=True)
-        
-        # Delete template
-        subprocess.run(['task', 'rc.confirmation=off', uuid, 'delete'],
-                     capture_output=True)
-        
-        print(f"\nâœ“ Stopped recurrence: {template.get('description')}")
-        print(f"  - Deleted template")
-        print(f"  - Deleted {len(pending_instances)} pending instance(s)\n")
+
+        childless = []
+        for t in templates:
+            if not query_instances(t['uuid']):
+                childless.append(t)
+
+        n_t = len(templates)
+        n_i = n_t - len(childless)
+        ok = len(childless) == 0
+        marker = "[OK]" if ok else "[!] "
+
+        print(f"Templates: {n_t}   Instances: {n_i}   {marker}")
+
+        if childless:
+            print()
+            for t in childless:
+                print(f"  Childless: '{t.get('description')}' (task {t.get('id', '?')})  -> rr spawn {t.get('id', '?')}")
+
+    def cmd_dupe(self, id_or_uuid):
+        """Duplicate a template (or demote an instance to a plain task)"""
+        output = self.run_task_command(str(id_or_uuid), 'export')
+        if not output:
+            print(f"ERROR: Could not find task '{id_or_uuid}'.")
+            return
+
+        tasks = json.loads(output)
+        if not tasks:
+            print(f"ERROR: No task found for '{id_or_uuid}'.")
+            return
+
+        source = tasks[0]
+        is_instance = 'rtemplate' in source
+        is_template = source.get('status') == 'recurring' and 'r' in source
+
+        if not is_instance and not is_template:
+            print(f"ERROR: Task {id_or_uuid} is not a recurring template or instance.")
+            return
+
+        # Fields never copied regardless
+        STRIP = {'uuid', 'id', 'entry', 'modified', 'status', 'end', 'urgency', 'rlast'}
+        if is_instance:
+            STRIP |= {'rtemplate', 'rindex'}
+
+        # Build task add command
+        cmd = ['task', 'rc.confirmation=off', 'rc.verbose=new-id', 'add',
+               source['description']]
+
+        annotations = []
+        for field, value in source.items():
+            if field in STRIP or field == 'description':
+                continue
+            if field == 'tags' and isinstance(value, list):
+                cmd.extend([f'+{tag}' for tag in value])
+            elif field == 'annotations' and isinstance(value, list):
+                annotations = value  # handled after creation
+            elif field == 'depends' and value:
+                deps = ','.join(value) if isinstance(value, list) else value
+                cmd.append(f'depends:{deps}')
+            elif isinstance(value, (str, int, float)):
+                cmd.append(f'{field}:{value}')
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"[!] task add failed: {result.stderr.strip()}")
+            return
+
+        # Extract new task ID for annotations
+        new_id = None
+        for line in result.stdout.splitlines():
+            if 'Created task' in line:
+                import re
+                m = re.search(r'Created task (\d+)', line)
+                if m:
+                    new_id = m.group(1)
+                    break
+
+        if new_id and annotations:
+            for ann in annotations:
+                if isinstance(ann, dict) and 'description' in ann:
+                    subprocess.run(
+                        ['task', 'rc.hooks=off', 'rc.confirmation=off',
+                         'rc.verbose=nothing', new_id, 'annotate', ann['description']],
+                        capture_output=True
+                    )
+
+        desc = source.get('description', '')
+        if is_template:
+            print(f"[+] Duplicated template '{desc}' -- on-exit will spawn instance #1.")
+        else:
+            print(f"[+] Instance '{desc}' duplicated as standalone task (rtemplate/rindex stripped).")
+
+    def cmd_spawn(self, id_or_uuid):
+        """Spawn a missing instance for a childless template"""
+        if spawn_instance is None or query_instances is None:
+            print("ERROR: recurrence_common_hook.py not found in ~/.task/hooks/")
+            print("  Ensure recurrence-overhaul is installed.")
+            return
+
+        output = self.run_task_command(str(id_or_uuid), 'export')
+        if not output:
+            print(f"ERROR: Could not find task '{id_or_uuid}'.")
+            return
+
+        tasks = json.loads(output)
+        if not tasks:
+            print(f"ERROR: No task found for '{id_or_uuid}'.")
+            return
+
+        template = tasks[0]
+        if template.get('status') != 'recurring':
+            print(f"ERROR: Task {id_or_uuid} is not a recurring template "
+                  f"(status: {template.get('status', 'unknown')}).")
+            print("  Use 'rr templates' to list templates.")
+            return
+
+        # Check for existing pending/waiting instance
+        existing = query_instances(template['uuid'])
+        if existing:
+            inst = existing[0]
+            print(f"[!] Template '{template.get('description')}' already has a pending instance:")
+            print(f"    #{inst.get('rindex', '?')} (task {inst.get('id', '?')}) -- nothing to do.")
+            return
+
+        # Spawn next instance (rlast+1, or 1 if never spawned)
+        next_index = int(template.get('rlast') or 0) + 1
+        print(f"Spawning instance #{next_index} for '{template.get('description')}'...")
+
+        msg = spawn_instance(template, next_index)
+        if msg:
+            print(f"[+] {msg}")
+        else:
+            print("[!] Spawn failed. Check template fields with 'rr template <uuid>'.")
 
 
 def main():
@@ -430,14 +553,21 @@ def main():
     
     # stats command
     subparsers.add_parser('stats', help='Show statistics')
-    
+
     # check command
     subparsers.add_parser('check', help='Check data integrity')
-    
-    # stop command
-    stop_parser = subparsers.add_parser('stop', help='Stop recurrence')
-    stop_parser.add_argument('uuid', help='Template UUID')
-    
+
+    # status command
+    subparsers.add_parser('status', help='Quick diagnostic: counts and childless templates')
+
+    # spawn command
+    spawn_parser = subparsers.add_parser('spawn', help='Spawn missing instance for a childless template')
+    spawn_parser.add_argument('id', help='Template task ID or UUID')
+
+    # dupe command
+    dupe_parser = subparsers.add_parser('dupe', help='Duplicate a template or demote an instance to plain task')
+    dupe_parser.add_argument('id', help='Template or instance task ID or UUID')
+
     args = parser.parse_args()
     
     if not args.command:
@@ -454,8 +584,12 @@ def main():
         manager.cmd_stats()
     elif args.command == 'check':
         manager.cmd_check()
-    elif args.command == 'stop':
-        manager.cmd_stop(args.uuid)
+    elif args.command == 'status':
+        manager.cmd_status()
+    elif args.command == 'spawn':
+        manager.cmd_spawn(args.id)
+    elif args.command == 'dupe':
+        manager.cmd_dupe(args.id)
     else:
         parser.print_help()
 
