@@ -1,20 +1,8 @@
 #!/usr/bin/env python3
-import os as _os_timing, time as _time_module
-if _os_timing.environ.get('TW_TIMING'):
-    import atexit as _atexit
-    _t0 = _time_module.perf_counter()
-
-    def _report_timing(_f=__file__):
-        elapsed = (_time_module.perf_counter() - _t0) * 1000
-        import os.path as _osp
-        print(f"[timing] {_osp.basename(_f)}: {elapsed:.1f}ms", file=__import__('sys').stderr)
-
-    _atexit.register(_report_timing)
-
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 2.7.5
-Date: 2026-04-02
+Version: 2.7.4
+Date: 2026-02-08
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:
 Every active template MUST have exactly one pending instance.
@@ -82,6 +70,19 @@ else:
         pass
 
 # ============================================================================
+# Timing support - set TW_TIMING=1 to enable; zero overhead otherwise
+# ============================================================================
+if os.environ.get('TW_TIMING'):
+    import time as _time_module
+    import atexit as _atexit
+    _t0 = _time_module.perf_counter()
+
+    def _report_timing():
+        elapsed = (_time_module.perf_counter() - _t0) * 1000
+        print(f"[timing] {os.path.basename(__file__)}: {elapsed:.1f}ms", file=sys.stderr)
+
+    _atexit.register(_report_timing)
+
 # ============================================================================
 # Original Code
 # ============================================================================
@@ -94,8 +95,7 @@ from datetime import datetime
 import os
 
 # Add hooks directory to Python path for importing common module
-TASK_DIR = os.environ.get('TW_TASK_DIR', os.path.expanduser('~/.task'))
-hooks_dir = os.path.join(TASK_DIR, 'hooks')
+hooks_dir = os.path.expanduser('~/.task/hooks')
 if hooks_dir not in sys.path:
     sys.path.insert(0, hooks_dir)
 
@@ -214,7 +214,7 @@ class RecurrenceSpawner:
         # Process propagation spool from on-modify (template -> instance sync).
         # on-modify can't subprocess 'task modify' because Taskwarrior holds a
         # file lock during hook execution. on-exit runs after the lock is released.
-        spool_path = os.path.join(TASK_DIR, 'recurrence_propagate.json')
+        spool_path = os.path.expanduser('~/.task/recurrence_propagate.json')
         if os.path.exists(spool_path):
             try:
                 with open(spool_path, 'r') as f:
@@ -394,68 +394,17 @@ class RecurrenceSpawner:
         
         return feedback
 
-    def reconcile_orphaned_templates(self, processed_uuids=None):
-        """Reconcile templates whose instance was silently auto-deleted by Taskwarrior.
-
-        Taskwarrior does NOT send auto-expired tasks (until: date reached) to on-exit
-        hook stdin.  The reactive approach in process_tasks() therefore never sees the
-        deletion and never spawns the replacement.  This method is the safety net: it
-        queries every recurring template, and for any that currently has no pending or
-        waiting instance it spawns the next one.
-
-        Args:
-            processed_uuids: set of template UUIDs already handled by process_tasks()
-                             (avoids double-spawning on the same run)
-        """
-        feedback = []
-        if processed_uuids is None:
-            processed_uuids = set()
-
-        try:
-            result = subprocess.run(
-                ['task', 'rc.hooks=off', 'status:recurring', 'export'],
-                capture_output=True, text=True, check=False
-            )
-            if not result.stdout.strip():
-                return feedback
-            templates = json.loads(result.stdout.strip())
-        except (subprocess.CalledProcessError, json.JSONDecodeError, Exception):
-            return feedback
-
-        for template in templates:
-            template_uuid = template.get('uuid')
-            if not template_uuid or template_uuid in processed_uuids:
-                continue
-
-            instances = query_instances(template_uuid)
-            if instances:
-                continue  # Has an active instance — nothing to do
-
-            # No active instance found.  Spawn the next one.
-            last_idx = int(template.get('rlast', '0'))
-            next_idx = last_idx + 1
-
-            if DEBUG:
-                debug_log(
-                    f"Reconcile: template {template_uuid} has no active instance "
-                    f"(rlast={last_idx}), spawning #{next_idx}",
-                    "EXIT"
-                )
-
-            msg = spawn_instance(template, next_idx)
-            if msg:
-                feedback.append(msg)
-
-        return feedback
-
 
 def main():
     """Main entry point for on-exit"""
     lines = sys.stdin.readlines()
-
+    
     if DEBUG:
         debug_log(f"Received {len(lines)} lines of input", "EXIT")
-
+    
+    if not lines:
+        sys.exit(0)
+    
     try:
         tasks = [json.loads(line) for line in lines if line.strip()]
         if DEBUG:
@@ -467,29 +416,18 @@ def main():
         if DEBUG:
             debug_log(f"JSON decode error: {e}", "EXIT")
         sys.exit(0)
-
+    
     spawner = RecurrenceSpawner()
-
-    # Collect UUIDs of templates whose instances were processed reactively,
-    # so reconcile_orphaned_templates() can skip them (avoids double-spawning).
-    processed_uuids = set()
-    for task in tasks:
-        if task.get('status') in ['completed', 'deleted'] and 'rtemplate' in task:
-            processed_uuids.add(task['rtemplate'])
-
-    # Reactive pass: handle completions/deletions that DID arrive on stdin
+    
+    # Process tasks (reactive spawning - only for tasks that were modified)
     feedback = spawner.process_tasks(tasks)
-
-    # Reconciliation pass: catch instances silently deleted by Taskwarrior's
-    # until: auto-expiry (those tasks never appear on on-exit stdin).
-    feedback += spawner.reconcile_orphaned_templates(processed_uuids)
-
+    
     for msg in feedback:
         print(msg)
-
+    
     if DEBUG:
         debug_log(f"on-exit completed with {len(feedback)} feedback messages", "EXIT")
-
+    
     sys.exit(0)
 
 

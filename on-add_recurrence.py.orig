@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-import os as _os_timing, time as _time_module
-if _os_timing.environ.get('TW_TIMING'):
-    import atexit as _atexit
-    _t0 = _time_module.perf_counter()
-
-    def _report_timing(_f=__file__):
-        elapsed = (_time_module.perf_counter() - _t0) * 1000
-        import os.path as _osp
-        print(f"[timing] {_osp.basename(_f)}: {elapsed:.1f}ms", file=__import__('sys').stderr)
-
-    _atexit.register(_report_timing)
-
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
 Version: 2.7.4
@@ -94,6 +82,19 @@ else:
         pass
 
 # ============================================================================
+# Timing support - set TW_TIMING=1 to enable; zero overhead otherwise
+# ============================================================================
+if os.environ.get('TW_TIMING'):
+    import time as _time_module
+    import atexit as _atexit
+    _t0 = _time_module.perf_counter()
+
+    def _report_timing():
+        elapsed = (_time_module.perf_counter() - _t0) * 1000
+        print(f"[timing] {os.path.basename(__file__)}: {elapsed:.1f}ms", file=sys.stderr)
+
+    _atexit.register(_report_timing)
+
 # ============================================================================
 # Original Code
 # ============================================================================
@@ -111,8 +112,7 @@ import subprocess
 PROPAGATING = os.environ.get('RECURRENCE_PROPAGATING', '') == '1'
 
 # Add hooks directory to Python path for importing common module
-TASK_DIR = os.environ.get('TW_TASK_DIR', os.path.expanduser('~/.task'))
-hooks_dir = os.path.join(TASK_DIR, 'hooks')
+hooks_dir = os.path.expanduser('~/.task/hooks')
 if hooks_dir not in sys.path:
     sys.path.insert(0, hooks_dir)
 
@@ -170,7 +170,7 @@ class RecurrenceHandler:
         Taskwarrior holds a lock on pending.data during hook execution.
         on-exit runs after the lock is released.
         """
-        spool_path = os.path.join(TASK_DIR, 'recurrence_propagate.json')
+        spool_path = os.path.expanduser('~/.task/recurrence_propagate.json')
         try:
             with open(spool_path, 'w') as f:
                 json.dump(spool, f)
