@@ -213,5 +213,132 @@ class TestRecurrenceUntilExpiry(TaskTestCase):
                          "No instances should spawn after template is deleted")
 
 
+class TestRecurrenceChainedAndTypes(TaskTestCase):
+    """Tests for chained recurrence type and type normalisation."""
+
+    def get_taskrc_extras(self):
+        return RECURRENCE_UDAS
+
+    def setUp(self):
+        super().setUp()
+        os.environ['TW_TASK_DIR'] = self.t.taskdata
+        for fname in ('on-add_recurrence.py', 'on-modify_recurrence.py',
+                      'on-exit_recurrence.py', 'recurrence_common_hook.py'):
+            src = os.path.join(HOOK_DIR, fname)
+            if os.path.exists(src):
+                self.t.link_hook(fname, src)
+
+    def tearDown(self):
+        os.environ.pop('TW_TASK_DIR', None)
+        super().tearDown()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _add_recur(self, desc='recur task', period='1d', type_str=None, **extras):
+        """Add a recurring task. Pass type_str for ty: field; extras as key:val."""
+        args = ['add', desc, '+test', f'r:{period}', 'due:today']
+        if type_str:
+            args.append(f'ty:{type_str}')
+        for k, v in extras.items():
+            args.append(f'{k}:{v}')
+        self.t.task(*args)
+        _, out, _ = self.t.task('status:recurring', 'export')
+        templates = json.loads(out) if out.strip() else []
+        self.assertGreater(len(templates), 0, "No recurring template created")
+        return templates[0]
+
+    def _pending_instances(self):
+        _, out, _ = self.t.task('rtemplate.any:', 'status:pending', 'export')
+        return json.loads(out) if out.strip() else []
+
+    # ------------------------------------------------------------------
+    # Type normalisation
+    # ------------------------------------------------------------------
+
+    def test_type_c_normalised_to_chain(self):
+        """ty:c shorthand is stored as 'chain'"""
+        tmpl = self._add_recur(type_str='c')
+        self.assertEqual(tmpl.get('type'), 'chain')
+
+    def test_type_ch_normalised_to_chain(self):
+        """ty:ch abbreviation is stored as 'chain'"""
+        tmpl = self._add_recur(type_str='ch')
+        self.assertEqual(tmpl.get('type'), 'chain')
+
+    def test_type_chain_stored_as_chain(self):
+        """ty:chain is stored as 'chain'"""
+        tmpl = self._add_recur(type_str='chain')
+        self.assertEqual(tmpl.get('type'), 'chain')
+
+    def test_type_p_normalised_to_period(self):
+        """ty:p shorthand is stored as 'period'"""
+        tmpl = self._add_recur(type_str='p')
+        self.assertEqual(tmpl.get('type'), 'period')
+
+    def test_default_type_is_period(self):
+        """Omitting ty: defaults to 'period'"""
+        tmpl = self._add_recur()
+        self.assertEqual(tmpl.get('type'), 'period')
+
+    # ------------------------------------------------------------------
+    # Chained recurrence behaviour
+    # ------------------------------------------------------------------
+
+    def test_chained_first_instance_has_rindex_1(self):
+        """Chained recurrence creates first instance with rindex=1"""
+        self._add_recur(type_str='c', period='1d')
+        instances = self._pending_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['rindex'], '1')
+
+    def test_chained_completion_anchors_due_to_completion_time(self):
+        """Completing a chained instance sets next due = completion_time + period"""
+        period_sec = 5
+        self._add_recur(type_str='c', period=f'{period_sec}s')
+        inst1 = self._pending_instances()[0]
+
+        before_complete = time.time()
+        self.t.task(str(inst1['id']), 'done')
+        after_complete = time.time()
+
+        instances = self._pending_instances()
+        self.assertEqual(len(instances), 1, "Expected 1 instance after chained completion")
+
+        from datetime import datetime, timezone
+        due2_str = instances[0].get('due', '')
+        self.assertTrue(due2_str, "Instance 2 should have a due date")
+        due2_epoch = datetime.strptime(due2_str, '%Y%m%dT%H%M%SZ') \
+                             .replace(tzinfo=timezone.utc).timestamp()
+
+        # due2 should be ≈ completion_time + period_sec (10s tolerance for slow CI)
+        self.assertGreater(due2_epoch, before_complete + period_sec - 10,
+                           f"due2 too early: {due2_epoch}")
+        self.assertLess(due2_epoch, after_complete + period_sec + 10,
+                        f"due2 too late: {due2_epoch}")
+
+    def test_chained_multiple_completions_increment_rindex(self):
+        """Three successive chained completions produce rindex 1, 2, 3 in order"""
+        self._add_recur(type_str='c', period='5s')
+        for expected_rindex in ('1', '2', '3'):
+            instances = self._pending_instances()
+            self.assertEqual(len(instances), 1)
+            self.assertEqual(instances[0]['rindex'], expected_rindex,
+                             f"Expected rindex={expected_rindex}, got {instances[0].get('rindex')}")
+            self.t.task(str(instances[0]['id']), 'done')
+
+    def test_rend_stops_spawning(self):
+        """rend: stops spawning when next due would exceed it (r:7d, rend:+3d)"""
+        # period=7d, rend=+3d — next due after completion = today+7d >> rend
+        self._add_recur(type_str='c', period='7d', rend='+3d')
+        instances = self._pending_instances()
+        self.assertEqual(len(instances), 1, "Expected first instance to be created")
+        self.t.task(str(instances[0]['id']), 'done')
+        new_instances = self._pending_instances()
+        self.assertEqual(len(new_instances), 0,
+                         "No new instance should spawn when next due exceeds rend")
+
+
 if __name__ == '__main__':
     unittest.main(testRunner=TAPTestRunner())

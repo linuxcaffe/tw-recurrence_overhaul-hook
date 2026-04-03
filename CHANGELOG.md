@@ -24,9 +24,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   one via `spawn_instance(template, rlast + 1)`. A `processed_uuids` set
   prevents double-spawning when the deletion *did* arrive on stdin (manual
   deletes, completions).
-- `test/test-recurrence-until-expiry.py` — 8-test regression suite covering
-  the fixed bug and surrounding behaviour. Requires the
-  awesome-taskwarrior test framework (`tw-test`).
+- `test/test-recurrence-until-expiry.py` — 17-test suite (2 classes)
+  covering the fixed bug, chained recurrence behaviour, and type
+  normalisation. Requires the awesome-taskwarrior test framework (`tw-test`).
+  - `TestRecurrenceUntilExpiry` (8 tests): regression suite for the
+    `until:` auto-expiry bug fixed in v2.7.5.
+  - `TestRecurrenceChainedAndTypes` (9 tests): type normalisation
+    (`ty:c`/`ty:ch`/`ty:chain` → `"chain"`; `ty:p` → `"period"`; default
+    `"period"`), chained first-instance creation, completion-anchored due
+    date, multi-step rindex increment, and `rend:` stop-spawning.
 
 ### Changed
 - `on-exit_recurrence.py`: version bumped 2.7.4 → 2.7.5 / 2.8.0.
