@@ -5,7 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [2.8.0] — 2026-04-02
+## [2.9.1] — 2026-10-15
+
+### Fixed
+- **Daylight-saving drift.** Dates are stored in UTC and periods were added in UTC, so the
+  local time of day moved by an hour whenever a period crossed a DST change: a template due
+  at midnight in January gave 01:00 instances from March to November, and a summer template
+  gives winter instances at 23:00 on the previous day (the wrong date). New `add_local()`
+  counts whole days on the local calendar (the part shorter than a day stays elapsed time);
+  periodic and chained anchors and relative wait/scheduled/until/rend all use it.
+  Tests: `test/test_dst.py` (America/Toronto). Existing instances keep their dates.
+
+ — 2026-04-02
 
 *Distributed via `tw -I recurrence-overhaul`. Internally developed as 2.7.5.*
 

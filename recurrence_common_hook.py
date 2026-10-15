@@ -589,6 +589,22 @@ def format_date(dt):
     return dt.strftime('%Y%m%dT%H%M%SZ')
 
 
+def add_local(dt, delta):
+    """Add delta to dt (naive UTC, as parse_date returns), counting whole days on the local calendar.
+
+    Taskwarrior stores UTC. Adding days in UTC moves the local time of day by an hour across a
+    daylight-saving change (a midnight template in January gave 01:00 instances in October, and a
+    summer one gives winter instances at 23:00 the day before). Whole days keep the local time of
+    day; the part shorter than a day is added as elapsed time.
+    """
+    from datetime import timezone
+    days = int(delta / timedelta(days=1))           # whole days, toward zero
+    rest = delta - timedelta(days=days)
+    wall = dt.replace(tzinfo=timezone.utc).astimezone().replace(tzinfo=None) + timedelta(days=days)
+    utc = wall.astimezone(timezone.utc).replace(tzinfo=None)   # naive = local wall time here
+    return utc + rest
+
+
 def parse_relative_date(date_str, anchor_date=None):
     """Parse relative date expression like 'due-2d' or 'sched+1w'
     
@@ -649,7 +665,7 @@ def parse_relative_date(date_str, anchor_date=None):
         return (ref_field, delta)
     
     # If anchor provided (on-exit case), calculate absolute date
-    return anchor_date + delta
+    return add_local(anchor_date, delta)
 
 
 def is_template(task):
@@ -859,10 +875,10 @@ def spawn_instance(template, rindex, completion_time=None):
         if rtype == 'chain':
             # Chain: completion_time + period
             base = completion_time or datetime.utcnow()
-            anchor_date = base + recur_delta
+            anchor_date = add_local(base, recur_delta)
         else:
             # Period: template + (rindex - 1) * period
-            anchor_date = template_anchor + (recur_delta * (rindex - 1))
+            anchor_date = add_local(template_anchor, recur_delta * (rindex - 1))
             
             # Validate: For PERIODIC only, rindex > 1 means instance anchor MUST be after template anchor
             # (Chain can be earlier if completed early)

@@ -120,7 +120,7 @@ try:
     from recurrence_common_hook import (
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
-        get_anchor_field_name, debug_log, DEBUG,
+        get_anchor_field_name, debug_log, DEBUG, add_local,
         query_instances, check_instance_count, query_task,
         # Validation functions
         strip_legacy_recurrence, validate_recurrence_integers,
@@ -888,7 +888,7 @@ class RecurrenceHandler:
                 # Calculate new anchor date for this instance
                 if rtype == 'period':
                     # Periodic: template_anchor + (rindex - 1) * period
-                    new_anchor = template_anchor + (r_delta * (rindex - 1))
+                    new_anchor = add_local(template_anchor, r_delta * (rindex - 1))
                 else:
                     # Chained: Can't recalculate without completion time
                     # Just update the anchor field name if it changed
@@ -1006,10 +1006,10 @@ class RecurrenceHandler:
                 
                 if r_delta and template_anchor:
                     if rtype == 'period':
-                        new_anchor = template_anchor + (r_delta * (new_rindex - 1))
+                        new_anchor = add_local(template_anchor, r_delta * (new_rindex - 1))
                     else:
                         # Chained: best approximation without completion time
-                        new_anchor = template_anchor + (r_delta * (new_rindex - 1))
+                        new_anchor = add_local(template_anchor, r_delta * (new_rindex - 1))
                     
                     modified[actual_field] = format_date(new_anchor)
                     
