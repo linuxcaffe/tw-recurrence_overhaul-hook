@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased] — calendar periods (branch `calendar-periods`)
+## [3.0.0] — 2026-10-19 — calendar periods
 
 Plan: nb `tw:docs/tw-calendar-periods-plan.md`.
 

@@ -425,4 +425,4 @@ and bidirectional sync — is working and in daily use.
 - Language: Python
 - Requires: Taskwarrior 2.6.2, Python 3
 - Files: 3 Python files + 1 symlink + 1 config
-- Version: 2.11.1
+- Version: 3.0.0

@@ -1,6 +1,6 @@
 # Taskwarrior Enhanced Recurrence - Developer Documentation
 
-**Version:** 2.11.1
+**Version:** 3.0.0
 **Last Updated:** 2026-10-19
 
 How the hooks work and what will break if you don't know it. User documentation is in
