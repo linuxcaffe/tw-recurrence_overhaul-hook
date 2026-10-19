@@ -11,7 +11,11 @@ An enhanced recurrence system for Taskwarrior, implemented as hooks.
 
 - Chained recurrence — next task due relative to when you *complete* the last one
 - Periodic recurrence — fixed schedule, same as built-in but without the mask problem
-- Relative dates — `wait:due-7d`, `sched:due-2h` just work
+- Calendar-true periods — `r:1mo` lands on the same day every month (Jan 31 → Feb 28 → Mar 31),
+  not every 30 days
+- Position rules — `r:m:2tue` (second Tuesday), `r:m:lbd` (last business day),
+  `r:w:mon..fri`, `r:y:04-12`, combined with `+` and `|`
+- Relative dates — `wait:due-7d`, `sched:due-2h` just work; `rwait:due-1mo` steps a calendar month
 - Attribute-agnostic — all template fields (UDAs, annotations, tags, project, priority) copy to instances automatically
 - Comprehensive validation — catches errors before they become data problems
 - Handy aliases — type `ty:c` instead of `type:chain`
@@ -24,7 +28,9 @@ An enhanced recurrence system for Taskwarrior, implemented as hooks.
 
 Taskwarrior's built-in recurrence has real limitations: it only supports
 periodic (time-based) recurrence, the mask system grows unbounded, and there's
-no way to say "mow the lawn 7 days after I actually do it."
+no way to say "mow the lawn 7 days after I actually do it." Nor "the second
+Tuesday" or "the last business day"; and a duration such as `1mo` is stored as
+30 days, so a monthly bill drifts a few days earlier every month.
 
 This hook system replaces built-in recurrence with a template-instance model.
 Templates store the recurrence rules. Instances are the actual tasks you see
@@ -51,9 +57,14 @@ Based on the
   exercise — anything where "every N days" means "after I actually do it."
 
 - **Periodic recurrence** (`ty:p`, default)
-  Fixed schedule from the template. Instance #2 is always template date +
-  period, regardless of when you complete #1. Good for bills, meetings,
-  appointments.
+  Fixed schedule from the template. Instance #N is the template's date plus
+  N−1 periods (calendar months for `1mo`), or the rule's Nth date for a
+  position rule, regardless of when you complete the others. Good for bills,
+  meetings, appointments.
+
+- **Rule**
+  The template's `r`: a period ("every 2 weeks", `r:2w`) or a position rule
+  ("on the second Tuesday", `r:m:2tue`). See [The r rule](#the-r-rule).
 
 - **Anchor**
   The date field that recurrence calculations are based on — either `due`
@@ -73,8 +84,8 @@ Based on the
 chmod +x recurrence-overhaul.install  # then run it
 recurrence-overhaul.install
 ```
-copies hooks, library file, rc config and README
-to directories under ~/.task, sets chmod and simlink
+copies the hooks, the two library files, `rr`, the rc config and the README
+to directories under ~/.task, sets permissions and makes the on-modify symlink
 
 ### Option 2) Via [awesome-taskwarrior](https://github.com/linuxcaffe/awesome-taskwarrior)
 
@@ -87,17 +98,18 @@ tw -I recurrence-overhaul
 ```bash
 cd ~/.task/hooks
 
-# Copy the three hook files
-cp on-add_recurrence.py on-exit_recurrence.py recurrence_common_hook.py .
+# Copy the two hooks and the two libraries
+cp on-add_recurrence.py on-exit_recurrence.py recurrence_common_hook.py recurrence_rules.py .
 
-# Make hooks executable (not the library)
+# Make the hooks executable (the libraries needn't be)
 chmod +x on-add_recurrence.py on-exit_recurrence.py
 
 # Create the on-modify symlink
 ln -s on-add_recurrence.py on-modify_recurrence.py
 
-# Install configuration
+# Install configuration, and the rr tool
 cp recurrence.rc ~/.task/config/
+cp rr ~/.task/scripts/ && chmod +x ~/.task/scripts/rr
 ```
 
 Add to `~/.taskrc`:
@@ -109,8 +121,8 @@ include ~/.task/config/recurrence.rc
 Verify:
 
 ```bash
-task show | grep uda.type
-task diag # see hooks section
+task _get rc.uda.r.type   # string
+task diag                 # see the hooks section
 ```
 
 ---
@@ -267,13 +279,16 @@ You never need to type the `r`-prefixed field names directly.
 |----------|-------------|-------|
 | `ty:c` | `type:chain` | Also: `ty:ch`, `ty:chai`, `ty:chain` |
 | `ty:p` | `type:period` | Also: `ty:pe`, `ty:per`. Default if omitted |
-| `wait:due-2d` | `rwait:due-2d` | Relative dates stay relative |
-| `wait:2026-03-15` | `rwait:due+Xs` | Absolute dates auto-convert to relative |
-| `sched:due-1h` | `rscheduled:due-1h` | Same conversion rules |
-| `until:due+7d` | `runtil:due+7d` | Same conversion rules |
+| `wait:due-2d` | `rwait:due-172800s` | Kept as an offset from the anchor |
+| `wait:2026-03-15` | `rwait:due-Xs` | Absolute dates convert to offsets too |
+| `sched:due-1h` | `rscheduled:due-3600s` | Same conversion |
+| `until:due+7d` | `runtil:due+604800s` | Same conversion |
 
-Absolute dates on templates are automatically converted to relative offsets
-from the anchor. This ensures instances always get correctly calculated dates.
+Taskwarrior turns `wait:`, `sched:` and `until:` into dates before the hook sees
+them, and the hook stores each as an offset from the anchor, in seconds, so every
+instance gets the same offset from its own date. For calendar months, type the
+template field yourself: `rwait:due-1mo` is kept as typed and steps back a
+calendar month from each instance's date (`wait:due-1mo` would be 30 days).
 
 ---
 
@@ -299,7 +314,7 @@ from the anchor. This ensures instances always get correctly calculated dates.
 The hook validates input and blocks errors before they corrupt data.
 
 **Blocked with error:**
-- Template without anchor date (due or scheduled)
+- Template without anchor date: "anchor date required" (`due:` or `sched:`)
 - Template with wait date after anchor
 - Template with until date before anchor
 - An `r` the hook can't read (with the reason: `'1m' is ambiguous: 1mo for months, 1min for
@@ -308,6 +323,16 @@ The hook validates input and blocks errors before they corrupt data.
 - `rend` date in the past
 - Adding `r` to an existing instance
 - Changing `rtemplate` on an instance
+
+**Corrected, with a message:**
+- A position rule's template dated off its rule moves to the rule's first date
+  after it: "Moved due from Thu 2026-11-12 to Tue 2026-12-08, the first 'm:2tue'
+  on or after it."
+
+**Noted (nothing changed):**
+- A month period started on a short month's last day (`r:1mo due:2026-11-30`
+  repeats on the 30th): "For every month end use r:m:-1"
+- A new template starting in the past: its first instance is overdue at once
 
 **Warned and cleaned up:**
 - Legacy fields (`recur`, `mask`, `imask`, `parent`) — stripped automatically
@@ -320,14 +345,15 @@ The hook validates input and blocks errors before they corrupt data.
 
 ### Architecture
 
-Three files, one symlink:
+Four files, one symlink:
 
 | File | Hook type | Purpose |
 |------|-----------|---------|
 | `on-add_recurrence.py` | on-add | Template creation, validation |
 | `on-modify_recurrence.py` | on-modify | Symlink → on-add. Template/instance modification |
 | `on-exit_recurrence.py` | on-exit | Instance spawning, spool processing |
-| `recurrence_common_hook.py` | library | Shared utilities, date parsing, spawn logic |
+| `recurrence_common_hook.py` | library | Shared utilities, validation, spawn logic |
+| `recurrence_rules.py` | library | What `r` means: periods and position rules, and the dates they give |
 
 ### Template-instance lifecycle
 
@@ -337,8 +363,9 @@ Three files, one symlink:
 3. on-exit: Sees new template, spawns instance #1
 4. User: task 42 done
 5. on-exit: Sees completed instance, spawns instance #2
-   - Chain: due = completion_time + 7d
-   - Period: due = template_due + 7d
+   - Chain: due = completion_time + 7d (a month counts as 30 days)
+   - Period: due = template_due + (N−1) × period (calendar months for 1mo),
+     or the rule's Nth date (r:m:2tue)
 6. Repeat from step 4
 ```
 
@@ -379,7 +406,7 @@ understanding exactly what happened and why.
 
 ```bash
 task show | grep hooks     # Should show hooks=1
-ls -la ~/.task/hooks/on-*  # Should be executable (except _hook.py library)
+ls -la ~/.task/hooks/on-*  # on-add and on-exit executable; on-modify a symlink to on-add
 ```
 
 **No instances created?**
@@ -394,7 +421,19 @@ cat ~/.task/recurrence_debug.log
 **Wrong due dates?**
 
 For chained: check completion time in debug log — next due = completion + period.
-For periodic: verify template's anchor date — instance N due = template + (N-1) × period.
+For periodic: verify template's anchor date — instance N due = template + (N-1) × period,
+or the rule's Nth date for a position rule.
+
+**A monthly task still drifts a few days a month?**
+
+Its template was made before 3.0.1, when Taskwarrior stored `r:1mo` as `P30D`
+(30 days). Change it: `task <template> mod r:1mo`. The current instance moves
+to its calendar date at once, and later ones follow.
+
+**"Invalid recurrence r:…"?**
+
+The hook reads `r` itself and says what it couldn't read, for example
+`'1m' is ambiguous: 1mo for months, 1min for minutes`. See [The r rule](#the-r-rule).
 
 **Legacy field warnings?**
 
@@ -407,8 +446,9 @@ see a warning if you explicitly add a legacy field like `recur:weekly`.
 ## Project status
 
 Active development. Core functionality — template creation, instance spawning,
-chained and periodic recurrence, validation, attribute-agnostic copying,
-and bidirectional sync — is working and in daily use.
+chained and periodic recurrence, calendar periods and position rules (3.0.1),
+validation, attribute-agnostic copying, and bidirectional sync — is working
+and in daily use.
 
 ---
 
@@ -424,5 +464,5 @@ and bidirectional sync — is working and in daily use.
 - License: MIT
 - Language: Python
 - Requires: Taskwarrior 2.6.2, Python 3
-- Files: 3 Python files + 1 symlink + 1 config
-- Version: 3.0.0
+- Files: 2 hooks + 2 libraries + 1 symlink + 1 config + `rr`
+- Version: 3.0.1

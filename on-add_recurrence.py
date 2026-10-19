@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 3.0.0
+Version: 3.0.1
 Date: 2026-10-19
 
 Handles both adding new recurring tasks and modifying existing ones with

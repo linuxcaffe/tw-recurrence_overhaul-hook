@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1] — 2026-10-19
+
+Documentation only.
+
+### Changed
+- README in line with 3.0.0 throughout, not just "The r rule": TL;DR and core concepts
+  mention calendar periods and position rules; instance N's date is described as the rule
+  gives it; the aliases table shows what is really stored (`wait:due-2d` → `rwait:due-172800s`:
+  Taskwarrior resolves it first) and when to type `rwait:due-1mo`; install, architecture and
+  metadata list `recurrence_rules.py`; validation lists the moved-anchor message and the
+  notes; troubleshooting covers a pre-3.0 template that still drifts (`mod r:1mo`) and
+  "Invalid recurrence".
+
 ## [3.0.0] — 2026-10-19 — calendar periods
 
 Plan: nb `tw:docs/tw-calendar-periods-plan.md`.
