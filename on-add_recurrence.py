@@ -13,8 +13,8 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 2.7.4
-Date: 2026-02-08
+Version: 2.11.1
+Date: 2026-10-19
 
 Handles both adding new recurring tasks and modifying existing ones with
 sophisticated modification tracking and user feedback.
@@ -22,7 +22,7 @@ sophisticated modification tracking and user feedback.
 Features:
 - Template creation with type normalization
 - Smart modification detection and handling
-- Bidirectional rindex ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¯Ã‚Â¿Ã‚Â½ rlast synchronization
+- Bidirectional rindex ↔ rlast synchronization
 - Anchor change detection with automatic rwait/rscheduled updates
 - Time machine functionality (rlast/rindex modifications)
 - User-friendly aliases (wait->rwait, scheduled->rscheduled, until->runtil)
@@ -106,11 +106,6 @@ import os
 import re
 import subprocess
 
-# Re-entrancy guard: when propagating template changes to instance,
-# the subprocess 'task modify' triggers on-modify again. This env var
-# tells the second invocation to pass through without cascading.
-PROPAGATING = os.environ.get('RECURRENCE_PROPAGATING', '') == '1'
-
 # Add hooks directory to Python path for importing common module
 TASK_DIR = os.environ.get('TW_TASK_DIR', os.path.expanduser('~/.task'))
 hooks_dir = os.path.join(TASK_DIR, 'hooks')
@@ -122,11 +117,11 @@ try:
         normalize_type, parse_duration, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
         get_anchor_field_name, debug_log, DEBUG, add_local,
-        query_instances, check_instance_count, query_task,
+        query_instances, query_task,
         # Validation functions
         strip_legacy_recurrence, validate_recurrence_integers,
         validate_template_requirements, validate_date_logic,
-        validate_instance_integrity, validate_no_instance_fields_on_template,
+        validate_no_instance_fields_on_template,
         validate_no_r_on_instance, validate_no_rtemplate_change,
         validate_no_absolute_dates_on_template,
         # Attribute categories
@@ -706,8 +701,8 @@ class RecurrenceHandler:
         """Handle modifications to a template with auto-sync to instance
         
         Template modifications fall into two categories:
-        1. Recurrence fields ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Auto-sync parallel changes to current instance
-        2. Non-recurrence fields ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Inform user with suggested command
+        1. Recurrence fields → Auto-sync parallel changes to current instance
+        2. Non-recurrence fields → Inform user with suggested command
         
         Args:
             original: Original task state
@@ -719,7 +714,7 @@ class RecurrenceHandler:
         if DEBUG:
             debug_log(f"Handling template modification: {modified.get('description')}", "ADD/MOD")
         
-        # Expand user-friendly aliases (waitÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢rwait, lastÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢rlast, tyÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢type, etc.)
+        # Expand user-friendly aliases (wait→rwait, last→rlast, ty→type, etc.)
         expansions = self.expand_template_aliases(original, modified)
         
         
@@ -963,9 +958,9 @@ class RecurrenceHandler:
         """Handle modifications to an instance with auto-sync to template
         
         Instance modifications:
-        - rindex change ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Auto-sync template rlast + recalculate dates (TIME MACHINE)
-        - rtemplate change ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ REJECT (not allowed)
-        - Non-recurrence fields ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Inform with suggested command to apply to template
+        - rindex change → Auto-sync template rlast + recalculate dates (TIME MACHINE)
+        - rtemplate change → REJECT (not allowed)
+        - Non-recurrence fields → Inform with suggested command to apply to template
         
         Args:
             original: Original task state
@@ -1126,22 +1121,6 @@ class RecurrenceHandler:
 def main():
     """Main hook entry point"""
     if not lines:
-        sys.exit(0)
-    
-    # Re-entrancy guard: if we're being called from a template->instance propagation,
-    # just pass the modified task through without any recurrence logic.
-    # This prevents infinite recursion when handle_template_modification() subprocess
-    # calls 'task modify' on the instance, which triggers this hook again.
-    if PROPAGATING:
-        if DEBUG:
-            debug_log("PROPAGATION pass-through (re-entrant call, skipping recurrence logic)", "ADD/MOD")
-        if IS_ON_ADD:
-            print(json.dumps(json.loads(lines[0])))
-        else:
-            if len(lines) >= 2:
-                print(json.dumps(json.loads(lines[1])))
-            elif lines:
-                print(json.dumps(json.loads(lines[0])))
         sys.exit(0)
     
     handler = RecurrenceHandler()

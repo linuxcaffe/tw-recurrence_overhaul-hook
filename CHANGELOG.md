@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.11.1] — 2026-10-19
+
+Release C of the 2026-10-19 review: tidying, no change in behaviour.
+
+### Removed
+- Dead code: `delete_instance`, `check_instance_count` and `validate_instance_integrity`
+  (never called; ~100 lines), and on-modify's `RECURRENCE_PROPAGATING` pass-through (nothing
+  ever set it: on-exit's own modifies run with hooks off).
+
+### Changed
+- One version everywhere: VERSION, meta, README, recurrence.rc and the hook headers all say
+  2.11.1 (they said 2.6.2 to 2.11.0). `rr` keeps its own version.
+- Mojibake in on-add's comments (`ÃƒÂ¢Ã¢â‚¬Â…`) is back to `→` and `↔`.
+- DEVELOPERS.md rewritten for how the hooks work now: one snapshot per on-exit and why
+  (handleUntil), the spool as a list, what on-modify exports and when, footnote dedup, tests,
+  dry runs on real data, releasing with `links=`. It linked a SPOOL_PATTERN.md that never
+  existed and recommended `PYTHONPYCACHEPREFIX=/dev/null`, which recompiles the standard
+  library on every hook start.
+- test/: the until-expiry suite is `test_until_expiry.py` (pytest collects it; it finds the
+  hooks beside itself and skips if tw's test framework isn't installed). Old notes moved to
+  dev/notes/ (not published); test/logs/ is no longer tracked (.gitignore already said so).
+
 ## [2.11.0] — 2026-10-19
 
 Release B of the 2026-10-19 review: no exports where none are needed.

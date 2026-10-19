@@ -1,313 +1,140 @@
 # Taskwarrior Enhanced Recurrence - Developer Documentation
 
-**Version:** 2.6.2  
-**Status:** Production Ready ✓  
-**Last Updated:** 2026-02-08
+**Version:** 2.11.1
+**Last Updated:** 2026-10-19
+
+How the hooks work and what will break if you don't know it. User documentation is in
+[README.md](README.md), history in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
-## Quick Links
-
-- **[Spool File Pattern](SPOOL_PATTERN.md)** - Deep dive on template↔instance propagation
-- **[Installation](#installation)** - Get started quickly
-- **[Debugging](#debugging)** - Troubleshooting guide
-
----
-
-## Table of Contents
-
-1. [Architecture Overview](#architecture-overview)
-2. [File Structure](#file-structure)
-3. [Data Model](#data-model)
-4. [Hook Behavior](#hook-behavior)
-5. [Critical Rules](#critical-rules)
-6. [Installation](#installation)
-7. [Debugging](#debugging)
-8. [Known Issues](#known-issues)
-9. [Development Workflow](#development-workflow)
-
----
-
-## Architecture Overview
-
-### Three-File System
+## Files
 
 ```
 ~/.task/hooks/
-├── on-add_recurrence.py           (executable) - Creates templates, handles modifications
-├── on-exit_recurrence.py          (executable) - Spawns instances, processes spool
-├── recurrence_common_hook.py      (library)    - Shared utilities (NOT executable)
-└── on-modify_recurrence.py        (symlink)    → on-add_recurrence.py
+├── on-add_recurrence.py       (executable) templates: create, validate, modify; writes the spool
+├── on-modify_recurrence.py    (symlink)    → on-add_recurrence.py (the installer makes it)
+├── on-exit_recurrence.py      (executable) applies the spool, spawns instances
+└── recurrence_common_hook.py  (library, not executable) dates, durations, validation,
+                                            instance_dates / plan_next / spawn_instance
+~/.task/scripts/rr                          the recurrence report/repair tool
+~/.task/config/recurrence.rc                UDAs and reports
 ```
 
-### Core Principles
+on-add and on-modify are one script, told apart by how many lines arrive on stdin (one for an
+add, two for a modify).
 
-1. **on-add/on-modify** - Template creation, modification detection, spool writing
-2. **on-exit** - Instance spawning, spool processing (ONLY place that modifies other tasks)
-3. **Users** - Task deletion (hooks never delete tasks)
-4. **Spool file** - Deferred execution for template↔instance synchronization
+## Data model
 
-### Data Flow
+**Template** (`status:recurring`): `r` (period), `type` (chain | period), `ranchor` (due |
+sched), `rlast` (the last index spawned; a new template starts at `0`), the anchor date (`due`
+or `scheduled`), and optionally `rwait`, `rscheduled`, `runtil` (relative to the anchor, e.g.
+`due-2d`) and `rend`. Absolute wait/scheduled/until given on a template are converted to their
+relative forms.
 
-```
-User: task add "Gym" r:7d due:tomorrow
-  ↓
-on-add: Creates template (status:recurring, rlast:1)
-  ↓
-on-exit: Spawns instance #1 (status:pending, rindex:1)
-  ↓
-User: task <id> done
-  ↓
-on-exit: Spawns instance #2 (rindex:2), updates template rlast:2
-```
+**Instance** (pending or waiting): `rtemplate` (the template's UUID), `rindex` (its number),
+and every other template attribute copied, with real dates computed from the relative ones.
 
-See **[SPOOL_PATTERN.md](SPOOL_PATTERN.md)** for complete propagation flow details.
+Each kind's attributes are forbidden on the other; the hooks strip misplaced ones.
 
----
+**Instance N's anchor:** #1 takes the template's anchor. For `period`, #N is the anchor plus
+(N−1)·r, so dates never drift with completion times. For `chain`, #N is the completion time of
+#N−1 plus r. Date arithmetic is DST-safe (`add_local`).
 
-## File Structure
+## The rules
 
-### on-add_recurrence.py (1041 lines)
+- **One-to-one:** every active template has exactly one pending or waiting instance.
+- **rlast** equals the highest rindex spawned.
+- **Only on-exit spawns** (`spawn_instance`, the one place instances are created), and only
+  on-exit modifies other tasks. on-modify may change only the task it was given, so changes
+  meant for another task (template → instance sync, instance rindex → template rlast) go in
+  the spool for on-exit to apply.
+- **Users delete.** The hooks never delete tasks; deleting a template tells you how to delete
+  its pending instance.
 
-**Purpose:** Template creation and modification handler, spool writer
+## on-exit
 
-**Key Features:**
-- Template creation with type normalization (c→chain, p→period)
-- User-friendly aliases (wait→rwait, ty→type, last→rlast)
-- Modification tracking with detailed user feedback
-- Spool file writing for template↔instance propagation
-- Attribute validation and cleanup
+1. **Spool**: `~/.task/recurrence_propagate.json`, a JSON list of
+   `{instance_uuid, updates, instance_rindex, description, changes}`. Each entry is applied
+   with `task <uuid> modify` (hooks off), then the file is removed. An old single-dict spool
+   still works.
+2. **One snapshot**: one export of every template and every active instance
+   (`status:recurring or ((status:pending or status:waiting) and rtemplate.any:)`).
+3. **One decision per template**: a template with no active instance gets its next one,
+   whatever removed the last (done, delete, until: expiry, seen or not). `plan_next` picks the
+   index: rlast+1, and for a periodic template it skips indexes whose until has already passed
+   (one "Skipped N expired occurrences" message). Past `rend` nothing is spawned, and that is
+   said once, only when this command finished the last instance.
+4. The tasks on stdin (what this command changed) supply the completion time for chains, and
+   tell "this command ended a template" apart from "a template ended long ago".
 
-**What it does NOT do:**
-- ❌ No instance spawning (on-exit does that)
-- ❌ No task deletion
-- ❌ No direct modification of other tasks (uses spool instead)
+### Why one snapshot (the double-spawn bug, fixed in 2.10.0)
 
-### on-exit_recurrence.py (361 lines)
+**Every `task export` runs Taskwarrior's handleUntil**, which deletes tasks whose `until` has
+passed; with `rc.hooks=off` that happens silently. So any export the hooks run can change the
+data under them: two passes that each exported saw different worlds, and both spawned. Keep it
+to one export per run and decide from it. Custom reports, `count` and `_ids` expire tasks too.
 
-**Purpose:** Instance spawning and spool processing
+## on-modify
 
-**What it does:**
-- **FIRST:** Processes spool file (template↔instance sync)
-- Spawns instances when templates created or instances complete
-- Updates template rlast after spawning
-- Checks rend dates before spawning
+- **Template modified**: recurrence fields (`r`, `type`, `ranchor`, `rlast`, `rend`, `rwait`,
+  `rscheduled`, `runtil`) are synced to the active instance through the spool; changes to
+  project, priority, tags or description get a suggested `task N mod …` for the instance.
+  Changing `rlast` is the *time machine*: the instance takes that index and its dates.
+- **Instance modified**: an `rindex` change recalculates its dates and spools the template's
+  `rlast`; project, priority or tags changes get a suggested command for the template. Only
+  these look the template up (an export); start, stop, annotate and other edits run no `task`.
+- **Instance completed or deleted**: cleanup only, no `task` at all. Taskwarrior prints
+  "Completed task N 'desc'." and on-exit announces the next instance.
+- **Template completed or deleted**: its `r` is removed so it can be purged; on-exit reports it.
 
-### recurrence_common_hook.py (535 lines)
+## Output
 
-**Purpose:** Shared utility library
-
-**Key Functions:**
-- Date/duration parsing (7d, 1w, due-2d, etc.)
-- Type normalization
-- Task querying
-- Debug logging
-
----
-
-## Data Model
-
-### Template (status:recurring)
-
-**Required:**
-- `status:recurring`, `r` (period), `type` (chain|period)
-- `rlast` (last spawned index), `ranchor` (due|sched)
-- `due` OR `scheduled` (one required)
-
-**Optional:**
-- `rwait`, `rscheduled`, `runtil` (relative dates)
-- `rend` (stop spawning after)
-- `project`, `priority`, `tags`
-
-**Forbidden:**
-- ❌ `rtemplate`, `rindex` (instance-only)
-
-### Instance (status:pending/etc)
-
-**Required:**
-- `rtemplate` (parent UUID), `rindex` (sequence)
-- `due` OR `scheduled`
-- `+RECURRING` tag (auto-added)
-
-**Inherited:**
-- `project`, `priority`, `tags`
-- `wait`, `scheduled`, `until` (calculated from template)
-
-**Forbidden:**
-- ❌ `r`, `type`, `rlast`, `ranchor`, etc. (template-only)
-
----
-
-## Hook Behavior
-
-### on-add: New Task with r Field
-
-```bash
-task add "Gym" r:7d due:tomorrow ty:c
-```
-
-Creates template with `status:recurring`, `rlast:1`, normalized type.  
-Output: "Created recurrence template. First instance will be generated on exit."
-
-### on-modify: Time Machine
-
-```bash
-task 72 mod rlast:5
-```
-
-Writes spool file with instance updates.  
-Output: "Instance #1 will be synced."
-
-### on-exit: Spool Processing + Spawning
-
-1. Reads spool file (if exists)
-2. Executes modifications
-3. Spawns new instances as needed
-
-Output: "Instance #1 synced (rlast)."
-
----
-
-## Critical Rules
-
-### The Invariant
-**rlast MUST equal highest active rindex**
-
-### One-to-One Rule
-**Every active template has exactly ONE pending instance**
-
-### Attribute Separation
-Templates and instances have separate attribute sets. Hooks auto-remove misplaced attributes.
-
-### Responsibility Boundaries
-- **Spawning:** ONLY on-exit
-- **Modification:** ONLY on-exit (via spool)
-- **Deletion:** ONLY users
-
----
-
-## Installation
-
-```bash
-# 1. Copy files
-cp on-add_recurrence.py ~/.task/hooks/
-cp on-exit_recurrence.py ~/.task/hooks/
-cp recurrence_common_hook.py ~/.task/hooks/
-
-# 2. Set permissions
-chmod +x ~/.task/hooks/on-add_recurrence.py
-chmod +x ~/.task/hooks/on-exit_recurrence.py
-chmod -x ~/.task/hooks/recurrence_common_hook.py
-
-# 3. Create symlink
-cd ~/.task/hooks
-ln -sf on-add_recurrence.py on-modify_recurrence.py
-
-# 4. Verify
-ls -la ~/.task/hooks/on-*.py
-```
-
-Add UDAs to `~/.taskrc` (see recurrence.rc).
-
-Test:
-```bash
-export DEBUG_RECURRENCE=1
-task add "Test" r:1d due:tomorrow
-```
-
----
+Messages go to stdout as footnotes. Taskwarrior shows each distinct footnote once per
+command, so messages name their task ("Instance #1 of 'x' synced"): three identical lines
+would read as one. `rc.verbose=nothing` hides them.
 
 ## Debugging
 
-### Enable Debug Logging
+```bash
+DEBUG_RECURRENCE=1 task …          # appends to ~/.task/recurrence_debug.log
+tw --debug=2 task …                # per-script logs in ~/.task/logs/debug/
+TW_TIMING=1 task …                 # each hook's run time on stderr
+```
+
+A spool left behind after a command (`~/.task/recurrence_propagate.json`) means on-exit
+didn't run or failed.
+
+## Tests
 
 ```bash
-export DEBUG_RECURRENCE=1
+cd test
+python3 -m pytest -q
 ```
 
-Creates `~/.task/recurrence_debug.log`.
+- `test_hooks_sandbox.py`: the hooks under real Taskwarrior in a throwaway task dir (on-modify
+  symlinked as installed). A `task` wrapper on PATH logs the hooks' own calls, so tests can
+  pin how many exports a command costs.
+- `test_until_expiry.py`: lifecycle, type normalisation, chains, rend, until-expiry
+  reconcile. It needs tw's test framework (`~/.task/awesome-taskwarrior/lib`) and is skipped
+  without it.
+- `test_dst.py`: date arithmetic across DST changes.
 
-### Common Patterns
+**Dry run on real data** before installing: copy `~/.task/*.data` into a temp dir, with an rc
+that does `include ~/.taskrc` and then overrides `data.location` and `hooks.location`. A
+minimal rc won't do: values such as `priority:3` are valid only with your own config, and
+spawns fail on them.
 
-**Template creation:**
-```
-ADD/MOD: Creating template
-EXIT: spawning first instance
-```
+## Releasing
 
-**Time machine:**
-```
-ADD/MOD: Wrote propagation spool
-EXIT: Processing propagation spool
-EXIT: Propagation successful
-```
+Bump `VERSION`, the meta's `version=`, `__version__` and the file headers together, add a
+CHANGELOG entry, then run `make-awesome.py --install` and `--push`. The meta's
+`links=on-modify_recurrence.py:on-add_recurrence.py:hook` makes the installer create the
+symlink. Never ship on-modify as a file: the download would write through an existing
+symlink and overwrite on-add.
 
-### Troubleshooting
+## Known limitations
 
-**Hook not running?**
-- Check executable: `ls -la ~/.task/hooks/on-*.py`
-- Check enabled: `task show | grep hooks`
-
-**Time machine not working?**
-- Check debug log: `grep spool ~/.task/recurrence_debug.log`
-- Verify no stale spool: `ls ~/.task/recurrence_propagate.json`
-
-### Python Bytecode Prevention
-
-```bash
-# Add to ~/.bashrc
-export PYTHONDONTWRITEBYTECODE=1
-export PYTHONPYCACHEPREFIX=/dev/null
-```
-
----
-
-## Known Issues
-
-### rwait Propagation
-Modifying template `rwait` doesn't calculate instance updates.  
-**Workaround:** Manually update instance.
-
----
-
-## Development Workflow
-
-```bash
-# Test changes
-rm -rf ~/.task/hooks/__pycache__
-cp on-add_recurrence.py ~/.task/hooks/
-chmod +x ~/.task/hooks/on-add_recurrence.py
-export DEBUG_RECURRENCE=1
-task add "Test" r:1d due:tomorrow
-
-# Check results
-tail -50 ~/.task/recurrence_debug.log
-```
-
----
-
-## What v2.6.2 Has
-
-✅ Template creation  
-✅ Instance spawning  
-✅ Periodic and chained recurrence  
-✅ **Spool file pattern** (template↔instance sync)  
-✅ **Time machine** (rlast modification)  
-✅ **Bidirectional sync** (rindex ↔ rlast)  
-✅ User-friendly aliases  
-✅ Comprehensive feedback  
-✅ Debug logging  
-✅ Attribute validation  
-✅ Python bytecode prevention  
-
----
-
-## References
-
-- **[SPOOL_PATTERN.md](SPOOL_PATTERN.md)** - Technical deep dive
-- **[README.md](README.md)** - User documentation
-- `~/.task/recurrence_debug.log` - Runtime log
-
----
-
-**Remember:** Smart coding over quick fixes!
+- `r` is a duration UDA, and Taskwarrior stores `1mo` as `P30D` and `1y` as `P365D` before
+  the hook sees it, so monthly and yearly templates drift. A plan to make `r` a string is
+  pending.

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Tests for recurrence hook until: auto-expiry reconciliation.
+Recurrence lifecycle under tw's test framework: first instance, done/delete spawn the next,
+until: expiry, type normalisation, chains, rend.
 
-Bug: Taskwarrior silently auto-deletes tasks whose until: date has passed.
-     These auto-expired tasks never appear in on-exit hook stdin.
-     The reactive spawn logic in process_tasks() therefore never fires.
-
-Fix (v2.7.5): reconcile_orphaned_templates() scans all status:recurring templates
-     on every on-exit call and spawns the next instance for any with no
-     pending/waiting instance.
+until: expiry: Taskwarrior deletes tasks whose until has passed (handleUntil) inside any
+export or report, and with hooks off nobody hears of it. on-exit therefore doesn't rely on
+seeing the expiry: every run takes one snapshot and gives any template with no active
+instance its next one (2.10.0; earlier a reactive pass and a reconcile pass could both spawn).
 
 Usage:
-    python3 test-recurrence-until-expiry.py
+    python3 -m pytest -q test_until_expiry.py      (or python3 test_until_expiry.py, TAP)
+
+Needs tw's test framework (~/.task/awesome-taskwarrior/lib); skipped without it.
 """
 
 import sys
@@ -21,9 +21,12 @@ import json
 import time
 
 sys.path.insert(0, os.path.expanduser('~/.task/awesome-taskwarrior/lib'))
-from test_framework import TaskTestCase, TAPTestRunner
+try:
+    from test_framework import TaskTestCase, TAPTestRunner
+except ImportError:
+    raise unittest.SkipTest("tw's test framework isn't installed (~/.task/awesome-taskwarrior/lib)")
 
-HOOK_DIR = os.path.expanduser('~/dev/tw-recurrence_overhaul-hook')
+HOOK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Recurrence UDAs — mirrors recurrence.rc
 RECURRENCE_UDAS = {

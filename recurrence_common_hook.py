@@ -13,8 +13,8 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 2.11.0
-Date: 2026-02-08
+Version: 2.11.1
+Date: 2026-10-19
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
 This module contains date/duration parsing, type normalization, and debug logging.
@@ -313,40 +313,6 @@ def validate_date_logic(task, is_template=False):
                 debug_log(f"INFO: scheduled after due (allowed): sched={task['scheduled']}, due={task['due']}", "VALIDATION")
     
     return errors
-
-
-def validate_instance_integrity(task):
-    """Validate instance has proper template link
-    
-    Args:
-        task: Task dictionary (instance)
-        
-    Returns:
-        List of warning messages (empty if valid)
-    """
-    warnings = []
-    
-    if 'rtemplate' not in task:
-        return []  # Not an instance
-    
-    # Check if template exists
-    template_uuid = task['rtemplate']
-    template = query_task(template_uuid)
-    
-    if not template:
-        warnings.append(
-            f"WARNING: Instance references non-existent template {template_uuid}\n"
-            f"  Template may have been deleted. To fix:\n"
-            f"  - Delete orphaned instance: task {task.get('uuid', 'UUID')} delete\n"
-            f"  - Or remove link: task {task.get('uuid', 'UUID')} modify rtemplate:"
-        )
-    elif template.get('status') not in ['recurring']:
-        warnings.append(
-            f"WARNING: Instance references template with status={template.get('status')}\n"
-            f"  Template should have status:recurring"
-        )
-    
-    return warnings
 
 
 def validate_no_instance_fields_on_template(task):
@@ -785,38 +751,6 @@ def query_task(uuid):
         return None
 
 
-def check_instance_count(template_uuid):
-    """Check instance count for a specific template (targeted checking)
-    
-    This is the ONLY way to check instances - never check all templates globally!
-    
-    Args:
-        template_uuid: Template UUID to check
-        
-    Returns:
-        Tuple: (status, data)
-            - ('missing', None): No instances exist
-            - ('ok', instance): Exactly one instance exists
-            - ('multiple', instances): Multiple instances exist (corruption)
-    """
-    instances = query_instances(template_uuid)
-    
-    if len(instances) == 0:
-        if DEBUG:
-            debug_log(f"Instance check for {template_uuid}: MISSING (0 found)", "COMMON")
-        return ('missing', None)
-    
-    elif len(instances) == 1:
-        if DEBUG:
-            debug_log(f"Instance check for {template_uuid}: OK (1 found)", "COMMON")
-        return ('ok', instances[0])
-    
-    else:
-        if DEBUG:
-            debug_log(f"Instance check for {template_uuid}: MULTIPLE ({len(instances)} found - CORRUPTION)", "COMMON")
-        return ('multiple', instances)
-
-
 def instance_dates(template, rindex, completion_time=None):
     """The dates instance rindex of template gets: ({field: datetime}, ended).
 
@@ -1023,42 +957,8 @@ def spawn_instance(template, rindex, completion_time=None):
         return None
 
 
-def delete_instance(instance_uuid, instance_id=None):
-    """Delete an instance task
-    
-    Args:
-        instance_uuid: Instance UUID to delete
-        instance_id: Optional task ID for logging
-        
-    Returns:
-        True if successful, False otherwise
-    """
-    import subprocess
-    
-    if DEBUG:
-        debug_log(f"Deleting instance {instance_id or instance_uuid}", "COMMON")
-    
-    try:
-        subprocess.run(
-            ['task', 'rc.hooks=off', 'rc.confirmation=off', instance_uuid, 'delete'],
-            capture_output=True,
-            check=True
-        )
-        
-        if DEBUG:
-            debug_log(f"Instance {instance_id or instance_uuid} deleted successfully", "COMMON")
-        
-        return True
-    
-    except subprocess.CalledProcessError as e:
-        if DEBUG:
-            debug_log(f"Failed to delete instance {instance_id or instance_uuid}: {e}", "COMMON")
-        
-        return False
-
-
 # Version info
-__version__ = '2.11.0'
+__version__ = '2.11.1'
 __date__ = '2026-10-19'
 
 if DEBUG:
