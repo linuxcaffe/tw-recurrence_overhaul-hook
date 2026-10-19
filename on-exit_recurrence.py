@@ -101,10 +101,7 @@ if hooks_dir not in sys.path:
 
 try:
     from recurrence_common_hook import (
-        normalize_type, parse_duration, parse_date, format_date,
-        parse_relative_date, is_template, is_instance,
-        get_anchor_field_name, debug_log, DEBUG,
-        spawn_instance, query_instances
+        parse_date, debug_log, DEBUG, spawn_instance, plan_next
     )
 except ImportError as e:
     # Fallback error handling
@@ -117,379 +114,147 @@ if DEBUG:
     debug_log("on-exit hook started", "EXIT")
 
 
+SPOOL_PATH = os.path.join(TASK_DIR, 'recurrence_propagate.json')
+
+
+def task_export(*filter_args):
+    """Tasks matching filter_args (hooks off), [] on any failure. Note that every `task export`
+    also deletes tasks whose until has passed (Taskwarrior's handleUntil), silently."""
+    try:
+        r = subprocess.run(['task', 'rc.hooks=off', 'rc.verbose=nothing'] + list(filter_args) + ['export'],
+                           capture_output=True, text=True, check=False)
+        return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else []
+    except (OSError, ValueError) as e:
+        if DEBUG:
+            debug_log(f"export {filter_args} failed: {e}", "EXIT")
+        return []
+
+
 class RecurrenceSpawner:
-    """Spawns new recurrence instances"""
+    """Keeps every active template with exactly one pending or waiting instance.
+
+    One snapshot (templates + active instances), then one decision per template: a template
+    with no active instance gets its next one, whatever removed the last (done, delete, until:
+    expiry seen or unseen). Deciding once from one snapshot is what prevents double spawns: the
+    hooks' own exports expire tasks silently, so separate passes saw different worlds."""
     
     def __init__(self):
         self.now = datetime.utcnow()
-    
-    def get_template(self, uuid):
-        """Fetch template task by UUID"""
-        if DEBUG:
-            debug_log(f"Attempting to fetch template: {uuid}")
-        
-        # Try method 1: Direct UUID export
+
+    def process_spool(self):
+        """Apply the edits on-modify queued (it can't modify other tasks itself): a list of
+        {instance_uuid, updates, ...}; an older single-dict spool still works."""
+        if not os.path.exists(SPOOL_PATH):
+            return []
         try:
-            result = subprocess.run(
-                ['task', 'rc.hooks=off', uuid, 'export'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            with open(SPOOL_PATH) as f:
+                spool = json.load(f)
+        except (OSError, ValueError) as e:
             if DEBUG:
-                debug_log(f"Method 1 returncode: {result.returncode}")
-                debug_log(f"Method 1 stderr: {result.stderr}")
-            
-            lines = [line for line in result.stdout.strip().split('\n') if line]
-            if lines:
-                # Parse the JSON array
-                tasks = json.loads(result.stdout.strip())
-                if tasks and len(tasks) > 0:
-                    template = tasks[0]
-                    if DEBUG:
-                        debug_log(f"Template fetched via method 1: {template.get('description')}, status={template.get('status')}")
-                    return template
-                else:
-                    if DEBUG:
-                        debug_log("Method 1: Empty task array")
-        except subprocess.CalledProcessError as e:
-            if DEBUG:
-                debug_log(f"Method 1 CalledProcessError: returncode={e.returncode}")
-                debug_log(f"  stderr: {e.stderr}")
-        except json.JSONDecodeError as e:
-            if DEBUG:
-                debug_log(f"Method 1 JSONDecodeError: {e}")
-        except Exception as e:
-            if DEBUG:
-                debug_log(f"Method 1 exception: {type(e).__name__}: {e}")
-        
-        # Try method 2: Filter by UUID with status:recurring
+                debug_log(f"Unreadable spool: {e}", "EXIT")
+            spool = []
         try:
-            result = subprocess.run(
-                ['task', 'rc.hooks=off', f'uuid:{uuid}', 'status:recurring', 'export'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            if DEBUG:
-                debug_log(f"Method 2 returncode: {result.returncode}")
-            
-            tasks = json.loads(result.stdout.strip())
-            if tasks and len(tasks) > 0:
-                template = tasks[0]
-                if DEBUG:
-                    debug_log(f"Template fetched via method 2: {template.get('description')}")
-                return template
-        except Exception as e:
-            if DEBUG:
-                debug_log(f"Method 2 exception: {type(e).__name__}: {e}")
-        
-        if DEBUG:
-            debug_log("All template fetch methods failed")
-        return None
-    
-    def check_rend(self, template, new_date):
-        """Check if new_date exceeds recurrence end date (rend)"""
-        if 'rend' not in template:
-            return False
-        
-        rend_str = template['rend']
-        anchor_field = template.get('ranchor', 'due')
-        actual_field = get_anchor_field_name(anchor_field)
-        anchor_date = parse_date(template.get(actual_field))
-        rend_date = parse_relative_date(rend_str, anchor_date)
-        
-        if not rend_date:
-            rend_date = parse_date(rend_str)
-        
-        if rend_date and new_date > rend_date:
-            return True
-        
-        return False
-    
-    def process_tasks(self, tasks):
-        """Process tasks and spawn instances"""
+            os.remove(SPOOL_PATH)
+        except OSError:
+            pass
         feedback = []
-        
-        # Process propagation spool from on-modify (template -> instance sync).
-        # on-modify can't subprocess 'task modify' because Taskwarrior holds a
-        # file lock during hook execution. on-exit runs after the lock is released.
-        spool_path = os.path.join(TASK_DIR, 'recurrence_propagate.json')
-        if os.path.exists(spool_path):
+        for entry in (spool if isinstance(spool, list) else [spool]):
             try:
-                with open(spool_path, 'r') as f:
-                    spool = json.load(f)
-                os.remove(spool_path)
-                
-                instance_uuid = spool['instance_uuid']
-                updates = spool['updates']
-                template_id = spool.get('template_id', '?')
-                instance_rindex = spool.get('instance_rindex', '?')
-                changes = spool.get('changes', [])
-                
-                mod_args = [f'{field}:{value}' for field, value in updates.items()]
-                
-                if DEBUG:
-                    debug_log(f"Processing propagation spool: instance {instance_uuid}, updates: {updates}", "EXIT")
-                
-                result = subprocess.run(
-                    ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=nothing',
-                     instance_uuid, 'modify'] + mod_args,
-                    capture_output=True,
-                    text=True,
-                    check=False
-                )
-                
-                if result.returncode == 0:
-                    if DEBUG:
-                        debug_log(f"Propagation successful", "EXIT")
-                    field_list = ', '.join(changes) if changes else 'recurrence fields'
-                    feedback.append(f"Instance #{instance_rindex} synced ({field_list}).")
-                else:
-                    if DEBUG:
-                        debug_log(f"Propagation failed: {result.stderr}", "EXIT")
-                    feedback.append(f"WARNING: Failed to sync instance #{instance_rindex}. Manual sync may be needed.")
-                    
-            except (json.JSONDecodeError, KeyError, OSError) as e:
-                if DEBUG:
-                    debug_log(f"Error processing propagation spool: {e}", "EXIT")
-                # Clean up bad spool file
-                try:
-                    os.remove(spool_path)
-                except OSError:
-                    pass
-        
-        for task in tasks:
-            if DEBUG:
-                debug_log(f"Processing task: uuid={task.get('uuid')}, status={task.get('status')}, "
-                         f"rtemplate={task.get('rtemplate')}, rindex={task.get('rindex')}")
-            
-            # Template being deleted or completed?
-            if ((task.get('status') in ['deleted', 'completed']) and 
-                'r' in task and 
-                'rtemplate' not in task):
-                
-                if DEBUG:
-                    debug_log(f"Template {task.get('status')}: {task.get('uuid')}")
-                
-                # Find pending instances
-                try:
-                    result = subprocess.run(
-                        ['task', 'rc.hooks=off', f'rtemplate:{task.get("uuid")}', 'status:pending', 'export'],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    instances = json.loads(result.stdout.strip()) if result.stdout.strip() else []
-                    instance_ids = [str(inst.get('id', '')) for inst in instances if inst.get('id')]
-                except Exception as e:
-                    if DEBUG:
-                        debug_log(f"Could not fetch instances: {e}")
-                    instance_ids = []
-                
-                if task.get('status') == 'deleted':
-                    feedback.append(f"Deleted template '{task.get('description')}' - all future instances stopped.")
-                    if instance_ids:
-                        if len(instance_ids) == 1:
-                            feedback.append(f"To delete the pending instance: task {instance_ids[0]} delete")
-                        else:
-                            feedback.append(f"To delete pending instances: task {' '.join(instance_ids)} delete")
-                else:  # completed
-                    feedback.append(f"Completed template '{task.get('description')}' - all future instances stopped.")
-                    if instance_ids:
-                        if len(instance_ids) == 1:
-                            feedback.append(f"To complete the pending instance: task {instance_ids[0]} done")
-                        else:
-                            feedback.append(f"To complete pending instances: task {' '.join(instance_ids)} done")
+                target, updates = entry['instance_uuid'], entry['updates']
+            except (KeyError, TypeError):
                 continue
-            
-            # Completed or deleted instance?
-            if (task.get('status') in ['completed', 'deleted'] and 
-                'rtemplate' in task and 'rindex' in task):
-                
+            rindex = entry.get('instance_rindex', '?')
+            r = subprocess.run(['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=nothing',
+                                target, 'modify'] + [f'{k}:{v}' for k, v in updates.items()],
+                               capture_output=True, text=True, check=False)
+            # Name the task: task shows each distinct footnote once, so three identical
+            # "Instance #1 synced" lines would read as one
+            name = f" of '{entry['description']}'" if entry.get('description') else ''
+            if r.returncode == 0:
+                fields = ', '.join(entry.get('changes') or ['recurrence fields'])
+                feedback.append(f"Instance #{rindex}{name} synced ({fields}).")
+            else:
                 if DEBUG:
-                    debug_log(f"Found {task.get('status')} instance: rindex={task['rindex']}")
-                
-                template = self.get_template(task['rtemplate'])
-                if not template:
-                    if DEBUG:
-                        debug_log(f"Could not fetch template: {task['rtemplate']}")
-                    continue
-                
-                # Check if template has been deleted or completed
-                if template.get('status') in ['deleted', 'completed']:
-                    if DEBUG:
-                        debug_log(f"Template is {template.get('status')}, not spawning")
-                    continue
-                
-                if DEBUG:
-                    debug_log(f"Template found: {template.get('description')}, rlast={template.get('rlast')}, type={template.get('type')}")
-                
-                current_idx = int(task['rindex'])
-                last_idx = int(template.get('rlast', '0'))
-                
-                if DEBUG:
-                    debug_log(f"Checking: current_idx={current_idx}, last_idx={last_idx}")
-                
-                # Only spawn if this is the latest instance
-                # Both periodic and chained spawn on completion/deletion
-                if current_idx >= last_idx:
-                    if DEBUG:
-                        debug_log(f"Will spawn next instance", "EXIT")
-                    
-                    # Get completion/deletion time for chained type
-                    completion = None
-                    if task.get('status') == 'completed' and 'end' in task:
-                        completion = parse_date(task['end'])
-                        if DEBUG:
-                            debug_log(f"Completion time: {completion}", "EXIT")
-                    elif task.get('status') == 'deleted':
-                        # For deleted tasks, use deletion time (now)
-                        completion = self.now
-                        if DEBUG:
-                            debug_log(f"Deletion time: {completion}", "EXIT")
-                    
-                    # Always use spawn_instance from common module
-                    msg = spawn_instance(template, current_idx + 1, completion)
-                    
-                    if msg:
-                        feedback.append(msg)
-                        if DEBUG:
-                            debug_log(f"Result: {msg}", "EXIT")
-                else:
-                    if DEBUG:
-                        debug_log(f"Skipping spawn: not the latest instance")
-            
-            # Deleted instance? (just acknowledge, don't spawn)
-            elif (task.get('status') == 'deleted' and 
-                  'rtemplate' in task and 'rindex' in task):
-                
-                if DEBUG:
-                    debug_log(f"Instance deleted (not spawning): rindex={task['rindex']}")
-            
-            # New template? (handle both string and int rlast)
-            elif (task.get('status') == 'recurring' and 
-                  'r' in task and 
-                  str(task.get('rlast', '')).strip() in ['0', '1', '']):
-                
-                if DEBUG:
-                    debug_log(f"Found template with rlast in [0,1,'']: {task.get('description')}", "EXIT")
-                
-                # Check if instance already exists (prevent duplicate spawning on template mods)
-                template_uuid = task.get('uuid')
-                existing_instances = query_instances(template_uuid) if template_uuid else []
-                
-                if existing_instances:
-                    if DEBUG:
-                        debug_log(f"Instance already exists (count={len(existing_instances)}), not spawning", "EXIT")
-                else:
-                    if DEBUG:
-                        debug_log(f"No instance exists, spawning first instance", "EXIT")
-                    
-                    # Always use spawn_instance from common module
-                    msg = spawn_instance(task, 1)  # First instance is always index 1
-                    
-                    if msg:
-                        feedback.append(msg)
-        
+                    debug_log(f"Propagation to {target} failed: {r.stderr}", "EXIT")
+                feedback.append(f"WARNING: Failed to sync instance #{rindex}{name}. Manual sync may be needed.")
         return feedback
 
-    def reconcile_orphaned_templates(self, processed_uuids=None):
-        """Reconcile templates whose instance was silently auto-deleted by Taskwarrior.
-
-        Taskwarrior does NOT send auto-expired tasks (until: date reached) to on-exit
-        hook stdin.  The reactive approach in process_tasks() therefore never sees the
-        deletion and never spawns the replacement.  This method is the safety net: it
-        queries every recurring template, and for any that currently has no pending or
-        waiting instance it spawns the next one.
-
-        Args:
-            processed_uuids: set of template UUIDs already handled by process_tasks()
-                             (avoids double-spawning on the same run)
-        """
+    def run(self, tasks):
+        """Spawn what's missing, given the tasks this command changed (stdin)."""
         feedback = []
-        if processed_uuids is None:
-            processed_uuids = set()
+        snapshot = task_export('(', 'status:recurring', 'or', '(', '(', 'status:pending', 'or',
+                               'status:waiting', ')', 'and', 'rtemplate.any:', ')', ')')
+        templates = {t['uuid']: t for t in snapshot if t.get('status') == 'recurring' and t.get('uuid')}
+        active = {}
+        for t in snapshot:
+            if t.get('rtemplate') and t.get('status') in ('pending', 'waiting'):
+                active.setdefault(t['rtemplate'], []).append(t)
 
-        try:
-            result = subprocess.run(
-                ['task', 'rc.hooks=off', 'status:recurring', 'export'],
-                capture_output=True, text=True, check=False
-            )
-            if not result.stdout.strip():
-                return feedback
-            templates = json.loads(result.stdout.strip())
-        except (subprocess.CalledProcessError, json.JSONDecodeError, Exception):
-            return feedback
-
-        for template in templates:
-            template_uuid = template.get('uuid')
-            if not template_uuid or template_uuid in processed_uuids:
+        # What this command did: instances it finished, templates it ended
+        finished = {}
+        for t in tasks:
+            status = t.get('status')
+            if status not in ('completed', 'deleted'):
                 continue
+            if t.get('rtemplate'):
+                finished[t['rtemplate']] = t
+            elif 'rlast' in t or 'r' in t:          # a template (on-modify drops its r)
+                feedback += self.template_ended(t, active.get(t.get('uuid'), []))
 
-            instances = query_instances(template_uuid)
-            if instances:
-                continue  # Has an active instance — nothing to do
-
-            # No active instance found.  Spawn the next one.
-            last_idx = int(template.get('rlast', '0'))
-            next_idx = last_idx + 1
-
+        for uuid, template in templates.items():
+            if uuid in active:
+                continue
+            trigger = finished.get(uuid)
+            completion = None
+            if trigger and trigger.get('status') == 'completed':
+                completion = parse_date(trigger.get('end'))
+            elif trigger:
+                completion = self.now
+            rindex, skipped, ended = plan_next(template, completion, self.now)
+            desc = template.get('description', 'untitled')
+            if ended:
+                if trigger:                         # say it once, when the last one goes
+                    feedback.append(f"Recurrence of '{desc}' has ended (rend reached); no new instance.")
+                continue
             if DEBUG:
-                debug_log(
-                    f"Reconcile: template {template_uuid} has no active instance "
-                    f"(rlast={last_idx}), spawning #{next_idx}",
-                    "EXIT"
-                )
-
-            msg = spawn_instance(template, next_idx)
+                debug_log(f"Template {uuid}: no active instance; spawning #{rindex}"
+                          f" (skipped {skipped})", "EXIT")
+            msg = spawn_instance(template, rindex, completion)
+            if msg and skipped:
+                msg = (f"Skipped {skipped} expired occurrence{'s' if skipped != 1 else ''}"
+                       f" of '{desc}'. {msg}")
             if msg:
                 feedback.append(msg)
-
         return feedback
+
+    @staticmethod
+    def template_ended(template, instances):
+        word, verb = (('Deleted', 'delete') if template.get('status') == 'deleted'
+                      else ('Completed', 'done'))
+        lines = [f"{word} template '{template.get('description')}' - all future instances stopped."]
+        ids = [str(i['id']) for i in instances if i.get('id')]
+        if ids:
+            what = 'the pending instance' if len(ids) == 1 else 'pending instances'
+            lines.append(f"To {verb.replace('done', 'complete')} {what}: task {' '.join(ids)} {verb}")
+        return lines
 
 
 def main():
     """Main entry point for on-exit"""
     lines = sys.stdin.readlines()
-
-    if DEBUG:
-        debug_log(f"Received {len(lines)} lines of input", "EXIT")
-
     try:
         tasks = [json.loads(line) for line in lines if line.strip()]
-        if DEBUG:
-            debug_log(f"Parsed {len(tasks)} tasks", "EXIT")
-            for i, task in enumerate(tasks):
-                debug_log(f"Task {i}: uuid={task.get('uuid')}, status={task.get('status')}, "
-                         f"desc={task.get('description', '')[:50]}", "EXIT")
     except json.JSONDecodeError as e:
         if DEBUG:
             debug_log(f"JSON decode error: {e}", "EXIT")
         sys.exit(0)
+    if DEBUG:
+        debug_log(f"on-exit: {len(tasks)} changed task(s)", "EXIT")
 
     spawner = RecurrenceSpawner()
-
-    # Collect UUIDs of templates whose instances were processed reactively,
-    # so reconcile_orphaned_templates() can skip them (avoids double-spawning).
-    processed_uuids = set()
-    for task in tasks:
-        if task.get('status') in ['completed', 'deleted'] and 'rtemplate' in task:
-            processed_uuids.add(task['rtemplate'])
-
-    # Reactive pass: handle completions/deletions that DID arrive on stdin
-    feedback = spawner.process_tasks(tasks)
-
-    # Reconciliation pass: catch instances silently deleted by Taskwarrior's
-    # until: auto-expiry (those tasks never appear on on-exit stdin).
-    feedback += spawner.reconcile_orphaned_templates(processed_uuids)
-
+    feedback = spawner.process_spool() + spawner.run(tasks)
     for msg in feedback:
         print(msg)
-
-    if DEBUG:
-        debug_log(f"on-exit completed with {len(feedback)} feedback messages", "EXIT")
-
     sys.exit(0)
 
 

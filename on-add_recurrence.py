@@ -172,8 +172,19 @@ class RecurrenceHandler:
         """
         spool_path = os.path.join(TASK_DIR, 'recurrence_propagate.json')
         try:
-            with open(spool_path, 'w') as f:
-                json.dump(spool, f)
+            # A list: one command can modify several templates (task 1-3 mod ...), and each
+            # on-modify run adds its entry. on-exit applies them all, then removes the file.
+            try:
+                with open(spool_path) as f:
+                    queued = json.load(f)
+                queued = queued if isinstance(queued, list) else [queued]
+            except (OSError, ValueError):
+                queued = []
+            queued.append(spool)
+            tmp = spool_path + '.tmp'
+            with open(tmp, 'w') as f:
+                json.dump(queued, f)
+            os.replace(tmp, spool_path)
             if DEBUG:
                 debug_log(f"Wrote spool: {spool}", "ADD/MOD")
             return True
@@ -482,9 +493,9 @@ class RecurrenceHandler:
         if DEBUG:
             debug_log(f"  Type: {task['type']}, r={task.get('r')}", "ADD/MOD")
         
-        # Mark as template
+        # Mark as template. rlast is the last spawned instance: none yet (on-exit spawns #1)
         task['status'] = 'recurring'
-        task['rlast'] = '1'
+        task['rlast'] = '0'
         
         # Get anchor date
         anchor_field, anchor_date = self.get_anchor_date(task)
@@ -776,6 +787,7 @@ class RecurrenceHandler:
                     spool = {
                         'instance_uuid': instance_uuid,
                         'instance_rindex': instance.get('rindex', '?'),
+                        'description': description,
                         'updates': instance_updates,
                         'template_id': task_id,
                         'changes': list(recurrence_changes.keys())

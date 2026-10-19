@@ -278,7 +278,7 @@ Three files, one symlink:
 
 ```
 1. User: task add "Mow lawn" ty:c r:7d due:tomorrow
-2. on-add: Creates template (status:recurring, rlast:1)
+2. on-add: Creates template (status:recurring, rlast:0 — none spawned yet)
 3. on-exit: Sees new template, spawns instance #1
 4. User: task 42 done
 5. on-exit: Sees completed instance, spawns instance #2
@@ -370,4 +370,4 @@ and bidirectional sync — is working and in daily use.
 - Language: Python
 - Requires: Taskwarrior 2.6.2, Python 3
 - Files: 3 Python files + 1 symlink + 1 config
-- Version: 2.6.3
+- Version: 2.10.0

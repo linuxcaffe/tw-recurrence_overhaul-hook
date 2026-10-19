@@ -53,6 +53,10 @@ uda.rwait.indicator=W
 uda.rscheduled.type=string
 uda.rscheduled.label=Template Scheduled
 
+# runtil: internal storage for relative until dates
+uda.runtil.type=string
+uda.runtil.label=Template Until
+
 # ranchor: which date field is the anchor (due or scheduled)
 uda.ranchor.type=string
 uda.ranchor.label=Anchor Field
@@ -70,7 +74,7 @@ report.templates.filter=status:recurring
 report.templates.columns=id,rlast,type,ranchor,r,priority,description.count,project,tags,due,rscheduled,rwait,until,rend,urgency
 report.templates.labels=ID,L,Type,Anc,Time,Pri,Description,Project,Tags,Due,Sched,Wait,Until,rEnd,Urg
 report.templates.sort=due+,description+
-report.tamplates.context=0
+report.templates.context=0
 
 # Enhanced recurring report (replaces default)
 report.recurring.description=Recurring task templates and instances

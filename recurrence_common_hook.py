@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 2.7.4
+Version: 2.10.0
 Date: 2026-02-08
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -817,123 +817,104 @@ def check_instance_count(template_uuid):
         return ('multiple', instances)
 
 
-def spawn_instance(template, rindex, completion_time=None):
-    """Spawn a new instance for a template
-    
-    This is the ONLY way to spawn instances - can be called from on-exit (normal)
-    or on-modify (re-spawn when rlast changes).
-    
-    Args:
-        template: Template task dictionary
-        rindex: Instance index to create
-        completion_time: For chain types, when previous instance completed
-        
-    Returns:
-        Success message string or None on failure
+def instance_dates(template, rindex, completion_time=None):
+    """The dates instance rindex of template gets: ({field: datetime}, ended).
+
+    The anchor field (due or scheduled) always, plus wait/scheduled/until from the template's
+    relative dates. Instance 1 takes the template's anchor; later ones add the period: to the
+    template's anchor (rindex-1 times) for period, to completion_time (else now) for chain.
+    ended is True when the anchor lies beyond rend. ({}, False) when it can't be computed.
     """
-    import subprocess
-    from datetime import datetime
-    
-    if DEBUG:
-        debug_log(f"Spawning instance {rindex} from template {template.get('uuid')}", "COMMON")
-    
-    # Validate rindex
     try:
         rindex = int(rindex)
-        if rindex < 1:
-            if DEBUG:
-                debug_log(f"Invalid rindex: {rindex} (must be >= 1)", "COMMON")
-            return None
     except (ValueError, TypeError):
-        if DEBUG:
-            debug_log(f"Invalid rindex type: {rindex}", "COMMON")
-        return None
-    
-    # Parse recurrence interval
+        return {}, False
     recur_delta = parse_duration(template.get('r'))
-    if not recur_delta:
-        if DEBUG:
-            debug_log(f"Failed to parse recurrence interval: {template.get('r')}", "COMMON")
-        return None
-    
-    rtype = template.get('type', 'period')
     anchor_field = template.get('ranchor', 'due')
     actual_field = get_anchor_field_name(anchor_field)
-    
-    # Get template anchor date
     template_anchor = parse_date(template.get(actual_field))
-    if not template_anchor:
+    if rindex < 1 or not recur_delta or not template_anchor:
         if DEBUG:
-            debug_log(f"Failed to parse template anchor date: {template.get(actual_field)}", "COMMON")
-        return None
-    
-    # Calculate anchor date for this instance
+            debug_log(f"Can't compute dates: rindex={rindex} r={template.get('r')} "
+                      f"{actual_field}={template.get(actual_field)}", "COMMON")
+        return {}, False
+
     if rindex == 1:
-        # Instance 1 always uses template's anchor date
         anchor_date = template_anchor
+    elif template.get('type', 'period') == 'chain':
+        anchor_date = add_local(completion_time or datetime.utcnow(), recur_delta)
     else:
-        if rtype == 'chain':
-            # Chain: completion_time + period
-            base = completion_time or datetime.utcnow()
-            anchor_date = add_local(base, recur_delta)
-        else:
-            # Period: template + (rindex - 1) * period
-            anchor_date = add_local(template_anchor, recur_delta * (rindex - 1))
-            
-            # Validate: For PERIODIC only, rindex > 1 means instance anchor MUST be after template anchor
-            # (Chain can be earlier if completed early)
-            if anchor_date <= template_anchor:
-                if DEBUG:
-                    debug_log(f"ERROR: Periodic rindex={rindex} but calculated anchor ({anchor_date}) not after template anchor ({template_anchor})", "COMMON")
-                return None
-    
-    # Check if recurrence has ended (rend)
-    if 'rend' in template:
-        rend_str = template['rend']
-        rend_date = parse_relative_date(rend_str, template_anchor)
-        if not rend_date:
-            rend_date = parse_date(rend_str)
-        
+        anchor_date = add_local(template_anchor, recur_delta * (rindex - 1))
+
+    rend = template.get('rend')
+    if rend:
+        rend_date = parse_relative_date(rend, template_anchor) or parse_date(rend)
         if rend_date and anchor_date > rend_date:
-            if DEBUG:
-                debug_log(f"Recurrence ended: anchor_date {anchor_date} > rend {rend_date}", "COMMON")
-            return "Recurrence ended (rend date reached)"
-    
+            return {actual_field: anchor_date}, True
+
+    dates = {actual_field: anchor_date}
+    for rel, field in (('rwait', 'wait'), ('rscheduled', 'scheduled'), ('runtil', 'until')):
+        if rel in template and not (field == 'scheduled' and anchor_field == 'sched'):
+            when = parse_relative_date(template[rel], anchor_date)
+            if when:
+                dates[field] = when
+            elif DEBUG:
+                debug_log(f"Failed to parse {rel}: {template[rel]}", "COMMON")
+    return dates, False
+
+
+def plan_next(template, completion_time=None, now=None):
+    """(rindex, skipped, ended): the instance to spawn when template has no active one.
+
+    rlast + 1 (rlast is 0 until the first instance exists). A periodic template skips the
+    occurrences whose until has already passed (they'd expire at once), so catching up after a
+    gap is one instance, not one per command; skipped counts them. ended: past rend.
+    """
+    now = now or datetime.utcnow()
+    try:
+        rindex = int(template.get('rlast') or 0) + 1
+    except (ValueError, TypeError):
+        rindex = 1
+    skipped = 0
+    for _ in range(10000):
+        dates, ended = instance_dates(template, rindex, completion_time)
+        if ended or not dates:
+            return rindex, skipped, ended
+        until = dates.get('until')
+        if template.get('type', 'period') == 'chain' or not until or until > now:
+            return rindex, skipped, False
+        rindex += 1
+        skipped += 1
+    return rindex, skipped, False
+
+
+def spawn_instance(template, rindex, completion_time=None):
+    """Spawn instance rindex of template, and set the template's rlast to it.
+
+    The ONLY way to spawn instances. Returns a message, or None on failure. Past rend it
+    spawns nothing and returns None (on-exit decides whether to say so).
+    """
+    import subprocess
+
+    if DEBUG:
+        debug_log(f"Spawning instance {rindex} from template {template.get('uuid')}", "COMMON")
+    dates, ended = instance_dates(template, rindex, completion_time)
+    if ended or not dates:
+        if DEBUG:
+            debug_log(f"Not spawning #{rindex}: {'past rend' if ended else 'no dates'}", "COMMON")
+        return None
+    rindex = int(rindex)
+    anchor_field = template.get('ranchor', 'due')
+    actual_field = get_anchor_field_name(anchor_field)
+
     # Build task add command
     # rc.verbose=new-id: Only output task ID line, suppress warnings and context messages
     cmd = ['task', 'rc.hooks=off', 'rc.confirmation=off', 'rc.verbose=new-id', 'add', template['description']]
-    
-    # Add anchor date
-    cmd.append(f'{actual_field}:{format_date(anchor_date)}')
-    
-    # Process relative wait
-    if 'rwait' in template:
-        wait_date = parse_relative_date(template['rwait'], anchor_date)
-        if wait_date:
-            cmd.append(f'wait:{format_date(wait_date)}')
-    
-    # Process relative scheduled
-    if 'rscheduled' in template and anchor_field != 'sched':
-        sched_date = parse_relative_date(template['rscheduled'], anchor_date)
-        if sched_date:
-            cmd.append(f'scheduled:{format_date(sched_date)}')
-    
-    # Process relative until
-    if 'runtil' in template:
-        if DEBUG:
-            debug_log(f"Template has runtil: {template['runtil']}", "COMMON")
-        until_date = parse_relative_date(template['runtil'], anchor_date)
-        if until_date:
-            cmd.append(f'until:{format_date(until_date)}')
-            if DEBUG:
-                debug_log(f"Added until: {format_date(until_date)}", "COMMON")
-        else:
-            if DEBUG:
-                debug_log(f"Failed to parse runtil: {template['runtil']}", "COMMON")
-    
+    cmd += [f'{field}:{format_date(when)}' for field, when in dates.items()]
+
     # Copy ALL other attributes from template (attribute-agnostic)
     # Skip fields in DO_NOT_COPY and fields already handled above
-    already_handled = {actual_field, 'description', 'uuid', 'status'}
+    already_handled = {'description', 'uuid', 'status'} | set(dates)
     
     for field, value in template.items():
         # Skip if already handled or in do-not-copy list
@@ -1077,8 +1058,8 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '2.7.4'
-__date__ = '2026-03-08'
+__version__ = '2.10.0'
+__date__ = '2026-10-19'
 
 if DEBUG:
     debug_log(f"recurrence_common v{__version__} loaded")
