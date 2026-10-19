@@ -42,7 +42,6 @@ Installation:
 
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
 
 # Debug configuration (default 0, triggered by tw --debug=2)
@@ -57,6 +56,7 @@ except ValueError:
 debug_active = DEBUG_MODE == 1 or tw_debug_level >= 2
 
 def get_log_dir():
+    from pathlib import Path
     cwd = Path.cwd()
     if (cwd / '.git').exists():
         log_dir = cwd / 'logs' / 'debug'
@@ -68,6 +68,7 @@ def get_log_dir():
 if debug_active:
     DEBUG_LOG_DIR = get_log_dir()
     DEBUG_SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
+    from pathlib import Path
     try:
         script_name = Path(__file__).stem
     except:
@@ -733,13 +734,11 @@ class RecurrenceHandler:
         description = modified.get('description', 'untitled')
         template_uuid = modified.get('uuid')
         
-        # If template is being deleted/completed, remove r field so it can be purged
+        # If template is being deleted/completed, remove r field so it can be purged.
+        # on-exit says so, and how to finish the pending instance.
         if modified.get('status') in ['deleted', 'completed']:
             if 'r' in modified:
                 del modified['r']
-            self.add_message(
-                f"Template {task_id} marked for deletion. Recurrence will stop."
-            )
             return modified
         
         # Get current instance
@@ -991,13 +990,17 @@ class RecurrenceHandler:
             # Restore original value
             modified['rtemplate'] = original.get('rtemplate')
         
-        # Get template
+        # The template, only when a change needs it: start, stop, annotate, edits to the
+        # description or dates (the common modifications) don't, and the lookup is an export
+        rindex_changed = 'rindex' in modified and modified['rindex'] != original.get('rindex')
+        non_recur_changes = [f for f in ('project', 'priority', 'tags')
+                             if f in modified and modified.get(f) != original.get(f)]
         template = None
-        if rtemplate_uuid:
+        if rtemplate_uuid and (rindex_changed or non_recur_changes):
             template = query_task(rtemplate_uuid)
         
         # Check for rindex change (TIME MACHINE from instance side)
-        if 'rindex' in modified and modified['rindex'] != original.get('rindex'):
+        if rindex_changed:
             old_rindex = int(original.get('rindex', 0))
             new_rindex = int(modified['rindex'])
             
@@ -1078,13 +1081,7 @@ class RecurrenceHandler:
                     f"task {rtemplate_uuid} mod rlast:{new_rindex}"
                 )
         
-        # Check for non-recurrence field changes (inform only)
-        non_recur_changes = []
-        non_recur_fields = ['project', 'priority', 'tags']
-        for field in non_recur_fields:
-            if field in modified and modified.get(field) != original.get(field):
-                non_recur_changes.append(field)
-        
+        # Non-recurrence field changes: inform only
         if non_recur_changes and template:
             template_id = template.get('id', '?')
             mod_parts = []
@@ -1108,86 +1105,21 @@ class RecurrenceHandler:
         return modified
     
     def handle_instance_completion(self, original, modified):
-        """Handle completion/deletion of an instance with validation
-        
-        Args:
-            original: Original task state
-            modified: Modified task state
-            
-        Returns:
-            Updated modified task
+        """An instance completed or deleted: clean it, nothing more.
+
+        Taskwarrior already says "Completed task N 'desc'.", and on-exit spawns and announces
+        the next instance. This used to print its own completion notice and export the
+        template and the instance history to check them, during the command, where an export
+        also expires until: tasks behind Taskwarrior's back.
         """
-        if DEBUG:
-            debug_log(f"Handling instance completion: {modified.get('description')}", "ADD/MOD")
-        
-        # Check if being completed or deleted
         if modified.get('status') not in ['completed', 'deleted']:
             return modified
-        
-        task_id = modified.get('id', '?')
-        description = modified.get('description', 'untitled')
-        rindex = int(modified.get('rindex', 0))
-        rtemplate_uuid = modified.get('rtemplate', '')
-        
-        status_word = 'Completed' if modified['status'] == 'completed' else 'Deleted'
-        messages = []
-        
-        # Query template to check rlast and detect issues
-        template = None
-        template_id = None
-        template_rlast = None
-        
-        if rtemplate_uuid:
-            template = query_task(rtemplate_uuid)
-            if template:
-                template_id = template.get('id', '?')
-                template_rlast = int(template.get('rlast', 0))
-        
-        if template:
-            # Check for rlast/rindex desync
-            if template_rlast != rindex:
-                messages.append(
-                    f"WARNING: Instance rindex={rindex} doesn't match template rlast={template_rlast}\n"
-                    f"  This may indicate out-of-order completion or missed instances."
-                )
-                if DEBUG:
-                    debug_log(f"Completion desync: rindex={rindex}, rlast={template_rlast}", "ADD/MOD")
-            
-            # Check if any pending instances exist
-            instances = query_instances(rtemplate_uuid)
-            
-            if not instances:
-                # No pending instances exist!
-                messages.append(
-                    f"ERROR: No pending instances exist for this template.\n"
-                    f"  On-exit hook should spawn next instance, but may need manual intervention."
-                )
-                if DEBUG:
-                    debug_log(f"No pending instances found for template {template_id}", "ADD/MOD")
-            else:
-                if DEBUG:
-                    debug_log(f"Found {len(instances)} pending instance(s) for template {template_id}", "ADD/MOD")
-        
-        # Build final message
-        msg = f"{status_word} task {task_id} -- {description} (instance #{rindex})\n"
-        if template_id:
-            msg += f"  Template: task {template_id}"
-        else:
-            msg += f"  Template: {rtemplate_uuid}"
-        
-        if messages:
-            msg += "\n" + "\n".join(messages)
-        
-        self.add_message(msg)
-        
         if DEBUG:
-            debug_log(f"Instance {rindex} {status_word.lower()}", "ADD/MOD")
-        
-        # Validate and cleanup - ensure no template-only attributes
+            debug_log(f"Instance #{modified.get('rindex')} {modified['status']}: "
+                      f"{modified.get('description')}", "ADD/MOD")
         warning = self.validate_and_cleanup(modified, is_template_task=False)
         if warning:
             self.add_message(warning)
-        
         return modified
 
 

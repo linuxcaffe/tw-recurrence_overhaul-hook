@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.11.0] — 2026-10-19
+
+Release B of the 2026-10-19 review: no exports where none are needed.
+
+### Changed
+- **Completing or deleting an instance** no longer prints its own "Completed task ? -- desc
+  (instance #N) / Template: task M" on top of Taskwarrior's "Completed task N 'desc'.", and no
+  longer exports the template and the template's full instance history to check them (two
+  exports mid-command, where an export also expires until: tasks behind Taskwarrior's back;
+  its "ERROR: No pending instances" was misleading, on-exit spawns right after). on-modify now
+  runs no `task` at all on a completion.
+- **Modifying an instance** looks its template up only when the change needs it (rindex, or
+  project/priority/tags for the "to apply to template" hint); start, stop, annotate, date and
+  description edits run no export.
+- **Deleting or completing a template**: on-modify's "Template N marked for deletion" is gone;
+  on-exit's message says the same and how to finish the pending instance.
+- `query_instances` asks Taskwarrior for active instances only, not the full history (up to
+  159 deleted instances per template here).
+- `pathlib` is imported only when debugging (it was ~15 ms of every hook's start, for the
+  debug header alone).
+
+on-exit after a report: one `task export` (~25 ms) on top of Python's start; ~70 ms in all.
+
 ## [2.10.0] — 2026-10-19
 
 Release A of the 2026-10-19 review (nb `tw:recurrence-overhaul_review_—_2026-10-19.md`).

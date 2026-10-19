@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 2.10.0
+Version: 2.11.0
 Date: 2026-02-08
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -29,7 +29,6 @@ Installation:
 
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
 
 # ============================================================================
@@ -45,6 +44,7 @@ except ValueError:
 
 # Determine log directory based on context
 def get_log_dir():
+    from pathlib import Path
     """Auto-detect dev vs production mode"""
     cwd = Path.cwd()
     
@@ -721,10 +721,10 @@ def query_instances(template_uuid):
     import json
     
     try:
-        # Query without status filter first, then filter manually
-        # This avoids potential parentheses parsing issues
+        # Active instances only: the full history (hundreds of deleted ones) cost a parse
         result = subprocess.run(
-            ['task', 'rc.hooks=off', f'rtemplate:{template_uuid}', 'export'],
+            ['task', 'rc.hooks=off', 'rc.verbose=nothing', f'rtemplate:{template_uuid}',
+             '(', 'status:pending', 'or', 'status:waiting', ')', 'export'],
             capture_output=True,
             text=True,
             check=False
@@ -1058,7 +1058,7 @@ def delete_instance(instance_uuid, instance_id=None):
 
 
 # Version info
-__version__ = '2.10.0'
+__version__ = '2.11.0'
 __date__ = '2026-10-19'
 
 if DEBUG:
@@ -1073,6 +1073,7 @@ _original_debug_log = debug_log
 if tw_debug_level >= 2:
     DEBUG_LOG_DIR = get_log_dir()
     DEBUG_SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
+    from pathlib import Path
     try:
         script_name = Path(__file__).stem
     except:

@@ -33,8 +33,16 @@ def tw(tmp_path):
     rc = tmp_path / 'rc'
     rc.write_text(f'data.location={tmp_path}\nhooks.location={hooks}\nconfirmation=off\n'
                   f'verbose=footnote\nbulk=0\ninclude {REPO / "recurrence.rc"}\n')
+    # the hooks' own task calls go through a wrapper that logs them
+    bin_ = tmp_path / 'bin'
+    bin_.mkdir()
+    calls = tmp_path / 'hook-calls'
+    real = shutil.which('task')
+    (bin_ / 'task').write_text(f'#!/bin/sh\necho "$*" >> {calls}\nexec {real} "$@"\n')
+    (bin_ / 'task').chmod(0o755)
     env = dict(os.environ, TASKRC=str(rc), TW_TASK_DIR=str(tmp_path), HOME=str(tmp_path),
-               PYTHONPYCACHEPREFIX=str(tmp_path / 'pycache'))
+               PYTHONPYCACHEPREFIX=str(tmp_path / 'pycache'),
+               PATH=f"{bin_}:{os.environ['PATH']}")
     for k in ('DEBUG_RECURRENCE', 'TW_DEBUG', 'TW_TIMING'):
         env.pop(k, None)
 
@@ -42,13 +50,18 @@ def tw(tmp_path):
         dir = tmp_path
 
         def __call__(self, *args):
-            """Run task with hooks; stdout + stderr."""
-            r = subprocess.run(['task'] + list(args), capture_output=True, text=True, env=env,
+            """Run task with hooks; stdout + stderr. self.calls: the hooks' own task calls."""
+            calls.write_text('')
+            r = subprocess.run([real] + list(args), capture_output=True, text=True, env=env,
                                timeout=60)
             return r.stdout + r.stderr
 
+        @property
+        def calls(self):
+            return calls.read_text().splitlines() if calls.exists() else []
+
         def export(self, *filt):
-            r = subprocess.run(['task', 'rc.hooks=off', 'rc.verbose=nothing'] + list(filt) + ['export'],
+            r = subprocess.run([real, 'rc.hooks=off', 'rc.verbose=nothing'] + list(filt) + ['export'],
                                capture_output=True, text=True, env=env, timeout=60)
             return json.loads(r.stdout) if r.stdout.strip() else []
 
@@ -95,6 +108,38 @@ def test_description_with_attribute_words_is_kept(tw):
     tw('add', 'r:7d', 'due:2030-01-07', '--', 'water plants due:never +tag pro:x')
     [inst] = tw.instances('water plants due:never +tag pro:x')
     assert 'tags' not in inst and 'project' not in inst
+
+
+# ── on-modify: no exports where none are needed (Release B) ──────────────────
+
+def test_completing_says_it_once_and_on_modify_exports_nothing(tw):
+    tw('add', 'water plants', 'r:7d', 'due:2030-01-07')
+    out = tw('rtemplate.any:', 'done')
+    assert 'Template:' not in out and 'ERROR' not in out              # task's own line is enough
+    assert out.count('\n') == 1 and 'recurrence instance #2' in out   # verbose=footnote here
+    exports = [c for c in tw.calls if c.endswith('export')]
+    assert len(exports) == 1, tw.calls                                  # on-exit's snapshot only
+
+
+def test_starting_an_instance_looks_nothing_up(tw):
+    tw('add', 'water plants', 'r:7d', 'due:2030-01-07')
+    tw('rtemplate.any:', 'start')
+    assert [c for c in tw.calls if c.endswith('export')] == [tw.calls[0]]   # the snapshot
+    assert 'status:recurring' in tw.calls[0]
+
+
+def test_instance_priority_change_still_suggests_the_template_command(tw):
+    tw('add', 'water plants', 'r:7d', 'due:2030-01-07')
+    out = tw('rtemplate.any:', 'mod', 'priority:H')
+    assert 'To apply to template (future instances):' in out
+    assert f"task {tw.template('water plants')['id']} mod priority:H" in out
+
+
+def test_template_modification_finds_the_instance(tw):
+    tw('add', 'water plants', 'r:7d', 'due:2030-01-07')
+    out = tw('status:recurring', 'mod', 'priority:H')
+    [inst] = tw.instances('water plants')
+    assert f"task {inst['id']} mod priority:H" in out
 
 
 # ── rend: once ───────────────────────────────────────────────────────────────

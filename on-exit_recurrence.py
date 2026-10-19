@@ -30,7 +30,6 @@ Installation:
 
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
 
 # Debug configuration (default 0, triggered by tw --debug=2)
@@ -45,6 +44,7 @@ except ValueError:
 debug_active = DEBUG_MODE == 1 or tw_debug_level >= 2
 
 def get_log_dir():
+    from pathlib import Path
     cwd = Path.cwd()
     if (cwd / '.git').exists():
         log_dir = cwd / 'logs' / 'debug'
@@ -56,6 +56,7 @@ def get_log_dir():
 if debug_active:
     DEBUG_LOG_DIR = get_log_dir()
     DEBUG_SESSION_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
+    from pathlib import Path
     try:
         script_name = Path(__file__).stem
     except:
