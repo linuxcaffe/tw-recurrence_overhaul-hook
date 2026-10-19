@@ -17,6 +17,14 @@ Plan: nb `tw:docs/tw-calendar-periods-plan.md`.
   exactly the dates the hook gives today (checked against every active instance). Bad input
   raises `RuleError` with the position of the problem; dates in year 9999 (Taskwarrior's
   someday) are refused. `test/test_rules.py`: 103 tests.
+- Position rules (step 2): `w:mon,fri`, `w:mon..fri`, `weekdays`, `w/2:mon`; `m:14`, `m:1,15`,
+  `m:31` (clamped to month end), `m:-1`, `m:2tue`, `m:last-fri`, `m:5bd`, `m:lbd`, `m/3:1`;
+  `y:04-12`, `y:02-29` (Feb 28 in other years), `y:apr`, `y/2:06-01`; `+` (both), `|` (either),
+  parentheses; `@t=09:00,17:30`, `@nbd`, `@pbd`. Instance n is the nth occurrence from the
+  anchor's date, at the anchor's local time of day unless `@t=` says otherwise. Standard
+  library only (the plan said dateutil: an intersection or a roll isn't one RRULE, and a hook
+  that fails to import blocks every command); the tests use dateutil's RRULE as an oracle.
+  `test/test_rules_positions.py`: 165 tests.
 
 ## [2.11.1] — 2026-10-19
 

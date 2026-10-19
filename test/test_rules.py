@@ -189,9 +189,8 @@ def test_bad_input(text, pos, words):
 
 
 @pytest.mark.parametrize('text', ['weekdays', 'm:2tue', 'w:mon,fri', 'y:04-12', 'm:1 | m:last-fri'])
-def test_position_rules_are_not_here_yet(text):
-    with pytest.raises(RuleError, match='position rules'):
-        parse(text)
+def test_position_syntax_goes_to_the_position_parser(text):
+    assert parse(text).kind == 'position'          # step 2: test_rules_positions.py
 
 
 def test_nth_needs_a_positive_index():

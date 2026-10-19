@@ -4,13 +4,14 @@ Version: 2.11.1
 Date: 2026-10-19
 
 What a template's `r` means, and the dates it gives. Standard library only, no Taskwarrior
-I/O. Step 1 of the calendar-periods plan (nb tw:docs/tw-calendar-periods-plan.md): periods.
-Position rules (m:2tue, w:mon..fri) come in step 2.
+I/O. Steps 1 and 2 of the calendar-periods plan (nb tw:docs/tw-calendar-periods-plan.md):
+periods ("this long") and position rules ("on these calendar dates", below).
 
     rule = parse('1mo')            # RuleError, with .pos, for anything else
     rule.nth(anchor, n)            # periodic: instance n (1 = the anchor itself)
     rule.after(completed)          # chained: the next one after a completion
-    rule.offset(due, -1)           # relative fields: due-1mo
+    rule.offset(due, -1)           # relative fields: due-1mo (periods only)
+    rule.dates(anchor, count)      # position rules: the first count dates from the anchor's date
 
 Dates in and out are naive UTC, as the hooks keep them (parse_date). Steps are taken on the
 local calendar, as add_local does, so the local time of day survives DST:
@@ -30,7 +31,7 @@ biyearly = 2 years).
 import calendar
 from datetime import datetime, timedelta, timezone
 
-__all__ = ['RuleError', 'Rule', 'parse']
+__all__ = ['RuleError', 'Rule', 'PositionRule', 'parse']
 
 # unit -> (calendar months, days, seconds)
 UNITS = {}
@@ -165,9 +166,8 @@ def parse(text):
     s = raw.strip()
     if not s:
         raise RuleError("r is empty: give a period, " + EXAMPLES, 0, raw)
-    if any(c in s for c in ':|+') or s.lower() == 'weekdays':
-        raise RuleError(f"'{s}': position rules (like m:2tue or w:mon..fri) aren't supported "
-                        f"yet; use a period, {EXAMPLES}", lead, raw)
+    if any(c in s for c in ':|+()@') or s.lower() == 'weekdays':
+        return _parse_position(s, lead)
 
     low = s.lower()
     if low in NAMED:
@@ -247,3 +247,411 @@ def _parse_iso(s, lead):
         parts.append((m * n, d * n, sec * n, unit == 'Y' and not in_time))
         i = j + 1
     return _rule(s, parts, lead)
+
+
+# ── position rules: "on these calendar dates" ────────────────────────────────
+#
+#   atom      w:mon,fri  w:mon..fri  weekdays  w/2:mon
+#             m:14  m:1,15  m:31 (clamped to month end)  m:-1  m:2tue  m:last-fri  m:5bd
+#             m:lbd  m/3:1
+#             y:04-12  y:01-15,07-15  y:apr  y/2:06-01
+#   a + b     dates in both (+ binds tighter)        a | b   dates in either
+#   ( ... )   grouping
+#   @t=09:00,17:30   times of day (else the anchor's)   @nbd / @pbd   roll a weekend date to the
+#                    next / previous business day (Mon-Fri)
+#
+# Each node lists its occurrences in a window of local dates as (date, time) pairs; the rule
+# walks windows forward from the anchor's date. Standard library only: an intersection or a
+# roll isn't one RRULE, and a hook that can't import something blocks every task command.
+
+DAY_NAMES = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+DAY_FULL = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+MONTH_NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+MONTH_FULL = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+              'september', 'october', 'november', 'december']
+WINDOW_DAYS = 366
+NEVER_YEARS = 200            # no occurrence in this long: the rule never happens
+ROLL_PAD = 3                 # a weekend date rolls at most 2 days
+
+
+def _day(name):
+    name = name.lower()
+    if name in DAY_NAMES:
+        return DAY_NAMES.index(name)
+    if name in DAY_FULL:
+        return DAY_FULL.index(name)
+    return None
+
+
+def _month(name):
+    name = name.lower()
+    if name in MONTH_NAMES:
+        return MONTH_NAMES.index(name) + 1
+    if name in MONTH_FULL:
+        return MONTH_FULL.index(name) + 1
+    return None
+
+
+def _month_len(d):
+    return calendar.monthrange(d.year, d.month)[1]
+
+
+def _is_bd(d):
+    return d.weekday() < 5
+
+
+class _Ctx:
+    """What every node needs: the anchor's local date (intervals count from it) and time of
+    day (occurrences without @t= take it)."""
+
+    def __init__(self, ref, time_of_day):
+        self.ref = ref
+        self.time = time_of_day
+
+
+class _Atom:
+    """w:, m: or y: with a list of items, an optional /N interval."""
+
+    def __init__(self, unit, interval, tests):
+        self.unit = unit
+        self.interval = interval
+        self.tests = tests          # predicates on a local date
+
+    def _in_interval(self, d, ref):
+        if self.interval == 1:
+            return True
+        if self.unit == 'w':
+            weeks = ((d - timedelta(days=d.weekday())) - (ref - timedelta(days=ref.weekday()))).days // 7
+            return weeks % self.interval == 0
+        if self.unit == 'm':
+            return ((d.year - ref.year) * 12 + d.month - ref.month) % self.interval == 0
+        return (d.year - ref.year) % self.interval == 0
+
+    def occurrences(self, ctx, start, stop):
+        out, d = [], start
+        while d < stop:
+            if any(t(d) for t in self.tests) and self._in_interval(d, ctx.ref):
+                out.append((d, ctx.time))
+            d += timedelta(days=1)
+        return out
+
+
+class _Union:
+    def __init__(self, parts):
+        self.parts = parts
+
+    def occurrences(self, ctx, start, stop):
+        return sorted({o for p in self.parts for o in p.occurrences(ctx, start, stop)})
+
+
+class _Both:
+    """a + b: the occurrences of a on the dates b has too (times come from a)."""
+
+    def __init__(self, parts):
+        self.parts = parts
+
+    def occurrences(self, ctx, start, stop):
+        out = self.parts[0].occurrences(ctx, start, stop)
+        for p in self.parts[1:]:
+            dates = {d for d, _ in p.occurrences(ctx, start, stop)}
+            out = [o for o in out if o[0] in dates]
+        return out
+
+
+class _Times:
+    def __init__(self, inner, times):
+        self.inner = inner
+        self.times = times
+
+    def occurrences(self, ctx, start, stop):
+        dates = sorted({d for d, _ in self.inner.occurrences(ctx, start, stop)})
+        return [(d, t) for d in dates for t in self.times]
+
+
+class _Roll:
+    """@nbd / @pbd: a weekend date moves to the next / previous business day."""
+
+    def __init__(self, inner, step):
+        self.inner = inner
+        self.step = step            # +1 or -1
+
+    def occurrences(self, ctx, start, stop):
+        pad = timedelta(days=ROLL_PAD)
+        out = set()
+        for d, t in self.inner.occurrences(ctx, start - pad, stop + pad):
+            while not _is_bd(d):
+                d += timedelta(days=self.step)
+            if start <= d < stop:
+                out.add((d, t))
+        return sorted(out)
+
+
+class PositionRule:
+    """On these calendar dates. Periodic templates only."""
+
+    kind = 'position'
+
+    def __init__(self, text, node):
+        self.text = text
+        self.node = node
+
+    def __repr__(self):
+        return f'PositionRule({self.text!r})'
+
+    def _walk(self, anchor):
+        """Occurrences on or after the anchor's local date, as naive UTC, in order."""
+        try:
+            if anchor.year >= SOMEDAY_YEAR:
+                raise OverflowError(anchor)
+            wall = anchor.replace(tzinfo=timezone.utc).astimezone().replace(tzinfo=None)
+        except (OverflowError, ValueError):
+            raise _too_far(self.text) from None
+        ctx = _Ctx(wall.date(), wall.time())
+        start, empty_since = wall.date(), wall.date()
+        while True:
+            try:
+                stop = start + timedelta(days=WINDOW_DAYS)
+                if stop.year >= SOMEDAY_YEAR:
+                    raise OverflowError(stop)
+            except OverflowError:
+                raise _too_far(self.text) from None
+            found = self.node.occurrences(ctx, start, stop)
+            if found:
+                empty_since = stop
+            elif (stop - empty_since).days > NEVER_YEARS * 366:
+                raise RuleError(f"'{self.text}' never happens (nothing in {NEVER_YEARS} years)",
+                                0, self.text)
+            for d, t in found:
+                out = datetime.combine(d, t).astimezone(timezone.utc).replace(tzinfo=None)
+                if out.year >= SOMEDAY_YEAR:
+                    raise _too_far(self.text)
+                yield out
+            start = stop
+
+    def dates(self, anchor, count):
+        """The first count occurrences on or after the anchor's local date (naive UTC)."""
+        out = []
+        for when in self._walk(anchor):
+            if len(out) == count:
+                break
+            out.append(when)
+        return out
+
+    def nth(self, anchor, n):
+        """Instance n of a periodic template: the nth occurrence from the anchor's date."""
+        if not isinstance(n, int) or n < 1:
+            raise RuleError(f'instance numbers start at 1 (got {n!r})', 0, self.text)
+        return self.dates(anchor, n)[-1]
+
+    def after(self, when):
+        raise RuleError(f"'{self.text}' is a position rule: those work on periodic templates "
+                        f"only (ty:p); a chained template needs a period, like 1mo", 0, self.text)
+
+    def offset(self, when, sign):
+        raise RuleError(f"'{self.text}' is a position rule: relative dates take a period, "
+                        f"like due-1mo", 0, self.text)
+
+
+def _tokens(s, lead):
+    """(kind, text, pos): '(' ')' '|' '+', ('mod', '@name=value'), ('atom', text)."""
+    out, i = [], 0
+    while i < len(s):
+        c = s[i]
+        if c.isspace():
+            i += 1
+        elif c in '()|+':
+            out.append((c, c, lead + i))
+            i += 1
+        elif c == '@':
+            j = i + 1
+            while j < len(s) and not s[j].isspace() and s[j] not in '()|+@':
+                j += 1
+            out.append(('mod', s[i:j], lead + i))
+            i = j
+        else:
+            j = i
+            while j < len(s) and not s[j].isspace() and s[j] not in '()|+@':
+                j += 1
+            out.append(('atom', s[i:j], lead + i))
+            i = j
+    return out
+
+
+class _Parser:
+    def __init__(self, text, lead):
+        self.text = text
+        self.toks = _tokens(text, lead)
+        self.i = 0
+        self.end = lead + len(text)
+
+    def error(self, message, pos):
+        return RuleError(message, pos, self.text)
+
+    def peek(self):
+        return self.toks[self.i] if self.i < len(self.toks) else (None, None, self.end)
+
+    def take(self):
+        tok = self.peek()
+        self.i += 1
+        return tok
+
+    def parse(self):
+        node = self.union()
+        kind, text, pos = self.peek()
+        if kind is not None:
+            raise self.error(f"unexpected '{text}' in '{self.text}': join rules with + or |",
+                             pos)
+        return node
+
+    def union(self):
+        parts = [self.both()]
+        while self.peek()[0] == '|':
+            self.take()
+            parts.append(self.both())
+        return parts[0] if len(parts) == 1 else _Union(parts)
+
+    def both(self):
+        parts = [self.factor()]
+        while self.peek()[0] == '+':
+            self.take()
+            parts.append(self.factor())
+        return parts[0] if len(parts) == 1 else _Both(parts)
+
+    def factor(self):
+        kind, text, pos = self.take()
+        if kind == '(':
+            node = self.union()
+            k, t, p = self.take()
+            if k != ')':
+                raise self.error(f"expected ')' in '{self.text}'", p)
+        elif kind == 'atom':
+            node = self.atom(text, pos)
+        elif kind is None:
+            raise self.error(f"'{self.text}' ends where a rule should be, like m:1 or w:mon",
+                             pos)
+        else:
+            raise self.error(f"unexpected '{text}' in '{self.text}': expected a rule, like "
+                             f"m:1 or w:mon", pos)
+        while self.peek()[0] == 'mod':
+            node = self.modifier(node, *self.take()[1:])
+        return node
+
+    def modifier(self, node, text, pos):
+        low = text.lower()
+        if low == '@nbd':
+            return _Roll(node, 1)
+        if low == '@pbd':
+            return _Roll(node, -1)
+        if low.startswith('@t='):
+            value, vpos = text[3:], pos + 3
+            if not value:
+                raise self.error(f"@t= needs a time, like @t=09:00", vpos)
+            times, at = [], vpos
+            for part in value.split(','):
+                hm = part.split(':')
+                ok = (len(hm) == 2 and all(x.isdigit() for x in hm) and len(hm[1]) == 2
+                      and int(hm[0]) < 24 and int(hm[1]) < 60)
+                if not ok:
+                    raise self.error(f"'{part}' isn't a time of day: use HH:MM, like 09:00",
+                                     at)
+                times.append(datetime.strptime(part, '%H:%M').time())
+                at += len(part) + 1
+            return _Times(node, sorted(set(times)))
+        raise self.error(f"unknown modifier '{text}': use @t=HH:MM, @nbd or @pbd", pos)
+
+    def atom(self, text, pos):
+        low = text.lower()
+        if low == 'weekdays':
+            return _Atom('w', 1, [lambda d: d.weekday() < 5])
+        unit, colon, items = low.partition(':')
+        interval = 1
+        if '/' in unit:
+            unit, _, n = unit.partition('/')
+            if not n.isdigit() or int(n) < 1:
+                raise self.error(f"'{text}': the interval after / is a whole number from 1",
+                                 pos + len(unit) + 1)
+            interval = int(n)
+        if unit not in ('w', 'm', 'y') or not colon:
+            if ':' not in low:
+                try:
+                    parse(text)
+                except RuleError:
+                    pass
+                else:
+                    if self.peek()[0] == 'mod':
+                        raise self.error("modifiers (@t=, @nbd, @pbd) work on position rules "
+                                         "only, like m:1@nbd", self.peek()[2])
+                    raise self.error(f"'{text}' is a period: periods can't be combined with "
+                                     f"position rules", pos)
+            raise self.error(f"'{text}' isn't a rule: use w:, m: or y:, like w:mon, m:14 or "
+                             f"y:04-12", pos)
+        start = pos + len(text) - len(items)
+        if not items:
+            raise self.error(f"'{text}' is empty after the colon", start)
+        tests, at = [], start
+        for item in items.split(','):
+            if not item:
+                raise self.error(f"'{text}' has an empty item", at)
+            tests.append(getattr(self, '_' + unit)(item, at))
+            at += len(item) + 1
+        return _Atom(unit, interval, tests)
+
+    def _w(self, item, pos):
+        if '..' in item:
+            a, _, b = item.partition('..')
+            first, last = _day(a), _day(b)
+            if first is None or last is None:
+                raise self.error(f"'{item}' isn't a range of days, like mon..fri", pos)
+            days = {(first + k) % 7 for k in range((last - first) % 7 + 1)}
+            return lambda d: d.weekday() in days
+        wd = _day(item)
+        if wd is None:
+            raise self.error(f"'{item}' isn't a day: use mon, tue, wed, thu, fri, sat, sun", pos)
+        return lambda d: d.weekday() == wd
+
+    def _m(self, item, pos):
+        if item.lstrip('-').isdigit():
+            n = int(item)
+            if 1 <= n <= 31:
+                return lambda d: d.day == min(n, _month_len(d))
+            if -31 <= n <= -1:
+                return lambda d: d.day == _month_len(d) + n + 1
+            raise self.error(f"'{item}' isn't a day of the month: 1 to 31, or -1 for the last",
+                             pos)
+        if item == 'lbd':
+            return lambda d: _is_bd(d) and not any(
+                _is_bd(d + timedelta(days=k)) for k in range(1, _month_len(d) - d.day + 1))
+        if item.endswith('bd') and item[:-2].isdigit():
+            n = int(item[:-2])
+            if n < 1:
+                raise self.error(f"'{item}': business days count from 1 (1bd, 2bd...)", pos)
+            return lambda d: _is_bd(d) and sum(
+                _is_bd(d.replace(day=k)) for k in range(1, d.day + 1)) == n
+        if item.startswith('last-') or item.startswith('last'):
+            wd = _day(item[5:] if item.startswith('last-') else item[4:])
+            if wd is not None:
+                return lambda d: d.weekday() == wd and d.day + 7 > _month_len(d)
+        if item[:1].isdigit():
+            wd = _day(item[1:])
+            n = int(item[0])
+            if wd is not None and 1 <= n <= 5:
+                return lambda d: d.weekday() == wd and (d.day - 1) // 7 == n - 1
+        raise self.error(f"'{item}' isn't a day of the month: use 14, -1, 2tue, last-fri, "
+                         f"5bd or lbd", pos)
+
+    def _y(self, item, pos):
+        month = _month(item)
+        if month is not None:
+            return lambda d: d.month == month
+        mm, sep, dd = item.partition('-')
+        if sep and mm.isdigit() and dd.isdigit() and 1 <= int(mm) <= 12:
+            m, n = int(mm), int(dd)
+            longest = calendar.monthrange(2028, m)[1]          # a leap year: Feb 29 is real
+            if 1 <= n <= longest:
+                return lambda d: d.month == m and d.day == min(n, _month_len(d))
+        raise self.error(f"'{item}' isn't a date in the year: use MM-DD, like 04-12, or a "
+                         f"month, like apr", pos)
+
+
+def _parse_position(s, lead):
+    return PositionRule(s, _Parser(s, lead).parse())
