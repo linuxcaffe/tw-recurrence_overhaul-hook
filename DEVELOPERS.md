@@ -15,8 +15,10 @@ How the hooks work and what will break if you don't know it. User documentation 
 ├── on-add_recurrence.py       (executable) templates: create, validate, modify; writes the spool
 ├── on-modify_recurrence.py    (symlink)    → on-add_recurrence.py (the installer makes it)
 ├── on-exit_recurrence.py      (executable) applies the spool, spawns instances
-└── recurrence_common_hook.py  (library, not executable) dates, durations, validation,
-                                            instance_dates / plan_next / spawn_instance
+├── recurrence_common_hook.py  (library, not executable) dates, validation,
+│                                           instance_dates / plan_next / spawn_instance
+└── recurrence_rules.py        (library, not executable) what r means: parse(r) -> a period
+                                            or a position rule; nth / after / offset / dates
 ~/.task/scripts/rr                          the recurrence report/repair tool
 ~/.task/config/recurrence.rc                UDAs and reports
 ```
@@ -26,7 +28,8 @@ add, two for a modify).
 
 ## Data model
 
-**Template** (`status:recurring`): `r` (period), `type` (chain | period), `ranchor` (due |
+**Template** (`status:recurring`): `r` (the rule, a string UDA: see README, "The r rule";
+`recurrence_rules.parse` reads it and the hooks refuse what it can't), `type` (chain | period), `ranchor` (due |
 sched), `rlast` (the last index spawned; a new template starts at `0`), the anchor date (`due`
 or `scheduled`), and optionally `rwait`, `rscheduled`, `runtil` (relative to the anchor, e.g.
 `due-2d`) and `rend`. Absolute wait/scheduled/until given on a template are converted to their
@@ -37,9 +40,13 @@ and every other template attribute copied, with real dates computed from the rel
 
 Each kind's attributes are forbidden on the other; the hooks strip misplaced ones.
 
-**Instance N's anchor:** #1 takes the template's anchor. For `period`, #N is the anchor plus
-(N−1)·r, so dates never drift with completion times. For `chain`, #N is the completion time of
-#N−1 plus r. Date arithmetic is DST-safe (`add_local`).
+**Instance N's anchor** comes from the rule (`instance_dates`, the one place): for `period`,
+`rule.nth(template anchor, N)`, so dates never drift with completion times: N−1 periods on,
+months as calendar months clamped from the template's day, or a position rule's Nth date. For
+`chain`, #1 is the template's anchor and #N is `rule.after(completion of #N−1)`, months as 30
+days. Everything steps on the local calendar, so DST doesn't move the time of day. A position
+rule's template is kept on its rule: an off-rule date is moved to the first match, with a
+message.
 
 ## The rules
 
@@ -90,8 +97,10 @@ to one export per run and decide from it. Custom reports, `count` and `_ids` exp
 
 ## Output
 
-Messages go to stdout as footnotes. Taskwarrior shows each distinct footnote once per
-command, so messages name their task ("Instance #1 of 'x' synced"): three identical lines
+on-exit's messages go to stdout as footnotes. on-add/on-modify write theirs to stderr, but
+when they refuse a change, to stdout: that's where Taskwarrior looks for a failing hook's
+reason ("Hook Error: Expected feedback from failing hook script" otherwise), and no task JSON
+goes with it. Taskwarrior shows each distinct footnote once per command, so messages name their task ("Instance #1 of 'x' synced"): three identical lines
 would read as one. `rc.verbose=nothing` hides them.
 
 ## Debugging
@@ -112,13 +121,17 @@ cd test
 python3 -m pytest -q
 ```
 
-- `test_hooks_sandbox.py`: the hooks under real Taskwarrior in a throwaway task dir (on-modify
-  symlinked as installed). A `task` wrapper on PATH logs the hooks' own calls, so tests can
-  pin how many exports a command costs.
+- `conftest.py`: the sandbox fixture: the hooks under real Taskwarrior in a throwaway task dir
+  (on-modify symlinked as installed), America/Toronto.
+- `test_hooks_sandbox.py`: lifecycle, spool, until-expiry. A `task` wrapper on PATH logs the
+  hooks' own calls, so tests can pin how many exports a command costs.
 - `test_until_expiry.py`: lifecycle, type normalisation, chains, rend, until-expiry
   reconcile. It needs tw's test framework (`~/.task/awesome-taskwarrior/lib`) and is skipped
   without it.
 - `test_dst.py`: date arithmetic across DST changes.
+- `test_rules.py`, `test_rules_positions.py`: the rule module alone (positions checked against
+  dateutil's RRULE where it's installed; the module itself doesn't need it).
+- `test_calendar_hooks.py`: calendar periods and position rules end to end.
 
 **Dry run on real data** before installing: copy `~/.task/*.data` into a temp dir, with an rc
 that does `include ~/.taskrc` and then overrides `data.location` and `hooks.location`. A
@@ -135,6 +148,7 @@ symlink and overwrite on-add.
 
 ## Known limitations
 
-- `r` is a duration UDA, and Taskwarrior stores `1mo` as `P30D` and `1y` as `P365D` before
-  the hook sees it, so monthly and yearly templates drift. A plan to make `r` a string is
-  pending.
+- Templates made while `r` was a duration UDA keep their stored `P30D`: 30 days, not a
+  calendar month, until `r` is changed.
+- `wait:due-1mo` typed on a template is computed by Taskwarrior (30 days) before the hook
+  sees it; `rwait:due-1mo` steps a calendar month.

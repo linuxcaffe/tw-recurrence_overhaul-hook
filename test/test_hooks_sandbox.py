@@ -19,62 +19,6 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parent.parent
-HOOKS = ['on-add_recurrence.py', 'on-exit_recurrence.py', 'recurrence_common_hook.py']
-
-
-@pytest.fixture
-def tw(tmp_path):
-    hooks = tmp_path / 'hooks'
-    hooks.mkdir()
-    for h in HOOKS:
-        shutil.copy2(REPO / h, hooks / h)
-    (hooks / 'on-modify_recurrence.py').symlink_to('on-add_recurrence.py')
-    rc = tmp_path / 'rc'
-    rc.write_text(f'data.location={tmp_path}\nhooks.location={hooks}\nconfirmation=off\n'
-                  f'verbose=footnote\nbulk=0\ninclude {REPO / "recurrence.rc"}\n')
-    # the hooks' own task calls go through a wrapper that logs them
-    bin_ = tmp_path / 'bin'
-    bin_.mkdir()
-    calls = tmp_path / 'hook-calls'
-    real = shutil.which('task')
-    (bin_ / 'task').write_text(f'#!/bin/sh\necho "$*" >> {calls}\nexec {real} "$@"\n')
-    (bin_ / 'task').chmod(0o755)
-    env = dict(os.environ, TASKRC=str(rc), TW_TASK_DIR=str(tmp_path), HOME=str(tmp_path),
-               PYTHONPYCACHEPREFIX=str(tmp_path / 'pycache'),
-               PATH=f"{bin_}:{os.environ['PATH']}")
-    for k in ('DEBUG_RECURRENCE', 'TW_DEBUG', 'TW_TIMING'):
-        env.pop(k, None)
-
-    class T:
-        dir = tmp_path
-
-        def __call__(self, *args):
-            """Run task with hooks; stdout + stderr. self.calls: the hooks' own task calls."""
-            calls.write_text('')
-            r = subprocess.run([real] + list(args), capture_output=True, text=True, env=env,
-                               timeout=60)
-            return r.stdout + r.stderr
-
-        @property
-        def calls(self):
-            return calls.read_text().splitlines() if calls.exists() else []
-
-        def export(self, *filt):
-            r = subprocess.run([real, 'rc.hooks=off', 'rc.verbose=nothing'] + list(filt) + ['export'],
-                               capture_output=True, text=True, env=env, timeout=60)
-            return json.loads(r.stdout) if r.stdout.strip() else []
-
-        def template(self, desc):
-            return next(t for t in self.export('status:recurring') if t['description'] == desc)
-
-        def instances(self, desc, active=True):
-            filt = ['(', 'status:pending', 'or', 'status:waiting', ')'] if active else []
-            return sorted((t for t in self.export('rtemplate.any:', *filt) if t['description'] == desc),
-                          key=lambda t: int(t['rindex']))
-
-    return T()
-
 
 def due_date(t):
     return (t.get('due') or t.get('scheduled'))[:8]

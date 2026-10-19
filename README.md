@@ -130,9 +130,10 @@ task add "Meditate" ty:c r:1d due:today +habits
 **Periodic** — fixed schedule (default type, `ty:p` optional):
 
 ```bash
-task add "Pay rent" r:1mo due:eom
+task add "Pay rent" r:1mo due:1st
 task add "Standup" r:1w due:monday +work
-task add "Quarterly report" r:3mo due:2025-03-31 +work
+task add "Quarterly report" r:m/3:-1 due:eoq +work
+task add "Team sync" r:m:2tue due:2030-01-08 +work
 ```
 
 **With relative dates:**
@@ -153,6 +154,58 @@ task add "Beach cleanup" r:1w due:2025-06-01 rend:2025-08-31 +volunteer
 ```bash
 task add "Daily standup" ty:c r:1d sched:tomorrow+9hrs wait:sched-90min
 ```
+
+### The `r` rule
+
+`r` is kept as you type it (a string UDA), and the hook reads it. It is either a **period**
+("this long") or a **position rule** ("on these calendar dates").
+
+**Periods:** `1d`, `2w`, `12h`, `30min`, `1mo`, `1q`, `1y` (and the spelled-out `3days`,
+`2weeks`, `1month`…), ISO 8601 (`P30D`, `P1M`, `P1M15D`, `PT1H`), or a name: `daily`,
+`weekly`, `biweekly`/`fortnight`, `monthly`, `bimonthly`, `quarterly`, `semiannual` (6 months),
+`annual`/`yearly`, `biannual`/`biyearly` (2 years). `1m` is refused as ambiguous: write `1mo`
+or `1min`.
+
+On a **periodic** template, months and years are calendar months: `r:1mo due:2030-01-31` gives
+Jan 31, Feb 28, Mar 31, Apr 30… (clamped to the month's end, from the template's own day, so it
+never gets stuck on the 28th). On a **chained** template a month is 30 days and a year 365.
+Days and weeks keep the local time of day across daylight-saving changes.
+
+**Position rules** (periodic templates only):
+
+| Rule | Means |
+|---|---|
+| `w:mon,fri`, `w:mon..fri`, `weekdays` | those weekdays |
+| `w/2:mon` | every second week, counted from the template's week |
+| `m:14`, `m:1,15` | those days of the month; `m:29`–`m:31` become the month's end in shorter months |
+| `m:-1` | the last day of the month (`m:-2` the day before) |
+| `m:2tue`, `m:last-fri`, `m:1wed,3fri` | the nth / last weekday of the month |
+| `m:5bd`, `m:lbd` | the 5th / last business day (Mon–Fri) |
+| `m/3:1` | every third month, on the 1st |
+| `y:04-12`, `y:01-15,07-15` | those dates each year (`y:02-29` is Feb 28 in other years) |
+| `y:apr` | every day in April (for combining) |
+| `y/2:06-01` | every second year |
+
+Combine with `+` (both: `w:mon,wed,fri + y:apr`) and `|` (either: `m:1 | m:last-fri`); `+`
+binds tighter, and parentheses group. Modifiers: `@t=09:00` or `@t=09:00,17:30` sets the time
+of day (otherwise the template's), `@nbd` / `@pbd` moves a weekend date to the next / previous
+business day: `m:1@nbd`.
+
+A template whose date isn't on its rule is moved to the rule's first date after it, and the
+hook says so. A position rule needs a date to start from: `due:` or `sched:`.
+
+**Relative dates use the template fields.** Taskwarrior computes `wait:due-1mo` itself, as 30
+days, before the hook sees it. To step calendar months, give the template field directly:
+`rwait:due-1mo`, `rscheduled:due-2w`, `runtil:due+1mo`.
+
+**Taskwarrior's named dates as a start:** use the forward-looking ones, such as `1st`, `15th`,
+`monday`, `january`, `eom`, `eoq`. `som`, `sow` and `soy` are already past, so the first
+instance would be overdue at once (the hook notes it). `eom` pairs with `r:m:-1` and `eoq` with
+`r:m/3:-1`: with `r:1mo`, a template started on the 30th repeats on the 30th, and the hook says
+so. `easter` resolves to a date, but `r:1y` repeats that date, not the feast.
+
+Templates made before `r` was a string keep their stored period (`P30D` stays 30 days); change
+`r` to `1mo` to move one to calendar months.
 
 ### Completing and deleting
 
@@ -228,12 +281,12 @@ from the anchor. This ensures instances always get correctly calculated dates.
 
 | Field | Where | Purpose |
 |-------|-------|---------|
-| `r` | Template | Recurrence period: `1d`, `7d`, `1w`, `1mo`, `3mo`, `1y` |
+| `r` | Template | The rule: a period (`1d`, `1w`, `1mo`, `quarterly`) or a position rule (`m:2tue`); see [The r rule](#the-r-rule) |
 | `type` | Template | `chain` or `period` (default: period) |
 | `ranchor` | Template | Anchor field: `due` or `sched` (default: due) |
 | `rlast` | Template | Index of last spawned instance |
 | `rend` | Template | Stop creating instances after this date |
-| `rwait` | Template | Relative wait offset: `due-7d` |
+| `rwait` | Template | Relative wait offset: `due-7d`, `due-1mo` |
 | `rscheduled` | Template | Relative scheduled offset: `due-2h` |
 | `runtil` | Template | Relative until offset: `due+30d` |
 | `rtemplate` | Instance | UUID of parent template |
@@ -249,7 +302,9 @@ The hook validates input and blocks errors before they corrupt data.
 - Template without anchor date (due or scheduled)
 - Template with wait date after anchor
 - Template with until date before anchor
-- Invalid period format
+- An `r` the hook can't read (with the reason: `'1m' is ambiguous: 1mo for months, 1min for
+  minutes`)
+- A position rule on a chained template
 - `rend` date in the past
 - Adding `r` to an existing instance
 - Changing `rtemplate` on an instance

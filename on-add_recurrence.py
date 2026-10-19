@@ -114,10 +114,11 @@ if hooks_dir not in sys.path:
 
 try:
     from recurrence_common_hook import (
-        normalize_type, parse_duration, parse_date, format_date,
+        normalize_type, parse_date, format_date,
         parse_relative_date, is_template, is_instance,
-        get_anchor_field_name, debug_log, DEBUG, add_local,
+        get_anchor_field_name, debug_log, DEBUG,
         query_instances, query_task,
+        instance_dates, align_to_rule, template_warnings, validate_rule,
         # Validation functions
         strip_legacy_recurrence, validate_recurrence_integers,
         validate_template_requirements, validate_date_logic,
@@ -197,17 +198,13 @@ class RecurrenceHandler:
         """Check if any blocking errors exist"""
         return len(self.errors) > 0
     
-    def output_messages(self):
-        """Output all collected messages to stderr"""
-        # Output errors first
-        if self.errors:
-            for msg in self.errors:
-                sys.stderr.write(f"{msg}\n")
-        
-        # Then warnings/info
-        if self.messages:
-            for msg in self.messages:
-                sys.stderr.write(f"{msg}\n")
+    def output_messages(self, stream=None):
+        """Errors, then the other messages. stderr when the hook succeeds; when it fails,
+        Taskwarrior takes the reason from stdout ("Expected feedback from failing hook
+        script" otherwise), so failures pass sys.stdout."""
+        stream = stream or sys.stderr
+        for msg in self.errors + self.messages:
+            stream.write(f"{msg}\n")
     
     def cleanup_template_attributes(self, task):
         """Remove instance-only attributes from a template
@@ -523,6 +520,14 @@ class RecurrenceHandler:
         if self.has_errors():
             return task
         
+        # A position rule's template dated off the rule moves to its first date (relative
+        # wait/scheduled/until were made relative to the date given, so they follow)
+        moved = align_to_rule(task)
+        if moved:
+            self.add_message(moved)
+        for note in template_warnings(task, new=True):
+            self.add_message(note)
+        
         if DEBUG:
             debug_log(f"  Template created: status={task['status']}, rlast={task['rlast']}", "ADD/MOD")
         
@@ -729,6 +734,22 @@ class RecurrenceHandler:
         description = modified.get('description', 'untitled')
         template_uuid = modified.get('uuid')
         
+        # r changed (or the type): check it, as Taskwarrior no longer does (r is a string)
+        anchor_name = get_anchor_field_name(modified.get('ranchor', 'due'))
+        rule_changed = any(modified.get(f) != original.get(f) for f in ('r', 'type'))
+        if rule_changed and modified.get('status') not in ('deleted', 'completed'):
+            for error in validate_rule(modified):
+                self.add_error(error)
+            if self.has_errors():
+                return modified
+        if rule_changed or modified.get(anchor_name) != original.get(anchor_name):
+            moved = align_to_rule(modified)
+            if moved:
+                self.add_message(moved)
+            if modified.get('r') != original.get('r'):
+                for note in template_warnings(modified, new=False):
+                    self.add_message(note)
+        
         # If template is being deleted/completed, remove r field so it can be purged.
         # on-exit says so, and how to finish the pending instance.
         if modified.get('status') in ['deleted', 'completed']:
@@ -883,47 +904,18 @@ class RecurrenceHandler:
         needs_date_recalc = any(f in changes for f in ['r', 'ranchor', 'rlast'])
         
         if needs_date_recalc:
-            # Get recurrence parameters
-            r_delta = parse_duration(template.get('r'))
-            rtype = template.get('type', 'period')
-            anchor_field = template.get('ranchor', 'due')
-            actual_field = get_anchor_field_name(anchor_field)
-            template_anchor = parse_date(template.get(actual_field))
-            
-            if r_delta and template_anchor:
-                # Calculate new anchor date for this instance
-                if rtype == 'period':
-                    # Periodic: template_anchor + (rindex - 1) * period
-                    new_anchor = add_local(template_anchor, r_delta * (rindex - 1))
-                else:
-                    # Chained: Can't recalculate without completion time
-                    # Just update the anchor field name if it changed
-                    if 'ranchor' in changes:
-                        new_anchor = template_anchor
-                    else:
-                        new_anchor = None
-                
-                if new_anchor:
-                    instance_updates[actual_field] = format_date(new_anchor)
-                    
-                    # Recalculate relative dates if they exist
-                    if 'rwait' in template:
-                        wait_date = parse_relative_date(template['rwait'], new_anchor)
-                        if wait_date:
-                            instance_updates['wait'] = format_date(wait_date)
-                    
-                    if 'rscheduled' in template and anchor_field != 'sched':
-                        sched_date = parse_relative_date(template['rscheduled'], new_anchor)
-                        if sched_date:
-                            instance_updates['scheduled'] = format_date(sched_date)
-                    
-                    if 'runtil' in template:
-                        until_date = parse_relative_date(template['runtil'], new_anchor)
-                        if until_date:
-                            instance_updates['until'] = format_date(until_date)
-                    
-                    if DEBUG:
-                        debug_log(f"Calculated new dates: {actual_field}={format_date(new_anchor)}", "ADD/MOD")
+            # Periodic: instance rindex's dates by the (new) rule. Chained has no completion
+            # time to go on: only an anchor change moves it, to the template's own anchor.
+            if template.get('type', 'period') == 'period':
+                dates, _ = instance_dates(template, rindex)
+            elif 'ranchor' in changes:
+                dates, _ = instance_dates(template, 1)
+            else:
+                dates = {}
+            for field, when in dates.items():
+                instance_updates[field] = format_date(when)
+            if DEBUG and dates:
+                debug_log(f"Calculated new dates: {instance_updates}", "ADD/MOD")
         
         # If only rwait/rscheduled/runtil changed (without anchor change), recalculate them
         relative_date_changes = any(f in changes for f in ['rwait', 'rscheduled', 'runtil'])
@@ -1007,40 +999,13 @@ class RecurrenceHandler:
                 if DEBUG:
                     debug_log(f"TIME MACHINE (instance): rindex {old_rindex} -> {new_rindex}, template rlast={current_rlast}", "ADD/MOD")
                 
-                # Recalculate instance dates in-place (we CAN modify 'modified' directly)
-                r_delta = parse_duration(template.get('r'))
-                rtype = template.get('type', 'period')
-                anchor_field = template.get('ranchor', 'due')
-                actual_field = get_anchor_field_name(anchor_field)
-                template_anchor = parse_date(template.get(actual_field))
-                
-                if r_delta and template_anchor:
-                    if rtype == 'period':
-                        new_anchor = add_local(template_anchor, r_delta * (new_rindex - 1))
-                    else:
-                        # Chained: best approximation without completion time
-                        new_anchor = add_local(template_anchor, r_delta * (new_rindex - 1))
-                    
-                    modified[actual_field] = format_date(new_anchor)
-                    
-                    # Recalculate relative dates
-                    if 'rwait' in template:
-                        wait_date = parse_relative_date(template['rwait'], new_anchor)
-                        if wait_date:
-                            modified['wait'] = format_date(wait_date)
-                    
-                    if 'rscheduled' in template and anchor_field != 'sched':
-                        sched_date = parse_relative_date(template['rscheduled'], new_anchor)
-                        if sched_date:
-                            modified['scheduled'] = format_date(sched_date)
-                    
-                    if 'runtil' in template:
-                        until_date = parse_relative_date(template['runtil'], new_anchor)
-                        if until_date:
-                            modified['until'] = format_date(until_date)
-                    
-                    if DEBUG:
-                        debug_log(f"Recalculated instance dates: {actual_field}={format_date(new_anchor)}", "ADD/MOD")
+                # Recalculate instance dates in-place (we CAN modify 'modified' directly).
+                # Chained has no completion time here: computed as if periodic.
+                dates, _ = instance_dates(template, new_rindex, as_periodic=True)
+                for field, when in dates.items():
+                    modified[field] = format_date(when)
+                if DEBUG and dates:
+                    debug_log(f"Recalculated instance dates: {dates}", "ADD/MOD")
                 
                 # Spool template rlast sync (can't subprocess from on-modify)
                 if current_rlast != new_rindex:
@@ -1144,7 +1109,7 @@ def main():
             
             # If errors occurred, output original task unchanged
             if handler.has_errors():
-                handler.output_messages()
+                handler.output_messages(sys.stdout)
                 sys.exit(1)
         
         print(json.dumps(task))
@@ -1201,8 +1166,7 @@ def main():
         
         # If errors occurred, output original task unchanged
         if handler.has_errors():
-            print(json.dumps(original))
-            handler.output_messages()
+            handler.output_messages(sys.stdout)
             sys.exit(1)
         
         print(json.dumps(modified))

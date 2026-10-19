@@ -26,6 +26,29 @@ Plan: nb `tw:docs/tw-calendar-periods-plan.md`.
   that fails to import blocks every command); the tests use dateutil's RRULE as an oracle.
   `test/test_rules_positions.py`: 165 tests.
 
+### Changed (step 3: the hooks use the rules)
+- `r` is a string UDA (`recurrence.rc`), kept as typed; the hook checks it, on add and on
+  modify, and refuses a bad one with the reason (`'1m' is ambiguous: 1mo for months, 1min for
+  minutes`). Templates stored as `P30D` keep their 30 days.
+- Every instance date comes from `instance_dates`, which asks the rule: periodic `1mo` lands
+  on the same day each month, clamped to month end; chained stays 30 days. Both time machines
+  (template `rlast`, instance `rindex`) use it too; they had their own copies of the
+  arithmetic.
+- A position rule's template dated off the rule is moved to the rule's first date on or after
+  it, with a message ("Moved due from Thu 2026-11-12 to Tue 2026-12-08, the first 'm:2tue' on
+  or after it."), on add and when `r` or the date changes. A template without a date: "anchor
+  date required". A position rule on a chained template is refused.
+- Notes (nothing refused): a month period anchored on a short month's last day ("For every
+  month end use r:m:-1"); a new template starting in the past.
+- When the hook refuses a change, its reason goes to stdout, where Taskwarrior looks for it:
+  every refusal used to add "Hook Error: Expected feedback from failing hook script", and a
+  refused modify printed the task's JSON.
+
+### Fixed
+- `rwait:due-1mo` (and `rscheduled`, `runtil`) meant one *minute*: the unit pattern tried `m`
+  before `mo`. Months and years in relative fields now step calendar months (Mar 31 − 1mo =
+  Feb 28), and the pattern must match the whole value.
+
 ## [2.11.1] — 2026-10-19
 
 Release C of the 2026-10-19 review: tidying, no change in behaviour.

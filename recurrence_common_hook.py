@@ -69,9 +69,9 @@ import os
 import re
 from datetime import datetime, timedelta
 
-# Constants for date calculations
-DAYS_PER_MONTH = 30
-DAYS_PER_YEAR = 365
+# What r means and the dates it gives (periods and position rules): recurrence_rules, beside
+# this file. Chained templates still count a month as 30 days and a year as 365.
+from recurrence_rules import parse as parse_rule, RuleError, CHAINED_MONTH_DAYS, CHAINED_YEAR_DAYS
 
 # Debug configuration
 DEBUG = os.environ.get('DEBUG_RECURRENCE', '0') == '1'
@@ -193,6 +193,19 @@ def validate_recurrence_integers(task):
     return errors
 
 
+def validate_rule(task):
+    """r is a rule recurrence_rules understands, and fits the template's type. r is a string
+    UDA, so this is the only check it gets. Error messages, empty if fine."""
+    try:
+        rule = parse_rule(task.get('r'))
+    except RuleError as e:
+        return [f"ERROR: Invalid recurrence r:{task.get('r')}\n  {e}"]
+    if rule.kind == 'position' and normalize_type(task.get('type')) == 'chain':
+        return [f"ERROR: r:{rule.text} is a position rule, for periodic templates only;\n"
+                f"  a chained template (ty:c) needs a period, like 1mo"]
+    return []
+
+
 def validate_template_requirements(task):
     """Validate template has required fields
     
@@ -211,18 +224,12 @@ def validate_template_requirements(task):
     
     # Must have anchor date (due or scheduled)
     if 'due' not in task and 'scheduled' not in task:
-        errors.append(
-            "ERROR: Recurring task must have 'due' or 'scheduled' date\n"
-            f"  Provided: due={task.get('due', 'missing')}, scheduled={task.get('scheduled', 'missing')}"
-        )
-    
-    # Validate period format
-    if not parse_duration(task['r']):
-        errors.append(
-            f"ERROR: Invalid recurrence period '{task['r']}'\n"
-            f"  Valid formats: 1d, 7d, 1w, 1mo, 1y, P1D, P1W, P1M, P1Y"
-        )
-    
+        errors.append("ERROR: anchor date required: a recurring task needs due: or scheduled:")
+
+    errors += validate_rule(task)
+    if errors:
+        return errors
+
     # Check rend not in past (if present)
     if 'rend' in task:
         rend_date = parse_date(task['rend'])
@@ -458,64 +465,16 @@ def normalize_type(type_str):
 
 
 def parse_duration(duration_str):
-    """Parse duration string (e.g., '7d', '1w', '1mo', '1y') to timedelta
-    
-    Supports:
-        - Simple formats: 1s, 7d, 2w, 1mo, 1y
-        - ISO 8601: P1Y2M3DT4H5M6S
-        
-    Args:
-        duration_str: Duration string to parse
-        
-    Returns:
-        timedelta object or None if parsing fails
-    """
-    if not duration_str:
+    """A period as a timedelta, months as 30 days and years as 365 (chained templates' meaning,
+    and an approximation for periodic ones: their dates come from recurrence_rules). None for
+    anything that isn't a period, position rules included."""
+    try:
+        rule = parse_rule(duration_str)
+    except RuleError:
         return None
-    
-    # Handle simple formats: 1s, 7d, 2w, 1mo, 1y
-    match = re.match(r'(\d+)(s|d|w|mo|y)', str(duration_str).lower())
-    if match:
-        num, unit = match.groups()
-        num = int(num)
-        
-        if unit == 's':
-            return timedelta(seconds=num)
-        elif unit == 'd':
-            return timedelta(days=num)
-        elif unit == 'w':
-            return timedelta(weeks=num)
-        elif unit == 'mo':
-            return timedelta(days=num * DAYS_PER_MONTH)
-        elif unit == 'y':
-            return timedelta(days=num * DAYS_PER_YEAR)
-    
-    # Handle ISO 8601 duration: P1Y2M3DT4H5M6S
-    pattern = r'P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?'
-    match = re.match(pattern, str(duration_str))
-    if match:
-        years, months, weeks, days, hours, mins, secs = match.groups()
-        delta = timedelta()
-        
-        # Add components (order doesn't matter for timedelta)
-        if secs:
-            delta += timedelta(seconds=int(secs))
-        if mins:
-            delta += timedelta(minutes=int(mins))
-        if hours:
-            delta += timedelta(hours=int(hours))
-        if days:
-            delta += timedelta(days=int(days))
-        if weeks:
-            delta += timedelta(weeks=int(weeks))
-        if months:
-            delta += timedelta(days=int(months) * DAYS_PER_MONTH)
-        if years:
-            delta += timedelta(days=int(years) * DAYS_PER_YEAR)
-        
-        return delta
-    
-    return None
+    if rule.kind != 'period':
+        return None
+    return timedelta(days=rule.chained_days + rule.days, seconds=rule.seconds)
 
 
 def parse_date(date_str):
@@ -593,7 +552,8 @@ def parse_relative_date(date_str, anchor_date=None):
     
     # Match patterns like: due-2d, sched+1w, wait-30m, wait-3days, sched+4hr
     match = re.match(
-        r'(due|sched|wait)\s*([+-])\s*(\d+)(s|seconds?|min|minutes?|m|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)',
+        # longest units first: with m before mo, 'due-1mo' was read as one minute
+        r'(due|sched|wait)\s*([+-])\s*(\d+)(seconds?|s|minutes?|min|months?|mo|m|hours?|h|days?|d|weeks?|w|years?|y)\s*$',
         str(date_str).lower()
     )
     
@@ -615,10 +575,16 @@ def parse_relative_date(date_str, anchor_date=None):
         delta = timedelta(days=num)
     elif unit.startswith('w'):
         delta = timedelta(weeks=num)
-    elif unit.startswith('mo'):
-        delta = timedelta(days=num * DAYS_PER_MONTH)
-    elif unit.startswith('y'):
-        delta = timedelta(days=num * DAYS_PER_YEAR)
+    elif unit.startswith('mo') or unit.startswith('y'):
+        # calendar months from an anchor (Mar 31 - 1mo = Feb 28); 30 / 365 days without one
+        period = f"{num}{'mo' if unit.startswith('mo') else 'y'}"
+        if anchor_date is not None:
+            try:
+                return parse_rule(period).offset(anchor_date, -1 if sign == '-' else 1)
+            except RuleError:
+                return None
+        delta = timedelta(days=num * (CHAINED_MONTH_DAYS if unit.startswith('mo')
+                                      else CHAINED_YEAR_DAYS))
     else:
         return (None, None) if anchor_date is None else None
     
@@ -751,40 +717,47 @@ def query_task(uuid):
         return None
 
 
-def instance_dates(template, rindex, completion_time=None):
+def instance_dates(template, rindex, completion_time=None, as_periodic=False):
     """The dates instance rindex of template gets: ({field: datetime}, ended).
 
     The anchor field (due or scheduled) always, plus wait/scheduled/until from the template's
-    relative dates. Instance 1 takes the template's anchor; later ones add the period: to the
-    template's anchor (rindex-1 times) for period, to completion_time (else now) for chain.
-    ended is True when the anchor lies beyond rend. ({}, False) when it can't be computed.
+    relative dates. The anchor comes from the template's rule (recurrence_rules): for period
+    templates the rule's nth date from the template's anchor (calendar months for 1mo, 1y...,
+    the nth occurrence for position rules); for chain, instance 1 is the template's anchor and
+    later ones the rule's step after completion_time (else now), months as 30 days.
+    as_periodic computes a chained template's instance as if periodic (the time machine, which
+    has no completion time). ended is True when the anchor lies beyond rend.
+    ({}, False) when it can't be computed.
     """
     try:
         rindex = int(rindex)
     except (ValueError, TypeError):
         return {}, False
-    recur_delta = parse_duration(template.get('r'))
     anchor_field = template.get('ranchor', 'due')
     actual_field = get_anchor_field_name(anchor_field)
     template_anchor = parse_date(template.get(actual_field))
-    if rindex < 1 or not recur_delta or not template_anchor:
+    try:
+        rule = parse_rule(template.get('r'))
+    except RuleError as e:
+        rule = None
+        if DEBUG:
+            debug_log(f"Bad r on template {template.get('uuid')}: {e}", "COMMON")
+    if rindex < 1 or not rule or not template_anchor:
         if DEBUG:
             debug_log(f"Can't compute dates: rindex={rindex} r={template.get('r')} "
                       f"{actual_field}={template.get(actual_field)}", "COMMON")
         return {}, False
 
-    if rindex == 1:
-        anchor_date = template_anchor
-    elif template.get('type', 'period') == 'chain':
-        anchor_date = add_local(completion_time or datetime.utcnow(), recur_delta)
-    else:
-        anchor_date = add_local(template_anchor, recur_delta * (rindex - 1))
-
-    rend = template.get('rend')
-    if rend:
-        rend_date = parse_relative_date(rend, template_anchor) or parse_date(rend)
-        if rend_date and anchor_date > rend_date:
-            return {actual_field: anchor_date}, True
+    try:
+        if template.get('type', 'period') == 'chain' and not as_periodic:
+            anchor_date = (template_anchor if rindex == 1
+                           else rule.after(completion_time or datetime.utcnow()))
+        else:
+            anchor_date = rule.nth(template_anchor, rindex)
+    except RuleError as e:
+        if DEBUG:
+            debug_log(f"No date for #{rindex} of {template.get('uuid')}: {e}", "COMMON")
+        return {}, False
 
     dates = {actual_field: anchor_date}
     for rel, field in (('rwait', 'wait'), ('rscheduled', 'scheduled'), ('runtil', 'until')):
@@ -794,7 +767,77 @@ def instance_dates(template, rindex, completion_time=None):
                 dates[field] = when
             elif DEBUG:
                 debug_log(f"Failed to parse {rel}: {template[rel]}", "COMMON")
+
+    rend = template.get('rend')
+    if rend:
+        rend_date = parse_relative_date(rend, template_anchor) or parse_date(rend)
+        if rend_date and anchor_date > rend_date:
+            return dates, True
     return dates, False
+
+
+def _local(dt):
+    """Naive UTC -> local wall time, for messages."""
+    from datetime import timezone
+    return dt.replace(tzinfo=timezone.utc).astimezone().replace(tzinfo=None)
+
+
+def _say_date(dt):
+    wall = _local(dt)
+    return wall.strftime('%a %Y-%m-%d' if wall.time() == datetime.min.time()
+                         else '%a %Y-%m-%d %H:%M')
+
+
+def align_to_rule(task):
+    """A template whose rule is a position rule and whose anchor isn't on it: move the anchor
+    to the rule's first date on or after it (open item A of the calendar-periods plan). Returns
+    the message to show, or None when nothing moved."""
+    try:
+        rule = parse_rule(task.get('r'))
+    except RuleError:
+        return None
+    field = get_anchor_field_name(task.get('ranchor', 'due'))
+    anchor = parse_date(task.get(field))
+    if rule.kind != 'position' or not anchor:
+        return None
+    try:
+        first = rule.nth(anchor, 1)
+    except RuleError:
+        return None
+    if first == anchor:
+        return None
+    task[field] = format_date(first)
+    return (f"Moved {field} from {_say_date(anchor)} to {_say_date(first)}, the first "
+            f"'{rule.text}' on or after it.")
+
+
+def template_warnings(task, new=True):
+    """Notes on a template that's fine but may not do what was meant; nothing is changed.
+
+    - a month period (1mo, 3mo, quarterly...) anchored on the last day of a month shorter than
+      31 days repeats on that day number, not on month ends
+    - a new template starting in the past has its first instance overdue at once
+    """
+    notes = []
+    try:
+        rule = parse_rule(task.get('r'))
+    except RuleError:
+        return notes
+    anchor = parse_date(task.get(get_anchor_field_name(task.get('ranchor', 'due'))))
+    if not anchor:
+        return notes
+    if (rule.kind == 'period' and rule.months % 12 and not rule.days and not rule.seconds):
+        import calendar
+        wall = _local(anchor)
+        month_len = calendar.monthrange(wall.year, wall.month)[1]
+        if wall.day == month_len < 31:
+            better = 'r:m:-1' if rule.months == 1 else f'r:m/{rule.months}:-1'
+            notes.append(f"Note: {wall:%b} {wall.day} is a month end, but r:{rule.text} repeats "
+                         f"on the {wall.day}th. For every month end use {better}.")
+    if new and anchor < datetime.utcnow() and 'runtil' not in task:
+        notes.append(f"Note: this starts {_say_date(anchor)}, in the past: its first instance "
+                     f"is overdue already.")
+    return notes
 
 
 def plan_next(template, completion_time=None, now=None):

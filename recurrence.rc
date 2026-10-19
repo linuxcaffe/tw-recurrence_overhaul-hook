@@ -27,8 +27,10 @@ recurrence=no
 uda.type.type=string
 uda.type.label=Recurrence Type
 
-# r: recurrence period (e.g., 1d, 1w, 1mo, 1y)
-uda.r.type=duration
+# r: the recurrence rule, kept as typed (a string, so 1mo stays a calendar month; as a
+# duration Taskwarrior stored it as P30D). A period (1d, 2w, 1mo, quarterly, P1M) or a
+# position rule (m:2tue, m:lbd, w:mon..fri, y:04-12); the hooks check it.
+uda.r.type=string
 uda.r.label=Recurrence Period
 
 # rtemplate: UUID of the template task (for instances)
