@@ -4,6 +4,9 @@ Each test gets fresh data, a copy of this repo's hooks (on-modify a symlink to o
 installed) and recurrence.rc, in America/Toronto. tw(*args) runs task with hooks and returns
 stdout + stderr; tw.calls are the hooks' own task calls (through a logging wrapper on PATH);
 tw.export / template / instances read the data with hooks off.
+
+RECURRENCE_INSTALLED=<task dir> tests an installed copy instead of this repo: the hooks from
+<dir>/hooks (its on-modify link included) and <dir>/config/recurrence.rc.
 """
 import json
 import os
@@ -16,6 +19,9 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 HOOKS = ['on-add_recurrence.py', 'on-exit_recurrence.py', 'recurrence_common_hook.py',
          'recurrence_rules.py']
+INSTALLED = os.environ.get('RECURRENCE_INSTALLED')
+SOURCE = Path(INSTALLED) / 'hooks' if INSTALLED else REPO
+RC = Path(INSTALLED) / 'config' / 'recurrence.rc' if INSTALLED else REPO / 'recurrence.rc'
 
 
 @pytest.fixture
@@ -23,11 +29,14 @@ def tw(tmp_path):
     hooks = tmp_path / 'hooks'
     hooks.mkdir()
     for h in HOOKS:
-        shutil.copy2(REPO / h, hooks / h)
+        shutil.copy2(SOURCE / h, hooks / h)
+    link = SOURCE / 'on-modify_recurrence.py'
+    if INSTALLED:
+        assert link.is_symlink() and str(link.readlink()) == 'on-add_recurrence.py', link
     (hooks / 'on-modify_recurrence.py').symlink_to('on-add_recurrence.py')
     rc = tmp_path / 'rc'
     rc.write_text(f'data.location={tmp_path}\nhooks.location={hooks}\nconfirmation=off\n'
-                  f'verbose=footnote\nbulk=0\ninclude {REPO / "recurrence.rc"}\n')
+                  f'verbose=footnote\nbulk=0\ninclude {RC}\n')
     # the hooks' own task calls go through a wrapper that logs them
     bin_ = tmp_path / 'bin'
     bin_.mkdir()
