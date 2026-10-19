@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — calendar periods (branch `calendar-periods`)
+
+Plan: nb `tw:docs/tw-calendar-periods-plan.md`.
+
+### Added
+- `recurrence_rules.py` (step 1): what `r` means and the dates it gives, standard library
+  only, not yet used by the hooks. `1mo`, `1q`, `1y`, `P1M`, `monthly`… step calendar months
+  on periodic templates, clamped to the month's end from the template's own day (Jan 31 →
+  Feb 28 → Mar 31); chained templates still count 30 / 365 days. Day and week periods give
+  exactly the dates the hook gives today (checked against every active instance). Bad input
+  raises `RuleError` with the position of the problem; dates in year 9999 (Taskwarrior's
+  someday) are refused. `test/test_rules.py`: 103 tests.
+
 ## [2.11.1] — 2026-10-19
 
 Release C of the 2026-10-19 review: tidying, no change in behaviour.
