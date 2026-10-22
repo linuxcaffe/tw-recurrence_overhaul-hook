@@ -164,3 +164,28 @@ def test_deleting_a_template_says_how_to_delete_its_instance(tw):
 
 def test_runtil_is_a_defined_uda(tw):
     assert 'runtil' in tw('rc.verbose=nothing', '_udas')
+
+
+# ── a completion this station didn't see (another station, hooks off) ───────────
+
+def test_chain_counts_from_a_completion_made_elsewhere(tw):
+    """A station without the recurrence hooks (a phone) completes a chained instance; the station
+    that runs them catches up on its next command. The next instance counts from that completion,
+    not from the moment of catching up."""
+    tw('add', 'haircut', 'r:7d', 'ty:c', 'due:2026-09-20')
+    tw('rc.hooks=off', 'rtemplate.any:', 'done', 'end:2026-10-01T12:00')
+    assert tw.instances('haircut') == []
+    out = tw('next')
+    assert 'recurrence instance #2' in out
+    [inst] = tw.instances('haircut')
+    assert due_date(inst) == '20261008'          # 2026-10-01 + 7d, not today + 7d
+
+
+def test_an_instance_deleted_elsewhere_still_gets_a_successor(tw):
+    from datetime import datetime, timedelta
+    tw('add', 'haircut', 'r:7d', 'ty:c', 'due:2026-09-20')
+    tw('rc.hooks=off', 'rtemplate.any:', 'delete')
+    tw('rc.hooks=off', 'rc.gc=on', 'next')
+    tw('next')
+    [inst] = tw.instances('haircut')
+    assert inst['rindex'] == '2'

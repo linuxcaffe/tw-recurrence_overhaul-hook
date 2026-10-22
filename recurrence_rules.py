@@ -1,6 +1,6 @@
 """
 Taskwarrior Enhanced Recurrence - Rules
-Version: 3.0.1
+Version: 3.0.2
 Date: 2026-10-19
 
 What a template's `r` means, and the dates it gives. Standard library only, no Taskwarrior

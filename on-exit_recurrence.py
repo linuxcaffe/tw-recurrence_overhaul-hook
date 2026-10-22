@@ -13,8 +13,8 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 3.0.1
-Date: 2026-10-19
+Version: 3.0.2
+Date: 2026-10-22
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:
 Every active template MUST have exactly one pending instance.
@@ -211,6 +211,10 @@ class RecurrenceSpawner:
                 completion = parse_date(trigger.get('end'))
             elif trigger:
                 completion = self.now
+            elif template.get('type', 'period') == 'chain':
+                # Finished where these hooks didn't run (another station): a chain counts from
+                # that instance's end, not from now
+                completion = self.unseen_completion(uuid, template)
             rindex, skipped, ended = plan_next(template, completion, self.now)
             desc = template.get('description', 'untitled')
             if ended:
@@ -227,6 +231,18 @@ class RecurrenceSpawner:
             if msg:
                 feedback.append(msg)
         return feedback
+
+    @staticmethod
+    def unseen_completion(uuid, template):
+        """When the template's latest instance finished, if this command didn't see it happen:
+        its `end`, or None (then now). Only a chain needs it, and only when an instance is missing."""
+        done = task_export(f'rtemplate:{uuid}', '(', 'status:completed', 'or', 'status:deleted', ')')
+        if not done:
+            return None
+        rlast = str(template.get('rlast') or '')
+        latest = [t for t in done if str(t.get('rindex')) == rlast] or done
+        end = max((t.get('end') or '' for t in latest), default='')
+        return parse_date(end) if end else None
 
     @staticmethod
     def template_ended(template, instances):

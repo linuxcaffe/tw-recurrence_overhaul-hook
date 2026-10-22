@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 3.0.1
+Version: 3.0.2
 Date: 2026-10-19
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -1001,7 +1001,7 @@ def spawn_instance(template, rindex, completion_time=None):
 
 
 # Version info
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 __date__ = '2026-10-19'
 
 if DEBUG:

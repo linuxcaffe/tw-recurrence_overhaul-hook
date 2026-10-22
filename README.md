@@ -465,4 +465,4 @@ and in daily use.
 - Language: Python
 - Requires: Taskwarrior 2.6.2, Python 3
 - Files: 2 hooks + 2 libraries + 1 symlink + 1 config + `rr`
-- Version: 3.0.1
+- Version: 3.0.2

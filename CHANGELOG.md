@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.2] — 2026-10-22
+
+### Fixed
+- **A chain counts from a completion made on another station.** When an instance was finished
+  where these hooks didn't run (a phone with hooks off, synced with gittw), the station that runs
+  them spawned the next instance on its next command, but counted the chain from *that moment*
+  instead of from the completion. on-exit now looks up the template's latest finished instance and
+  uses its `end`. Periodic templates were never affected (their dates don't depend on completion).
+
+---
+
 ## [3.0.1] — 2026-10-19
 
 Documentation only.
