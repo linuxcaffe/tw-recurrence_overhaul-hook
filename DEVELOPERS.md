@@ -132,6 +132,9 @@ python3 -m pytest -q
 - `test_rules.py`, `test_rules_positions.py`: the rule module alone (positions checked against
   dateutil's RRULE where it's installed; the module itself doesn't need it).
 - `test_calendar_hooks.py`: calendar periods and position rules end to end.
+- **Against an installed copy:** `RECURRENCE_INSTALLED=$HOME/.task python3 -m pytest -q test` runs the
+  whole suite on the hooks and `recurrence.rc` in that folder, not the repo's: the check after a release
+  (3.1.0 went out with a broken import that only the full suite caught).
 
 **Dry run on real data** before installing: copy `~/.task/*.data` into a temp dir, with an rc
 that does `include ~/.taskrc` and then overrides `data.location` and `hooks.location`. A
