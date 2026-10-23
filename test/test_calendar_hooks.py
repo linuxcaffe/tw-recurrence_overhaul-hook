@@ -116,6 +116,44 @@ def test_chained_position_rule_is_refused(tw):
     assert tw.export('status:recurring') == []
 
 
+# ── a chain takes no until: its instance would expire, spawn the next, expire… ──
+
+def test_chained_until_is_refused(tw):
+    out = tw('add', 'gym', 'r:2d', 'ty:c', 'due:2030-01-25', 'until:2030-01-27')
+    assert 'until' in out and 'chain' in out
+    assert tw.export() == []
+
+
+def test_chained_relative_until_is_refused(tw):
+    out = tw('add', 'gym', 'r:2d', 'ty:c', 'due:2030-01-25', 'until:due+2d')
+    assert 'until' in out
+    assert tw.export() == []
+
+
+def test_until_added_to_a_chain_is_refused(tw):
+    tw('add', 'gym', 'r:2d', 'ty:c', 'due:2030-01-25')
+    out = tw('status:recurring', 'mod', 'until:due+2d')
+    assert 'until' in out and 'chain' in out
+    t = tw.template('gym')
+    assert 'runtil' not in t and 'until' not in t
+
+
+def test_a_periodic_with_until_cannot_become_a_chain(tw):
+    tw('add', 'rent', 'r:1mo', 'due:2030-01-31', 'until:due+3d')
+    out = tw('status:recurring', 'mod', 'ty:c')
+    assert 'until' in out and 'chain' in out
+    assert tw.template('rent')['type'] == 'period'
+
+
+def test_a_chain_takes_wait_the_other_date_and_rend(tw):
+    out = tw('add', 'gym', 'r:2d', 'ty:c', 'due:2030-01-25', 'wait:due-1d',
+             'scheduled:due-2h', 'rend:2030-06-01')
+    assert 'ERROR' not in out
+    t = tw.template('gym')
+    assert t['type'] == 'chain' and t['ranchor'] == 'due'
+    assert 'rwait' in t and 'rscheduled' in t and 'rend' in t
+
+
 # ── r is the hook's to check now ─────────────────────────────────────────────
 
 def test_a_bad_r_is_refused_with_the_reason(tw):

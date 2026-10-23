@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence Hook - On-Exit
-Version: 3.0.2
+Version: 3.1.0
 Date: 2026-10-22
 
 Spawns new recurrence instances when needed and enforces one-to-one rule:

@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 3.0.2
+Version: 3.1.0
 Date: 2026-10-19
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -194,15 +194,21 @@ def validate_recurrence_integers(task):
 
 
 def validate_rule(task):
-    """r is a rule recurrence_rules understands, and fits the template's type. r is a string
-    UDA, so this is the only check it gets. Error messages, empty if fine."""
+    """r is a rule recurrence_rules understands, and fits the template's type (a chain takes no
+    position rule and no until). r is a string UDA, so this is the only check it gets. Error
+    messages, empty if fine."""
     try:
         rule = parse_rule(task.get('r'))
     except RuleError as e:
         return [f"ERROR: Invalid recurrence r:{task.get('r')}\n  {e}"]
-    if rule.kind == 'position' and normalize_type(task.get('type')) == 'chain':
+    chain = normalize_type(task.get('type')) == 'chain'
+    if rule.kind == 'position' and chain:
         return [f"ERROR: r:{rule.text} is a position rule, for periodic templates only;\n"
                 f"  a chained template (ty:c) needs a period, like 1mo"]
+    # A chained instance that expires spawns the next, which expires too: no until on a chain
+    if chain and (task.get('until') or task.get('runtil')):
+        return ["ERROR: a chained template (ty:c) takes no until:\n"
+                "  each expired instance would spawn the next; use rend: to stop the chain"]
     return []
 
 
@@ -1001,7 +1007,7 @@ def spawn_instance(template, rindex, completion_time=None):
 
 
 # Version info
-__version__ = '3.0.2'
+__version__ = '3.1.0'
 __date__ = '2026-10-19'
 
 if DEBUG:

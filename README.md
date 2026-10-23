@@ -55,6 +55,8 @@ Based on the
 - **Chained recurrence** (`ty:c`)
   Next instance due relative to completion time. Good for habits, chores,
   exercise — anything where "every N days" means "after I actually do it."
+  A chain takes a period, its anchor, wait, the other date and `rend`, but no
+  `until`: each expired instance would spawn the next, which would expire too.
 
 - **Periodic recurrence** (`ty:p`, default)
   Fixed schedule from the template. Instance #N is the template's date plus
@@ -320,6 +322,8 @@ The hook validates input and blocks errors before they corrupt data.
 - An `r` the hook can't read (with the reason: `'1m' is ambiguous: 1mo for months, 1min for
   minutes`)
 - A position rule on a chained template
+- `until` on a chained template (on add, on modify, and when a template with
+  `until` is changed to `ty:c`)
 - `rend` date in the past
 - Adding `r` to an existing instance
 - Changing `rtemplate` on an instance
@@ -465,4 +469,4 @@ and in daily use.
 - Language: Python
 - Requires: Taskwarrior 2.6.2, Python 3
 - Files: 2 hooks + 2 libraries + 1 symlink + 1 config + `rr`
-- Version: 3.0.2
+- Version: 3.1.0

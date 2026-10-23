@@ -13,7 +13,7 @@ if _os_timing.environ.get('TW_TIMING'):
 
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 3.0.2
+Version: 3.1.0
 Date: 2026-10-19
 
 Handles both adding new recurring tasks and modifying existing ones with
@@ -734,10 +734,12 @@ class RecurrenceHandler:
         description = modified.get('description', 'untitled')
         template_uuid = modified.get('uuid')
         
-        # r changed (or the type): check it, as Taskwarrior no longer does (r is a string)
+        # r changed (or the type): check it, as Taskwarrior no longer does (r is a string);
+        # an until changed too, as a chain takes none
         anchor_name = get_anchor_field_name(modified.get('ranchor', 'due'))
         rule_changed = any(modified.get(f) != original.get(f) for f in ('r', 'type'))
-        if rule_changed and modified.get('status') not in ('deleted', 'completed'):
+        until_changed = modified.get('runtil') != original.get('runtil')
+        if (rule_changed or until_changed) and modified.get('status') not in ('deleted', 'completed'):
             for error in validate_rule(modified):
                 self.add_error(error)
             if self.has_errors():

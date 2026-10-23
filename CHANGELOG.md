@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.1.0] — 2026-10-22
+
+### Changed
+- **A chained template takes no `until`.** Its instance would expire, the expiry would spawn the
+  next instance, and that one would expire too: a chain recreating and killing itself. `until:`
+  (absolute or relative) on a `ty:c` template is now refused on add and on modify, and so is
+  changing a template that has an `until` to `ty:c`; the message points to `rend:` for stopping a
+  chain. A chain still takes its anchor, `wait`, the other date (`rscheduled`) and `rend`.
+  Periodic templates and instances are unchanged.
+
+---
+
 ## [3.0.2] — 2026-10-22
 
 ### Fixed
