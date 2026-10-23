@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence Hook - On-Add/On-Modify
-Version: 3.1.0
+Version: 3.1.1
 Date: 2026-10-19
 
 Handles both adding new recurring tasks and modifying existing ones with

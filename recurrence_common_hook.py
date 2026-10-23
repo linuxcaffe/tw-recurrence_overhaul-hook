@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Taskwarrior Enhanced Recurrence - Common Utilities
-Version: 3.1.0
+Version: 3.1.1
 Date: 2026-10-19
 
 Shared utilities for recurrence hooks (on-add, on-modify, on-exit)
@@ -1007,7 +1007,7 @@ def spawn_instance(template, rindex, completion_time=None):
 
 
 # Version info
-__version__ = '3.1.0'
+__version__ = '3.1.1'
 __date__ = '2026-10-19'
 
 if DEBUG:

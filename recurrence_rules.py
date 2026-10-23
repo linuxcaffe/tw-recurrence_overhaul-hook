@@ -1,6 +1,6 @@
 """
 Taskwarrior Enhanced Recurrence - Rules
-Version: 3.1.0
+Version: 3.1.1
 Date: 2026-10-19
 
 What a template's `r` means, and the dates it gives. Standard library only, no Taskwarrior
@@ -48,7 +48,7 @@ if _os_timing.environ.get('TW_TIMING'):
 import os
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import calendar
 
 # Debug configuration (default 0, triggered by tw --debug=2)

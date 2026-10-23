@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.1.1] — 2026-10-22
+
+### Fixed
+- **3.1.0 as released couldn't spawn anything.** The release pipeline added its debug block to
+  `recurrence_rules.py` and, doing so, cut its `from datetime import datetime, timedelta, timezone`
+  down to `datetime` alone. The import is whole again; the suite (331) passes.
+
+---
+
 ## [3.1.0] — 2026-10-22
 
 ### Changed
